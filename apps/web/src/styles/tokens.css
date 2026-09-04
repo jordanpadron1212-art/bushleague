@@ -1,0 +1,158 @@
+/**
+ * Token layer — LAWS.md Law 6: every colour, size, spacing, radius, weight
+ * and duration is a :root custom property defined exactly once.
+ *
+ * Structure per UI.md §9: palette (the only place a hex appears) -> role ->
+ * shell override -> component. Two pinned values are real decisions, not
+ * invented: --c-accent is D17's cyan (#2FD4D4 dark / #0B5F61 light,
+ * chosen over amber) and --c-info is D17's blue, moved to hue 230 to stay
+ * 50 degrees clear of the accent. --c-warn reuses the accent per D37
+ * (".note.warn carries the attention colour") rather than reintroducing
+ * amber, which D17 explicitly removed.
+ *
+ * The neutral scale (ink/white steps, --c-bg/--c-surface/--c-pos/--c-neg)
+ * is NOT recorded anywhere in the old build's docs beyond the token
+ * *pattern* — RESEARCH/DECISIONS pin the two semantic accents but never
+ * published exact greys. These are a fresh, defensible construction, and
+ * every one of them is checked against DECISIONS.md D18's actual rule
+ * ("every semantic value is solved against bg, surface, surface2 AND
+ * surface3, and the ratio recorded is the WORST of the four") — computed,
+ * not eyeballed. Worst-case ratios (4 surfaces x 2 themes), all >= 4.5:1
+ * for text-bearing colours:
+ *   dark  text 13.89 · dim 6.07 · accent 9.30 · info 5.28 · pos 8.38 · neg 6.13
+ *   light text 13.85 · dim 6.81 · accent 5.76 · info 5.27 · pos 4.51 · neg 5.06
+ */
+
+:root {
+  /* ---- palette — the only hexes in the file ---- */
+  --pal-ink-98: #050506;
+  --pal-ink-94: #0a0a0a;
+  --pal-ink-90: #121214;
+  --pal-ink-85: #1c1c1f;
+  --pal-ink-border: #2a2a2e;
+  --pal-white-92: #e8e8ea;
+  --pal-white-60: #9a9aa0;
+
+  --pal-white-98: #fafafa;
+  --pal-white-94: #f2f2f3;
+  --pal-white-90: #e9e9eb;
+  --pal-white-86: #e2e2e6;
+  --pal-white-border: #d4d4d8;
+  --pal-ink-17: #17171a;
+  --pal-ink-4a: #4a4a50;
+
+  --pal-cyan-dark: #2fd4d4;
+  --pal-cyan-light: #0b5f61;
+  --pal-blue-dark: #6e86ff;
+  --pal-blue-light: #2f4fc9;
+  --pal-green-dark: #3ecf6e;
+  --pal-green-light: #117442;
+  --pal-red-dark: #ff6b6b;
+  --pal-red-light: #b3261e;
+
+  /* ---- roles — dark is the default; light overrides below ---- */
+  --c-bg: var(--pal-ink-98);
+  --c-surface: var(--pal-ink-94);
+  --c-surface2: var(--pal-ink-90);
+  --c-surface3: var(--pal-ink-85);
+  --c-border: var(--pal-ink-border);
+  --c-text: var(--pal-white-92);
+  --c-dim: var(--pal-white-60);
+  --c-dim2: color-mix(in srgb, var(--pal-white-60) 60%, var(--pal-ink-98));
+  --c-pos: var(--pal-green-dark);
+  --c-neg: var(--pal-red-dark);
+  --c-accent: var(--pal-cyan-dark);
+  --c-info: var(--pal-blue-dark);
+  --c-warn: var(--c-accent);
+
+  /* ---- type scale ---- */
+  --fs-micro: 10px;
+  --fs-sm: 11.5px;
+  --fs-base: 13px;
+  --fs-md: 15.5px;
+  --fs-lg: 19px;
+  --fs-hero: 28px;
+
+  /* ---- spacing ---- */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+
+  /* ---- motion ---- */
+  --dur-instant: 90ms;
+  --dur-fast: 160ms;
+  --dur-base: 240ms;
+
+  /* ---- shell (D9's hard rule: the ONLY layer either shell may redefine) ---- */
+  --shell-font-prose: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --shell-font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+  --shell-radius: 0px;
+  --shell-label-case: none;
+  --shell-label-track: 0;
+  --shell-row-rule: 1px;
+  --shell-flash: 0;
+
+  /* ---- density (D14: scales --sp-N and --row-h only, never the type scale) ---- */
+  --row-h: 62px; /* compact, the default */
+}
+
+:root:not([data-theme="light"]) {
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --c-bg: var(--pal-white-98);
+  --c-surface: var(--pal-white-94);
+  --c-surface2: var(--pal-white-90);
+  --c-surface3: var(--pal-white-86);
+  --c-border: var(--pal-white-border);
+  --c-text: var(--pal-ink-17);
+  --c-dim: var(--pal-ink-4a);
+  --c-dim2: color-mix(in srgb, var(--pal-ink-4a) 55%, var(--pal-white-98));
+  --c-pos: var(--pal-green-light);
+  --c-neg: var(--pal-red-light);
+  --c-accent: var(--pal-cyan-light);
+  --c-info: var(--pal-blue-light);
+}
+
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    color-scheme: light;
+    --c-bg: var(--pal-white-98);
+    --c-surface: var(--pal-white-94);
+    --c-surface2: var(--pal-white-90);
+    --c-surface3: var(--pal-white-86);
+    --c-border: var(--pal-white-border);
+    --c-text: var(--pal-ink-17);
+    --c-dim: var(--pal-ink-4a);
+    --c-dim2: color-mix(in srgb, var(--pal-ink-4a) 55%, var(--pal-white-98));
+    --c-pos: var(--pal-green-light);
+    --c-neg: var(--pal-red-light);
+    --c-accent: var(--pal-cyan-light);
+    --c-info: var(--pal-blue-light);
+  }
+}
+
+/* ---- shells (D9: no feature CSS may reference a shell name beyond this block) ---- */
+:root[data-shell="desk"] {
+  --shell-font-prose: var(--shell-font-num);
+  --shell-radius: 2px;
+  --shell-label-case: uppercase;
+  --shell-label-track: 0.06em;
+  --shell-flash: 1;
+}
+
+/* ---- density tiers (D14) ---- */
+:root[data-density="dense"] {
+  --row-h: 44px;
+  --sp-3: 8px;
+  --sp-4: 12px;
+}
+:root[data-density="standard"] {
+  --row-h: 70px;
+  --sp-3: 16px;
+  --sp-4: 20px;
+}

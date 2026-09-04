@@ -1,0 +1,38 @@
+@import "tailwindcss";
+@import "./tokens.css";
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--c-bg);
+  color: var(--c-text);
+  font-family: var(--shell-font-prose);
+  font-size: var(--fs-base);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Tabular numerals everywhere a number lives (Law 6). */
+.num {
+  font-family: var(--shell-font-num);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}

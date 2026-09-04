@@ -1,0 +1,109 @@
+# ROADMAP — Bush League
+
+What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
+
+> **Status update, 2026-09-04 (DECISIONS.md D78):** the engineering substrate was rebuilt from scratch
+> (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below "Done"
+> describes the retired `bush-league-v0.10.html` build and is kept as a historical record of what was
+> proven, not a description of what runs today.** Only the ledger, chart of accounts, RNG and
+> formatters are ported so far (`packages/sim-kit`). World generation, the box-score engine, the
+> market and the winter cycle are real logic sitting in the old build and are not yet ported — that is
+> now the actual next pass, ranked above everything the pre-rewrite roadmap had planned next, because
+> nothing in "Next, in order" below can be built on top of a world that doesn't exist yet in the new
+> stack.
+
+**Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
+
+**THE ARC — unchanged by the rewrite:** the **ownership ladder** — the climb from the floor to the Show is the game. The five independent leagues are the bottom rungs.
+
+**v0.8 made the market. v0.9 made the world survive it.** v0.8 gave every club free agency, sign and release, and turned five published rulebooks into predicates. v0.9 discovered that a closed population under an age rule has exactly one destiny — run v0.8 out ten years and the Frontier League has a **median age of 36 with 100% of the league aged 30 or over** — and built the churn that real independent baseball runs on: weekly contract purchases by affiliated organisations, contracts expiring every January, an age-curve exit, a demand-sized intake, an exclusive re-sign window, and a four-month open market.
+
+**The simulated Frontier League now matches the real one** on three of four measures after ten years: 14.6% aged 28+ (real 15%), 2.4% aged 30+ (real 2%), roster continuity 32.6% (real 24–41%), median age 26 (real 24–25 — one year old, and stated as a gap rather than tuned away).
+
+**The price of a win, measured** (`qa/econ.js`, annual net per 100 points of win%): Atlantic **$131,889** · American Association **$147,688** · Pioneer **$106,272** · Frontier **$44,920** · Pecos **$3,610**.
+
+## Next, in order — as of the 2026-09-04 rewrite
+
+**1. Port world generation and the box-score engine into `@bushleague/sim-kit`.** The real, working JS
+for both exists in `bush-league-v0.10.html` and is not yet in this repository in editable form (see the
+status note above) — this is transcription-with-tests against that source, not new design. Nothing else
+below is buildable without it: nothing plays yet.
+
+**2. Wire the Office/Books/Roster pages to real state.** The UI chassis (this pass), the ledger
+(`packages/sim-kit`, tested) and the world generator (pass 1 above) all need to meet in a Zustand store
+and an IndexedDB save. This is the "V1 must be winnable and losable" bar the pre-rewrite project always
+held itself to — a chassis with dark pages is not that yet.
+
+**3. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
+pass that makes scouting mean anything — just now behind two more passes than it used to be.
+
+**4. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
+ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing — see DECISIONS.md
+D77.
+
+**Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
+plan.** Still directionally right once the world exists again; re-sequence it against pass 1 and 2
+above rather than following its numbers literally.
+
+## Done (pre-rewrite build — historical record, not current state)
+
+1. **V1 research pass** — ten sections in `RESEARCH.md`. §10 (the winter) records what could NOT be found as findings, so nobody re-searches it blindly.
+2. **V1 layout proposal** — done and signed off. `UI.md`, with §13 recording Jordan's calls.
+3. **UI chassis (v0.1)** · **Finish pass (v0.2)** · **The Roster (v0.3)** · **The sim pass (v0.4)** · **The front door (v0.5)**.
+6. **Five leagues, not one (v0.6)** — each with its own published schedule, attendance, park effects, talent centre, cap and roster rule; the Pecos League as the floor; the scheduler's opponent distribution rebuilt after a harness that had counted games for six builds was asked for the first time *who* a club played.
+7. **The books meet the roster (v0.7)** — payroll posts what the roster costs; contracts fit each league's cap; all five economies solved to break even at .500.
+8. **The market (v0.8)** — free agency, sign and release, for the owner and all 68 independent clubs. Every published roster rule as a predicate, and the Atlantic League's absence of one encoded as an absence. The no-worse rule that keeps it from deadlocking.
+9. **The winter (v0.9)** — the whole annual cycle, plus nine defects including one that made every migrated save unplayable and one that handed the owner every free agent in the world on reload.
+
+## Next, in order — re-ordered by what v0.9 measured
+
+**1. Player development and ageing — THE ONE THAT MAKES SCOUTING MEAN ANYTHING.**
+Players age and nothing else happens to them. There is no growth curve, no breakout, no decline beyond the age classification. This is now the biggest hole in the game, and v0.9 is what exposed it: a world with real churn makes the question *"is this 22-year-old going to be better than this 26-year-old?"* the central decision of every winter — and right now the answer is fixed at birth. Hidden development curves are already in the locked design (Law 4); this is the pass that builds them. **Do this before scouting**, because scouting without development is scouting a constant.
+
+**2. Scouting and the amateur draft.** Reliability that sharpens with looks already exists on the player profile; nothing yet *spends* on it. A scouting budget, coverage that decides which men you see clearly, and a draft to point it at. Only worth building once there is something hidden that changes.
+
+**3. The ladder itself** — club valuation, buying and selling. Jordan has said plainly this is the point. RESEARCH 9.6 has the rungs: indy club revenue $1.8–4.1M → Triple-A sale $70–100M → MLB sale $1.0–2.5B. Build on **actual transactions, not Forbes valuations.** *(Corrected 2026-09-04, DECISIONS.md D77: the "valuations run ~1.5× high" framing below was comparing one team's sale to the league-wide average, not to that team's own prior valuation — retracted as a modelling input. The Rays sold for $1.7B against their own $1.25B Forbes number, i.e. +36% above estimate. See RESEARCH.md §14.3.)*
+
+**4. The league surfaces** — Standings, Leaders, Wire, Organization. Pure grid work, and what a season *feels* like between advances. **The wire now has real things to say** — every signing, release and contract purchase in the league flows through it — and nothing displays more than the last forty.
+
+**Closed by v0.8/v0.9, removed from this list:** sign and release (was #1) · the contract-out (was #2) · D44, the league rules binding only at generation.
+
+**Still worth knowing:** every salary cap in the build is stale — nothing newer than 2020 is published for any league, and the Frontier's own figures contradict each other by a factor of two (RESEARCH 9.2). Those caps are the binding constraint on play, which makes them the most load-bearing stale numbers in the project.
+
+Then, roughly:
+
+5. Trades + AI GM personalities and valuation logic
+6. Contracts: service time, arbitration, extensions, bonus amortization
+7. Injuries in depth (severity curves, rehab, recurrence — the mechanic exists, the model does not)
+8. Finance depth: media by market size, revenue sharing, luxury tax
+9. Watchable play-by-play (the camera over the pitch-aware math — no rewrite needed)
+10. Staff · 11. Awards, records, history · 12. Full roster rules (options, waivers, Rule 5)
+13+. **Road to the Show** (multi-pass)
+
+## Engineering debt worth paying soon
+
+- **The engine walks too many batters.** BB/9 runs 10.4% and WHIP 6.4% above the published 2025 line, every other figure within 1–5%. Pre-dates v0.8. `simcal.js` has been red on this for several builds.
+- **Batting order barely matters** — `sweep3.js` measures lineup quality capturing 44% of the achievable signal at MLB. The owner can set a lineup and it does not do much.
+- **Difficulty is dead state.** `G.diff` is written and never read. Either wire it to something measurable or delete the field.
+- **All 30 major-league clubs open financially identical**, which blocks the takeover scenarios. This is the finance pass in disguise.
+- **Save growth.** 5.1MB after a decade, driven by **box scores**, not players — v0.9's purge keeps the player array flat. Roll closed years into summary rows.
+- **The RNG stream is not in the save.** `SIMR` reseeds from `G.seed` on a new game but not on a load, so a reloaded save has a different future than an unbroken session.
+- **The series planner leaves ~33 single-game "series" a season** where a real schedule would have 2–4.
+- **The wire holds forty items and the winter generates hundreds.** It needs a real surface before it needs a bigger buffer.
+## Genuinely open (needs research or Jordan's call — do not assume)
+
+- **Minor-league parent affiliation** — which MLB club owns which of the 120 affiliates. Not researched, therefore not asserted. The Organization page stays dark until it is.
+- **Park factors** — Baseball America publishes 2025 MiLB factors running 66 to 206. For a sim these are a **bigger lever than level**, and nothing in the build reflects a ballpark yet.
+- **Ticket pricing by level and market, and the MLB salary scale** — both still Tier 3, both labelled as design knobs in the game. (Per-level run environment is closed — RESEARCH §7.)
+- **Independent-league rate stats** — borrowed from affiliated levels (D23). **The Pioneer League is the worst fit**: a high-altitude offensive extreme modelled on Single-A. Closing this needs a browser session against Pointstreak or ~20–40 fetches per league against Baseball-Reference register team pages.
+- **Baseball-Reference box-score column order** — every proxy route is robots-blocked; needs one JS-enabled browser fetch.
+- Indy detail: whether partner-league affiliation is modelled; whether the Pecos League (the true bottom rung) is in.
+- Complex/rookie ball in or out of world gen. Partly settled: complex clubs are owned by the MLB org, not licensed franchises — there is nothing there for a player-owner to buy. The purchasable ladder is indy → the 120 PDL clubs → MLB.
+- **Interrupt defaults.** Measured at 18.8 days delivered per 30-day request. Is that the right pacing, or should the injury stop fire only above a day threshold? Jordan's call after a playtest.
+- Difficulty knobs: what "hardcore" changes vs normal.
+- Whether the CBA-dependent rules (roster sizes, pitcher limits, the 12-team bracket, the 6-pick lottery, 20-round draft) get a UI for editing. They live in `RESEARCH.md` as data — the 2022–26 CBA expires 2026-12-01 and every one of them can change.
+
+## Decided against (do not re-propose)
+
+Multiplayer · frameworks or multi-file builds · real player names · fully fictional league · historical-era start · a single shell · one big hero figure on the Office screen · inventing an indy run environment · rewinding an old save's calendar on migration (all recorded in `DECISIONS.md`)

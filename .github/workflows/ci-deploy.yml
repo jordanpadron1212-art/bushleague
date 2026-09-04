@@ -1,0 +1,77 @@
+name: CI and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Typecheck, test, build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Enable corepack (pnpm from packageManager field)
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Unit + component tests (sim-kit, web)
+        run: pnpm run test
+
+      # CI-only visual QA (DECISIONS.md D16) — never shipped to users.
+      - name: Install Playwright's Chromium
+        run: pnpm --filter web exec playwright install --with-deps chromium
+
+      - name: Build (proves the app under test)
+        run: pnpm run build
+
+      - name: Visual regression check (360px + 1440px, both shells, both themes)
+        run: pnpm --filter web run test:visual
+
+      - name: Upload visual QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa-screenshots
+          path: apps/web/test-results/
+          retention-days: 14
+
+      - name: Upload Pages artifact
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: apps/web/dist
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4
