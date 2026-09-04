@@ -688,3 +688,57 @@ yet — player development/ageing (ROADMAP.md's next pass) is what actually cons
 curves; §19-22's pitch/batted-ball/defense/platoon research has no consumer yet at all (the game
 currently resolves a plate appearance as one outcome draw, not a pitch-by-pitch or ball-in-play-physics
 simulation) and will wait for whichever future pass decides to model at that depth.
+
+---
+
+## 2026-09-04 — The season-play driver: a season can now be played, not just one game
+
+**D84 · `playDay`/`pushForm` are ported into `@bushleague/sim-kit` (`season.ts`), from
+`bush-league-v0.10.html`. This is the pass that turns "a game can be simulated" (v2.4.0) into "a season
+can be played": walk a built schedule day by day, call `simGame` for every game on it, update every
+participating club's record.**
+
+**A small, genuine finding on `Club`, caught before it could be silently ported forward as real state.**
+The original club object carries a field, `l10w` (a NUMBER), assigned once at creation and never read
+again anywhere in the 5800-line source — confirmed by grep, not assumed. The real rolling last-10-games
+window is a separate field, `c.l10` (an ARRAY), that `pushForm()` actually maintains, with the win count
+derived on every read via `.reduce()`, never stored. This port does not carry `l10w` forward as if it
+were live state: `Club.l10` in this port IS the real array. `gp` (games played this season — what
+`simGame`'s rotation-slot pick reads) is a genuine addition; the original only ever set it inside a
+season-reset function this port doesn't have yet, not at club creation, but a freshly built world needs
+it initialized regardless. `z` is left untouched — also unread anywhere in the original, but nothing in
+this pass needs to touch it, so it wasn't.
+
+**Scope, stated plainly, matching `game.ts`'s own precedent from the last pass.** The original's
+`playDay()` also captures a box score for the OWNER'S OWN club only (`G.box`), posts that day's home
+gate revenue through the ledger (`gateDay`), and writes a wire event (`logEvent`) — none of those exist
+yet to receive this (no owned-club concept, no ledger-integrated gate, no wire). This pass ports the
+pure simulation half only: play every game on a day, update every club's record, return what was
+played. `injuryPass`/`settleWeek`/`settleMonth` (injuries, the market, the winter cycle) are separate,
+later passes, unchanged from ROADMAP.md's own ordering.
+
+**Verified the way this session's whole engine has been verified — against reality, not against an
+invented expectation, and at the largest scale that was actually cheap to run.** Rather than sample
+(as `game.test.ts` did last pass, 500 games/level), this pass built the full real 218-club world, its
+full real schedule, and played every single game on it — end to end, in under 3 seconds
+(`packages/sim-kit/test/season.test.ts`):
+
+- **Closed-system identities hold exactly, across all 218 clubs, not approximately:** total wins ==
+  total losses == total games played; total runs scored == total runs allowed. Not a tolerance check —
+  an exact equality, because a real closed league has no other way to balance its books.
+- **Every one of 218 clubs lands on its exact published game count** — not re-verifying the schedule
+  itself (that was D80's job), but confirming `playDay`'s cursor mechanics consume every scheduled game
+  exactly once, dropping none and doubling none.
+- **The full real 2,430-game MLB season reproduces RESEARCH.md §7.1 tighter than the prior pass's
+  500-game sample, at every stat measured:** ERA 3.74% (was ~2-4% at 500 games, consistent), WHIP 0.48%
+  (was ~4-5%), K/9 0.86%, BB/9 2.06% (still the same high-walks direction D82 already documented as a
+  pre-existing, not-a-port-defect characteristic — just a smaller gap at full scale, as expected from
+  more data averaging out sampling noise), BA 2.54%, OBP 1.75%, SLG 1.97%, **HR/9 0.06%** — essentially
+  exact. All measured directly this pass, not assumed to improve with scale.
+
+**What's still not built:** the owner's own club (no ownership concept exists to pick a rotation index's
+"gp" from — every club in a `playSeason()` run advances identically), a season-reset/year-rollover
+function (a fresh `buildWorld()` already zeroes every record, but nothing yet re-zeroes an EXISTING
+world's records for year two), the injury/market/winter systems, and — still the standing gap this
+session keeps naming — any of this wired to the UI or a real save. A season can be simulated end to
+end for the first time in this rewrite; nobody has watched one happen yet.

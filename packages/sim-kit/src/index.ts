@@ -18,3 +18,4 @@ export * from "./schedule.js";
 export * from "./pa-resolution.js";
 export * from "./roster.js";
 export * from "./game.js";
+export * from "./season.js";

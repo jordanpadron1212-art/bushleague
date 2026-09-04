@@ -13,6 +13,20 @@
  * unique within ONE world; nothing in that decision requires the counter
  * to survive across separate worlds, and a module-level counter that does
  * survive is a subtler bug waiting to happen in a test suite.
+ *
+ * Second adaptation, found while porting the season-play driver
+ * (`season.ts`, DECISIONS.md D84): the original club object's `l10w` field
+ * is a NUMBER, written once at creation and never read again anywhere in
+ * the 5800-line source (confirmed by grep) — the real last-10-games window
+ * is a separate array, `c.l10`, that `pushForm()` actually maintains, with
+ * the win count derived on read via `.reduce()`. Not ported forward as
+ * dead weight: this port's `Club.l10` IS that real array. `gp` (games
+ * played this season — what the season driver uses to pick a rotation
+ * slot) is a genuine addition; the original set it only at a season-reset
+ * function this port doesn't have yet, not at club creation, but a fresh
+ * world needs it initialized regardless. `z` is left alone — also unread
+ * anywhere in the original, but untouched here since nothing in this pass
+ * needs to touch it.
  */
 import { MLB, MILB, INDY, type MilbLevelKey } from "./world-data.js";
 import { abbrFor } from "./names.js";
@@ -30,7 +44,10 @@ export interface Club {
   l: number;
   rs: number;
   ra: number;
-  l10w: number;
+  /** Games played this season — drives `simGame`'s rotation-slot index (`gp % rot.length`). */
+  gp: number;
+  /** Rolling window of the last 10 decisions, oldest first, 1=win/0=loss — see `clubFormRecord` in `season.ts`. */
+  l10: number[];
   strk: number;
   z: number;
 }
@@ -45,7 +62,7 @@ export function makeClub(
   div: string,
   park = "",
 ): Club {
-  return { id, city, name, abbr, lvl, lg, div, park, w: 0, l: 0, rs: 0, ra: 0, l10w: 0, strk: 0, z: 0 };
+  return { id, city, name, abbr, lvl, lg, div, park, w: 0, l: 0, rs: 0, ra: 0, gp: 0, l10: [], strk: 0, z: 0 };
 }
 
 export function buildWorld(): Club[] {

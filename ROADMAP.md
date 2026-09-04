@@ -2,22 +2,21 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D82):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D84):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
 > ledger, chart of accounts, RNG, formatters, player generation and grading (v2.1.0, calibrated against
 > RESEARCH.md §7.1, 50/50 checks pass), club/world generation (all 218 real clubs) and the full schedule
 > (every club at its exact published game count) as of v2.2.0, plate-appearance resolution as of v2.3.0
-> (`log5`/`resolvePA`/`draw`), and — as of v2.4.0 — roster construction (legal by construction to each
-> league's own published rule), lineup/rotation/bullpen depth charts, and `simGame`'s full
-> inning-by-inning loop. **A game can be simulated end to end for the first time in this rewrite.**
-> What's still real logic sitting in the old build and not yet ported: a season-play driver (nothing
-> walks the schedule calendar and calls `simGame` for what's on it), the market, the winter cycle, and
-> everything below. A deep realism-research sweep across seven previously-unsourced domains also
-> completed this session (15 agents, independently fact-checked) — merging its findings into
-> `RESEARCH.md` is now the top item, ranked above further engine work, so the next pass (player
-> development) has real sourced material rather than waiting on it.
+> (`log5`/`resolvePA`/`draw`), roster construction/depth charts/`simGame`'s full inning-by-inning loop as
+> of v2.4.0, and — as of v2.5.0 — the season-play driver (`playDay`/`playSeason`): the full real 218-club
+> world's full real schedule now plays end to end in under 3 seconds, every closed-system identity holds
+> exactly, and the full real MLB season reproduces RESEARCH.md §7.1 within 4% at every stat. **A full
+> season can be simulated end to end for the first time in this rewrite.** A deep realism-research sweep
+> across seven previously-unsourced domains was also merged into `RESEARCH.md` this session (v2.4.1,
+> D83). What's still real logic sitting in the old build and not yet ported: an owner's own club, a
+> season-reset/year-rollover function, the market, the winter cycle, and everything below.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -29,39 +28,31 @@ What's next and what's genuinely open. Updated against reality — not against t
 
 **The price of a win, measured** (`qa/econ.js`, annual net per 100 points of win%): Atlantic **$131,889** · American Association **$147,688** · Pioneer **$106,272** · Frontier **$44,920** · Pecos **$3,610**.
 
-## Next, in order — as of the 2026-09-04 rewrite (updated after v2.4.0)
+## Next, in order — as of the 2026-09-04 rewrite (updated after v2.5.0)
 
 **Done: player generation and grading** (v2.1.0, DECISIONS.md D79), **club/world generation plus the
 full schedule** (v2.2.0, DECISIONS.md D80), **plate-appearance resolution** (v2.3.0, DECISIONS.md D81),
-and — **roster construction, depth charts, and a full played game** (v2.4.0, DECISIONS.md D82). D81's
-own open question is answered: with real lineup context, `ADV.hrCal` reproduces HR/9 within ~10% of
-published at every level, confirming it was tuned against real lineup/rotation play. A game can be
-simulated end to end for the first time in this rewrite.
+**roster construction, depth charts, and a full played game** (v2.4.0, DECISIONS.md D82), **the
+realism-research merge** (§18–24, v2.4.1, DECISIONS.md D83), and — **the season-play driver** (v2.5.0,
+DECISIONS.md D84). The full real 218-club world's full real schedule plays end to end in under 3
+seconds; every closed-system identity (wins==losses==games played, runs scored==runs allowed) holds
+exactly across all 218 clubs; the full real 2,430-game MLB season reproduces RESEARCH.md §7.1 within 4%
+at every stat, HR/9 within 0.06% — tighter than v2.4.0's 500-game sample, confirming D82's own hrCal
+finding at full scale. **A full season can be simulated end to end for the first time in this rewrite.**
 
-**Done: the realism-research workflow's findings are merged into `RESEARCH.md`** (§18–24, v2.4.1,
-DECISIONS.md D83) — development curves by individual tool, Statcast-era pitch/batted-ball modeling,
-defensive value in real units, platoon splits, the post-2023 baserunning rule effects, and the NPB/KBO
-posting system, all independently fact-checked (15 agents' worth), plus four of the highest-stakes
-figures re-checked a second time outside the workflow before the merge, all four confirmed exactly.
-Not consumed by any code yet — that's item 3 below.
+**1. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
+player/world generators and the box-score/season engine (passes above) all need to meet in a Zustand
+store and an IndexedDB save. This is the "V1 must be winnable and losable" bar the pre-rewrite project
+always held itself to — a chassis with dark pages is not that yet. This is also where an "owner's own
+club" concept needs to exist for the first time — nothing in `season.ts` distinguishes one club from
+another today, by design (every club advances identically), but a save needs to know which one is
+"mine."
 
-**1. A season-play driver.** `simGame` (v2.4.0) plays one game given two rosters; nothing yet walks
-`buildFullSeasonSchedule`'s calendar day by day, calls `simGame` for what's on it, and tracks each
-club's games-played (for rotation) and won-loss record. This is what turns "a game can be simulated"
-into "a season can be played," and is what finally unlocks ERA/WHIP calibration at the population level
-(player generation's one stated gap — opponent-dependent stats need a real season of opponents, not one
-smoke-test game).
-
-**2. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
-player/world generators and the box-score engine (passes above) all need to meet in a Zustand store
-and an IndexedDB save. This is the "V1 must be winnable and losable" bar the pre-rewrite project always
-held itself to — a chassis with dark pages is not that yet.
-
-**3. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
+**2. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
 pass that makes scouting mean anything — now with sourced component-aging curves (§18) to build from
 rather than waiting on them.
 
-**4. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+**3. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
 from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
 ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing — see DECISIONS.md
 D77.

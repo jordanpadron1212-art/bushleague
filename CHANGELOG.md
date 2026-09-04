@@ -5,6 +5,28 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.5.0 · A SEASON CAN BE PLAYED — 2026-09-04
+
+`playDay`/`pushForm` ported into `@bushleague/sim-kit` (`season.ts`), from
+`bush-league-v0.10.html`. Walks a built schedule day by day, calls `simGame` for every game on it, and
+updates every participating club's record (wins, losses, runs scored/allowed, games played, a rolling
+last-10 form window) in place. This turns v2.4.0's "a game can be simulated" into "a season can be
+played." See `DECISIONS.md` D84.
+
+Small finding on `Club`, caught before being ported forward as if it were live state: the original's
+`l10w` field is written once at creation and never read again anywhere in the source (confirmed by
+grep) — the real rolling window is a separate array (`l10`) `pushForm()` actually maintains. This
+port's `Club.l10` IS that real array, not the dead placeholder.
+
+Verified at the largest scale that was actually cheap: the full real 218-club world, its full real
+schedule, played end to end in under 3 seconds. Closed-system identities hold EXACTLY across all 218
+clubs (total wins == total losses == total games played; total runs scored == total runs allowed), and
+the full real 2,430-game MLB season reproduces RESEARCH.md §7.1 tighter than the prior pass's 500-game
+sample at every stat — HR/9 within 0.06% of published.
+
+Not yet built: an owner's own club, a season-reset/year-rollover function, injuries/market/winter, and
+wiring any of this to the UI or a real save.
+
 ## v2.4.1 · SEVEN NEW RESEARCH DOMAINS — 2026-09-04
 
 `RESEARCH.md` §18–24 added: component-specific player aging curves, Statcast pitch modeling, batted-
