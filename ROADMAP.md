@@ -2,17 +2,19 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D80):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D81):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
 > ledger, chart of accounts, RNG, formatters, player generation and grading (v2.1.0, calibrated against
-> RESEARCH.md §7.1, 50/50 checks pass), and — as of v2.2.0 — club/world generation (all 218 real clubs)
-> and the full schedule (every club at its exact published game count). The box-score engine, the
-> market and the winter cycle are real logic sitting in the old build and are still not ported — that
-> is the actual next pass, ranked above everything the pre-rewrite roadmap had planned next, because
-> nothing in "Next, in order" below can be built on top of a game that doesn't exist yet in the new
-> stack.
+> RESEARCH.md §7.1, 50/50 checks pass), club/world generation (all 218 real clubs) and the full schedule
+> (every club at its exact published game count) as of v2.2.0, and — as of v2.3.0 — plate-appearance
+> resolution (`log5`/`resolvePA`/`draw`, calibrated against 200,000 simulated PAs per level). Roster
+> construction, lineups, rotations, and the inning-by-inning game loop that actually plays those
+> resolved PAs out into a box score are real logic sitting in the old build and are still not ported —
+> that is the actual next pass, ranked above everything the pre-rewrite roadmap had planned next,
+> because nothing in "Next, in order" below can be built on top of a game that doesn't exist yet in the
+> new stack.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -24,18 +26,22 @@ What's next and what's genuinely open. Updated against reality — not against t
 
 **The price of a win, measured** (`qa/econ.js`, annual net per 100 points of win%): Atlantic **$131,889** · American Association **$147,688** · Pioneer **$106,272** · Frontier **$44,920** · Pecos **$3,610**.
 
-## Next, in order — as of the 2026-09-04 rewrite (updated after v2.2.0)
+## Next, in order — as of the 2026-09-04 rewrite (updated after v2.3.0)
 
-**Done: player generation and grading** (v2.1.0, DECISIONS.md D79) and **club/world generation plus the
-full schedule** (v2.2.0, DECISIONS.md D80) — all 218 real clubs, every club at its exact published
-game count, home/away balanced, opponent distribution fair.
+**Done: player generation and grading** (v2.1.0, DECISIONS.md D79), **club/world generation plus the
+full schedule** (v2.2.0, DECISIONS.md D80), and **plate-appearance resolution** (v2.3.0, DECISIONS.md
+D81) — `log5`, `resolvePA` and `draw` ported and calibrated against 200,000 simulated PAs per level.
+An open question from that pass: the `ADV.hrCal`/`bbCal` constants show strong evidence of having been
+tuned against the full lineup/rotation game engine, not isolated per-PA pairing — worth re-checking once
+pass 1 below exists.
 
-**1. Port the box-score game engine** (`log5`/`resolvePA`/`draw`, the `ADV` calibration constants) into
+**1. Port roster construction, lineups, rotations, and `simGame`'s inning-by-inning loop** into
 `@bushleague/sim-kit` — real, working JS in `bush-league-v0.10.html`, not yet in this repository in
-editable form. This is what turns a scheduled matchup and two `rateProfile()` outputs into an actual
-score, and what unlocks ERA/WHIP calibration — player generation's one stated gap (opponent-dependent
-stats need an opponent). Nothing plays until this exists: there is a world and a schedule now, but no
-game has ever been simulated.
+editable form. Plate-appearance resolution (v2.3.0) already turns one batter/pitcher pairing into one
+outcome; this pass is what builds the lineup to feed it and turns a sequence of resolved PAs into
+base-out states, runs, and a real box score — and what unlocks ERA/WHIP calibration, player generation's
+one stated gap (opponent-dependent stats need an opponent). Nothing plays until this exists: there is a
+world, a schedule, and a working PA resolver now, but no game has ever been simulated.
 
 **2. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
 player/world generators and the box-score engine (pass 1 above) all need to meet in a Zustand store

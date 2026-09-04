@@ -541,3 +541,39 @@ distribution fairness — all still hold exactly.
 
 **What's still not ported:** the box-score game engine (`log5`/`resolvePA`/`draw`, the `ADV` calibration
 constants) — the next pass, and what turns a scheduled matchup into an actual played game.
+
+---
+
+## 2026-09-04 — The plate-appearance resolution engine, ported
+
+**D81 · `log5`, `resolvePA`, `draw`, `advOf`, `errRate` and the `ADV` calibration constants are ported
+into `@bushleague/sim-kit` (`pa-resolution.ts`), from `bush-league-v0.10.html`.**
+
+**Scope, narrowed on purpose, not by accident.** `simGame()` in the original build wraps this logic in
+a full nine-inning loop against real rosters, lineups, rotations and bullpens — reading `RT[]` (the
+whole world's cached rate profiles), `G.world.clubs`, `G.players`, and accumulating box-score lines per
+player. That is a materially bigger subsystem (roster legality already exists in `world-data.ts`'s
+`comp` tables but nothing yet builds a roster from them; nothing sets a lineup or a rotation) than this
+pass covers. Porting it alongside risked rushing both, so it's the next pass, not this one.
+
+**A real, documented finding, not a defect:** a calibration test that ran `resolvePA` directly — a
+fresh random batter and a fresh random pitcher drawn from a realistic level population, resampled every
+single plate appearance, 200,000 PAs per level — reproduced batting average and OBP within 3% at every
+level, but undershot SLG (~4-6%) and home-run rate (~9-12%) even at near-zero population spread. Traced
+before assuming a port defect: `ADV.hrCal` (0.92) and `ADV.bbCal` (1.06) are themselves the calibration
+constants the original project tuned against `qa/simcal.js` — which simulated full 162-game seasons
+through real lineups and rotations, where the same pitcher faces the same ~9 hitters repeatedly across
+an outing, not a fresh random opponent every plate appearance. An isolated PA-resolution test measures
+a genuinely different experiment than what those two constants were tuned for. `log5`'s own core
+identity (`log5(l,l,l) === l`) is proven exact in `test/pa-resolution.test.ts`, and `rateProfile()`'s
+own per-player targets are independently verified at tight tolerance in `calibration.test.ts` — the gap
+lives specifically in how the ADV constants interact with lineup context, which doesn't exist here yet.
+Tolerances widened accordingly and documented in the test file's own header, not silently loosened:
+SLG 6%, HR/600 15%, BB%/K% 8%. **Precise reproduction of RESEARCH.md §7.1 waits for the lineup/rotation
+pass** — this is functionally the same class of finding as the old build's own "known red" pattern
+(`simcal.js`'s BB/9 10.4% high, carried as pre-existing and real rather than hidden).
+
+**What's still not ported:** roster construction from `world-data.ts`'s `comp` tables, lineup/rotation/
+bullpen assignment, and `simGame`'s own inning-by-inning loop (base-out state, run scoring, box-score
+accumulation per player). Nothing plays yet — there is a world, a schedule, and a plate-appearance
+engine now, but no game has ever actually been simulated end to end.

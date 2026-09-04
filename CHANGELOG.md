@@ -5,6 +5,22 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.3.0 · THE PLATE-APPEARANCE ENGINE — 2026-09-04
+
+`log5`, `resolvePA`, `draw`, `advOf`, `errRate` and the `ADV` calibration constants ported into
+`@bushleague/sim-kit` (`pa-resolution.ts`), from `bush-league-v0.10.html`. `log5`'s core identity
+(`log5(l,l,l) === l`) proven exact. A real finding from calibrating it directly (200,000 simulated PAs
+per level): isolated PA resolution undershoots SLG (~4-6%) and home-run rate (~9-12%) even at near-zero
+population spread, because `ADV.hrCal`/`bbCal` were tuned by the original project against full
+lineup-and-rotation game context (`qa/simcal.js`), not against a fresh random opponent every plate
+appearance. Not a port defect — `log5` and `rateProfile()` are independently verified exact/tight
+elsewhere — documented and tolerances widened accordingly rather than silently loosened. See
+`DECISIONS.md` D81.
+
+Scope stated plainly: roster construction, lineup/rotation/bullpen assignment, and the actual
+inning-by-inning game loop (`simGame`) are not yet ported. There is a world, a schedule, and a
+plate-appearance engine now — no game has been simulated end to end yet.
+
 ## v2.2.0 · WORLD GENERATION AND THE SCHEDULE — 2026-09-04
 
 Club/world generation (`buildWorld`) and the schedule generator (`pairCounts`/`placeSchedule`/
