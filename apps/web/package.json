@@ -38,6 +38,7 @@
     "jsdom": "^25.0.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.7.0",
+    "undici": "^8.10.1",
     "vite": "^7.3.0",
     "vite-plugin-pwa": "^0.21.0",
     "vitest": "^3.0.0"

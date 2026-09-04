@@ -1357,3 +1357,61 @@ above); silently correcting "Hill City" to a guessed real city (would be exactly
 this project's whole discipline exists to prevent — flagged instead). What's still not built: the amateur
 draft itself (now unblocked), the Organization page (no page exists, separate UI work), the ownership
 ladder, and everything else `DECISIONS.md` D90 already listed as outstanding. See `CHANGELOG.md` v2.12.0.
+
+---
+
+## 2026-09-04 — Every CI run since the rewrite began had been failing, silently, until asked to check
+
+**D92 · Asked "is there anything I can test play," the honest first step was checking whether the
+GitHub Pages deploy this project's own CI is supposed to produce actually exists — it did not, and had
+never once succeeded.** Every workflow run from the very first rewrite commit (v2.0.0) through v2.12.0 —
+14 runs, the entire history of this project's CI — shows `conclusion: failure`, confirmed directly via the
+GitHub API, not assumed from "the workflow file looks right." Because the `build` job's own test-failure
+short-circuits the pipeline before the `build`/`deploy` steps ever run, no version of this game has EVER
+been live at the GitHub Pages URL, despite dozens of passes' own local verification (`pnpm test`,
+`pnpm build`, the Playwright visual gate) reporting green every single time. That gap between "verified
+locally" and "actually shipped" is exactly the kind of thing this project's own discipline exists to
+catch — it simply never had a reason to look at CI's own run history until asked a direct question about
+what a real person could actually go open.
+
+**Root cause, reproduced directly rather than inferred from a stack trace: a Node-version-dependent
+cross-realm class mismatch between jsdom's `AbortController`/`AbortSignal` polyfill and Node's own
+built-in `undici`-based `fetch`/`Request`.** CI's workflow pins Node 24 (`actions/setup-node@v4`); every
+session that ever verified this project locally ran Node 22 — a difference nobody had reason to notice
+since both were "a supported Node," and `package.json`'s own `engines` field (`>=22`) never pinned an
+exact version to match CI with. Downloaded a real Node 24 binary into this session specifically to
+reproduce the failure rather than patch around a guess — confirmed: `apps/web/test/app.test.tsx`'s
+club-picker/action-bar tests, which drive `react-router`'s real navigation, throw `TypeError: RequestInit:
+Expected signal ("AbortSignal {}") to be an instance of AbortSignal` under Node 24, every time, and pass
+clean under Node 22. `react-router`'s data router calls `new Request(href, { signal })` on every
+navigation; Node 24's built-in `Request` does a strict `instanceof AbortSignal` check against Node's own
+native class — but jsdom's test environment shadows the global `AbortController`/`AbortSignal` with its
+own separate, DOM-spec-driven implementation, so a signal built from jsdom's `AbortController` fails that
+check. Node 22's own `undici` build happened not to enforce this particular check as strictly; that's a
+version difference in Node's own webidl validation, not a jsdom regression.
+
+**Fix: the standalone `undici` npm package, not a version pin or a jsdom workaround.** `apps/web/test/
+setup.ts` now imports `fetch`/`Request`/`Response`/`Headers`/`FormData` from `undici` (a new devDependency)
+and assigns them onto `globalThis`, so every fetch-adjacent call in a test — jsdom's own, react-router's,
+anything else — resolves through the SAME self-contained implementation instead of split between Node's
+native undici (strict) and jsdom's separate polyfill (incompatible with it). Chosen over pinning CI to
+Node 22 to match local sessions: that would paper over a real forward-compatibility gap rather than close
+it, and this project's own `engines` field already declares `>=22`, meaning Node 24 is a supported,
+expected environment this fix should actually work under, not route around.
+
+**Verified against the real failing environment, not just the one that already worked.** Downloaded Node
+24 directly into this session (nodejs.org's official binary, not a system package) specifically so the
+fix could be checked against the SAME Node version CI runs, not merely reasoned about: `app.test.tsx`
+passes, the full workspace suite (269 sim-kit + 8 apps/web tests) passes, typecheck is clean, `pnpm build`
+succeeds, and the 24-test Playwright visual gate passes — all under Node 24. Then re-ran the same full
+suite under Node 22 to confirm the fix doesn't regress the environment that DID already work. Both green.
+The actual GitHub Actions run this pass's own push produces is the final, real confirmation — checked
+directly after pushing, not assumed from the local Node-24 reproduction alone.
+
+Rejected: pinning CI's `node-version` to 22 (matches what already "worked" locally by accident, but ships
+a Node-24 incompatibility to every future contributor/session that trusts the `engines: >=22` field
+without re-discovering this exact investigation); patching react-router or jsdom directly (neither is this
+project's code, and the standalone-`undici` fix is the standard, minimal answer to this exact,
+well-understood ecosystem interaction); silently leaving CI red and just telling the user "it works on my
+machine" (would have been the actual answer prior to investigating — rejected the moment the real GitHub
+Actions run history was checked instead of assumed). See `CHANGELOG.md` v2.13.0.

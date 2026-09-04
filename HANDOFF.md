@@ -2,13 +2,23 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 91 of them are already recorded, several against
+proposing anything that feels like a new idea — 92 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
 > an incremental pass; this isn't one. The engineering substrate changed (`DECISIONS.md` D78), so every
 > file path, command and status claim in the old HANDOFF was stale at once. Full rewrite is the
 > documented exception, same as the original project instructions' close ritual specified.
+
+> **CI was red for the entire history of this rewrite until D92 (v2.13.0), 2026-09-04.** Every one of
+> this project's CI runs from v2.0.0 through v2.12.0 — its ENTIRE history — actually failed on GitHub's
+> own servers (Node 24 there vs. Node 22 in every session that verified locally, a jsdom/undici
+> `AbortSignal` mismatch under Node 24 specifically). Because the build job's own failure short-circuits
+> before the deploy step runs, no version of this game had ever gone live at the GitHub Pages URL despite
+> every single pass's own "pnpm test / pnpm build / Playwright gate all pass" — that was true locally,
+> and CI's own run history says otherwise. Fixed in D92; verify `.github/workflows/`'s most recent run
+> actually shows `conclusion: success` before ever telling anyone this game is "live" or "deployed" —
+> that claim was wrong every time it was made before this note existed.
 
 ---
 
@@ -26,7 +36,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D91. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D92. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |

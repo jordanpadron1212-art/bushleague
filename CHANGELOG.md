@@ -5,6 +5,34 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.13.0 · FIX: EVERY CI RUN HAD BEEN FAILING SINCE THE REWRITE BEGAN — 2026-09-04
+
+Asked whether there was anything to test-play, the honest first step was checking whether the GitHub
+Pages deploy actually existed. It didn't — every one of this project's 14 CI runs, from v2.0.0 through
+v2.12.0, shows `conclusion: failure` on GitHub's own API. Because the build job's test failure
+short-circuits before the deploy step ever runs, no version of this game had ever gone live, despite
+every pass's own local verification (tests, build, the Playwright gate) reporting green every time.
+
+Root cause, reproduced directly with a real downloaded Node 24 binary (CI's pinned version) rather than
+guessed from the stack trace: a cross-realm class mismatch between jsdom's `AbortController`/`AbortSignal`
+polyfill and Node 24's own stricter `undici`-based `Request` validation. `react-router`'s data router
+calls `new Request(href, { signal })` on every navigation; a signal built from jsdom's shadowed
+`AbortController` fails Node 24's `instanceof AbortSignal` check, throwing inside `app.test.tsx`'s
+club-picker/action-bar tests every time — but not under Node 22, which every local session had been
+running without anyone noticing the version gap.
+
+Fix: `apps/web/test/setup.ts` now imports `fetch`/`Request`/`Response`/`Headers`/`FormData` from the
+standalone `undici` package (new devDependency) and assigns them onto `globalThis`, so every fetch call in
+a test resolves through one self-contained implementation instead of split between Node's native undici
+and jsdom's incompatible polyfill. Chosen over pinning CI to Node 22 — this project's own `engines` field
+already declares `>=22`, so Node 24 is a supported environment this fix should actually work under, not
+route around.
+
+Verified against the real failing environment: full workspace suite (269 sim-kit + 8 apps/web tests),
+typecheck, build, and the 24-test Playwright visual gate all pass under a real Node 24 binary; re-verified
+clean under Node 22 too, so the fix doesn't regress the environment that already worked. See `DECISIONS.md`
+D92.
+
 ## v2.12.0 · REAL MINOR-LEAGUE PARENT AFFILIATION, RESEARCHED AND SOURCED — 2026-09-04
 
 Before starting the amateur draft, a real blocker surfaced: this project never recorded which MLB

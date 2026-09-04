@@ -2,7 +2,12 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D91):** the engineering substrate was rebuilt from
+> **CI was red for this project's entire history until just now (D92, v2.13.0) — every version claimed
+> "live" before this was never actually deployed.** See HANDOFF.md's own alert on this; don't repeat the
+> mistake of trusting local `pnpm test`/`pnpm build` green as proof of a real deploy without also checking
+> the actual GitHub Actions run.
+>
+> **Status update, 2026-09-04 (DECISIONS.md D78-D92):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
