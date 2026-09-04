@@ -61,6 +61,8 @@ export interface Player {
   pot: number;
   num: number;
   sal: number;
+  /** Monthly salary — only meaningful for independent-league contracts (`contractFor`), 0 elsewhere. */
+  mo: number;
   yrs: number;
   tot: number;
   svc: number;
@@ -122,6 +124,7 @@ export function makePlayer(
     pot: 50,
     num: 0,
     sal: 0,
+    mo: 0,
     yrs: 0,
     tot: 0,
     svc: 0,

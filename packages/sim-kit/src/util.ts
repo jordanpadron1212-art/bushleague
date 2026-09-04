@@ -15,3 +15,8 @@ export function clamp(v: number, a: number, b: number): number {
 export function round2(v: number): number {
   return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0;
 }
+
+/** Counting-stat accumulator — ported from bush-league-v0.10.html's `inc()`. Mutates a `PlayerStats`-shaped record in place. */
+export function inc(o: Record<string, number>, k: string, n = 1): void {
+  o[k] = (o[k] ?? 0) + n;
+}

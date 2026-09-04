@@ -2,19 +2,22 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D81):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D82):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
 > ledger, chart of accounts, RNG, formatters, player generation and grading (v2.1.0, calibrated against
 > RESEARCH.md §7.1, 50/50 checks pass), club/world generation (all 218 real clubs) and the full schedule
-> (every club at its exact published game count) as of v2.2.0, and — as of v2.3.0 — plate-appearance
-> resolution (`log5`/`resolvePA`/`draw`, calibrated against 200,000 simulated PAs per level). Roster
-> construction, lineups, rotations, and the inning-by-inning game loop that actually plays those
-> resolved PAs out into a box score are real logic sitting in the old build and are still not ported —
-> that is the actual next pass, ranked above everything the pre-rewrite roadmap had planned next,
-> because nothing in "Next, in order" below can be built on top of a game that doesn't exist yet in the
-> new stack.
+> (every club at its exact published game count) as of v2.2.0, plate-appearance resolution as of v2.3.0
+> (`log5`/`resolvePA`/`draw`), and — as of v2.4.0 — roster construction (legal by construction to each
+> league's own published rule), lineup/rotation/bullpen depth charts, and `simGame`'s full
+> inning-by-inning loop. **A game can be simulated end to end for the first time in this rewrite.**
+> What's still real logic sitting in the old build and not yet ported: a season-play driver (nothing
+> walks the schedule calendar and calls `simGame` for what's on it), the market, the winter cycle, and
+> everything below. A deep realism-research sweep across seven previously-unsourced domains also
+> completed this session (15 agents, independently fact-checked) — merging its findings into
+> `RESEARCH.md` is now the top item, ranked above further engine work, so the next pass (player
+> development) has real sourced material rather than waiting on it.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -26,35 +29,40 @@ What's next and what's genuinely open. Updated against reality — not against t
 
 **The price of a win, measured** (`qa/econ.js`, annual net per 100 points of win%): Atlantic **$131,889** · American Association **$147,688** · Pioneer **$106,272** · Frontier **$44,920** · Pecos **$3,610**.
 
-## Next, in order — as of the 2026-09-04 rewrite (updated after v2.3.0)
+## Next, in order — as of the 2026-09-04 rewrite (updated after v2.4.0)
 
 **Done: player generation and grading** (v2.1.0, DECISIONS.md D79), **club/world generation plus the
-full schedule** (v2.2.0, DECISIONS.md D80), and **plate-appearance resolution** (v2.3.0, DECISIONS.md
-D81) — `log5`, `resolvePA` and `draw` ported and calibrated against 200,000 simulated PAs per level.
-An open question from that pass: the `ADV.hrCal`/`bbCal` constants show strong evidence of having been
-tuned against the full lineup/rotation game engine, not isolated per-PA pairing — worth re-checking once
-pass 1 below exists.
+full schedule** (v2.2.0, DECISIONS.md D80), **plate-appearance resolution** (v2.3.0, DECISIONS.md D81),
+and — **roster construction, depth charts, and a full played game** (v2.4.0, DECISIONS.md D82). D81's
+own open question is answered: with real lineup context, `ADV.hrCal` reproduces HR/9 within ~10% of
+published at every level, confirming it was tuned against real lineup/rotation play. A game can be
+simulated end to end for the first time in this rewrite.
 
-**1. Port roster construction, lineups, rotations, and `simGame`'s inning-by-inning loop** into
-`@bushleague/sim-kit` — real, working JS in `bush-league-v0.10.html`, not yet in this repository in
-editable form. Plate-appearance resolution (v2.3.0) already turns one batter/pitcher pairing into one
-outcome; this pass is what builds the lineup to feed it and turns a sequence of resolved PAs into
-base-out states, runs, and a real box score — and what unlocks ERA/WHIP calibration, player generation's
-one stated gap (opponent-dependent stats need an opponent). Nothing plays until this exists: there is a
-world, a schedule, and a working PA resolver now, but no game has ever been simulated.
+**1. Merge the realism-research workflow's findings into `RESEARCH.md`.** A deep sweep across seven
+previously-unsourced domains (development curves by individual tool, Statcast-era pitch/batted-ball
+modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule effects, the
+NPB/KBO posting system, and more) completed 2026-09-04 — 15 agents, each finding independently
+fact-checked before synthesis. Reconcile it into `RESEARCH.md` with the same rigor D77 used for the
+earlier §9.6/§14.3 conflict; ranked first because the player-development pass (item 4 below) needs it
+sourced, not because engine work is done.
 
-**2. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
-player/world generators and the box-score engine (pass 1 above) all need to meet in a Zustand store
+**2. A season-play driver.** `simGame` (v2.4.0) plays one game given two rosters; nothing yet walks
+`buildFullSeasonSchedule`'s calendar day by day, calls `simGame` for what's on it, and tracks each
+club's games-played (for rotation) and won-loss record. This is what turns "a game can be simulated"
+into "a season can be played," and is what finally unlocks ERA/WHIP calibration at the population level
+(player generation's one stated gap — opponent-dependent stats need a real season of opponents, not one
+smoke-test game).
+
+**3. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
+player/world generators and the box-score engine (passes above) all need to meet in a Zustand store
 and an IndexedDB save. This is the "V1 must be winnable and losable" bar the pre-rewrite project always
 held itself to — a chassis with dark pages is not that yet.
 
-**3. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
-pass that makes scouting mean anything — just now behind two more passes than it used to be. The
-realism-research workflow launched 2026-09-04 (development curves by individual tool, Statcast-era
-pitch/batted-ball modeling, defensive value in real units, platoon splits) feeds this pass directly —
-merge and reconcile its findings into RESEARCH.md before starting it.
+**4. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
+pass that makes scouting mean anything — now with sourced material from item 1 above to build from
+rather than waiting on it.
 
-**4. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+**5. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
 from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
 ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing — see DECISIONS.md
 D77.
@@ -100,7 +108,7 @@ Then, roughly:
 
 ## Engineering debt worth paying soon
 
-- **The engine walks too many batters.** BB/9 runs 10.4% and WHIP 6.4% above the published 2025 line, every other figure within 1–5%. Pre-dates v0.8. `simcal.js` has been red on this for several builds.
+- **The engine walks too many batters.** BB/9 runs 10.4% and WHIP 6.4% above the published 2025 line, every other figure within 1–5%. Pre-dates v0.8. `simcal.js` has been red on this for several builds. **Reproduced in the new engine (v2.4.0, DECISIONS.md D82):** BB/9 runs up to +9.6% high (Single-A) with 500 simulated games of real lineup play — same characteristic, not a new port defect, still unfixed.
 - **Batting order barely matters** — `sweep3.js` measures lineup quality capturing 44% of the achievable signal at MLB. The owner can set a lineup and it does not do much.
 - **Difficulty is dead state.** `G.diff` is written and never read. Either wire it to something measurable or delete the field.
 - **All 30 major-league clubs open financially identical**, which blocks the takeover scenarios. This is the finance pass in disguise.

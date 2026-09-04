@@ -577,3 +577,67 @@ pass** — this is functionally the same class of finding as the old build's own
 bullpen assignment, and `simGame`'s own inning-by-inning loop (base-out state, run scoring, box-score
 accumulation per player). Nothing plays yet — there is a world, a schedule, and a plate-appearance
 engine now, but no game has ever actually been simulated end to end.
+
+---
+
+## 2026-09-04 — Roster construction, lineups, and the full game loop, ported
+
+**D82 · `clsOf`, `rosterPlan`, `buildRosters`, `contractFor` and `chartClub` are ported into
+`@bushleague/sim-kit` (`roster.ts`); `simGame` is ported (`game.ts`), from `bush-league-v0.10.html`.
+This is the pass that turns a world, a schedule and a plate-appearance resolver into an actual played
+game.**
+
+**Scope, stated plainly:** the original's `buildRosters()` also calls `buildFreeAgents()` (a separate
+open-market player pool) and puts two players per club on the injured list. Neither is ported — a
+free-agent pool has no meaning without the market pass that draws from it (ROADMAP.md item 4+), and a
+game can be simulated without either. Both are structural omissions, not approximations.
+
+**One genuine bug found and fixed, not reproduced — box-score home/away errors were swapped.** Every
+other paired field in `simGame`'s return statement follows the convention `h*` = home, `a*` = away
+(`hr:T[1].r, ar:T[0].r`; `hh:T[1].h, ah:T[0].h`), but errors read `he:T[0].e, ae:T[1].e` — backwards.
+Confirmed against the original's own box-score table (`bush-league-v0.10.html` ~line 4952-4954, which
+reads `b.ae` on the away row and `b.he` on the home row): `T[0].e` accumulates errors committed by the
+AWAY defence (incremented while `D === T[0]`, i.e. while away is pitching to home's batters), so the
+original build's own box score showed each team's OPPONENT's fielding errors under its own column.
+Fixed here to follow the same `h*`/`a*` convention as every other field, matching this session's own
+established pattern for a found-not-invented defect (D78's `post()` NaN guard, D79's `abbrFor()`
+undefined-string bug) — not silently reproduced, not silently "improved" beyond what the evidence
+supports.
+
+**Adaptation, noted rather than silent:** the original reads a per-club `gp` (games played) counter
+directly off the `Club` object to pick which of the five rotation slots starts a game. `Club`
+(`world.ts`) is a pure world-generation output with no mutable season counter, and no season-play
+driver exists yet to own one. `simGame` takes the starting rotation slot as an explicit
+`homeRotationIndex`/`awayRotationIndex` parameter instead — whichever pass builds the season loop
+supplies it. Two more small pieces of the original's per-side scratch state (`t.pER`, `t.pR`, `t.lead`)
+are assigned once and never read again inside the function, confirmed dead, not ported.
+
+**Verified the way `qa/simcal.js` verified the original — real games, real lineups, not just isolated
+plate appearances.** 500 simulated games per level, real 9-man lineups and 5-man rotations drawn from
+every club the level has (`packages/sim-kit/test/game.test.ts`):
+
+- **HR/9 lands within ~10% of published at every level** (worst: AA at +10.4%) — a large improvement
+  over D81's isolated-PA test, which ran a consistent ~8-9% LOW at every level. This confirms D81's own
+  hypothesis: `ADV.hrCal` was tuned against real lineup/rotation context, and with that context restored
+  here, no further correction on top of the existing constant is needed.
+- **BB/9 (and WHIP) runs consistently high** — up to +9.6% at Single-A. This is NOT a new defect: it
+  reproduces the same characteristic ROADMAP.md's "Engineering debt worth paying soon" already
+  documents in the ORIGINAL build ("The engine walks too many batters... `simcal.js` has been red on
+  this for several builds"). Left as-ported and documented, not silently retuned — retuning the walk-rate
+  formula is a real piece of work belonging to whoever picks it up, not an incidental fix inside a
+  porting pass.
+- **A real, small, structural finding, distinct from the above:** a starting lineup (`chartClub`'s
+  best-9-by-`ovr`) averages ~2-4 points higher power grade than the full hitter population
+  `calibration.test.ts` checks — an unavoidable consequence of only the best hitters actually playing,
+  which the original build's own whole-population `qa/calib.js` never had to account for. Small at
+  every level tried; noted for whoever next touches HR calibration.
+
+A first draft of this test at only 10 clubs and 300 games showed Single-A HR/9 running 27% high;
+re-running with more clubs, more games and a different seed each landed within ~10% — diagnosed as
+sampling noise at a small population before it was written down as a finding, not after.
+
+**What's still not ported:** the winter cycle, the market, scouting, the draft, trades, contracts in
+depth, injuries in depth, player development, the ownership ladder, play-by-play, staff, awards and
+history, and — closer at hand — wiring any of this to the UI or a real save. A game can now be
+simulated end to end for the first time in this rewrite; nothing yet calls `simGame` from anywhere a
+player would see.

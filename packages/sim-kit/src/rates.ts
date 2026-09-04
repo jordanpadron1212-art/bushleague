@@ -11,7 +11,9 @@
  * build's `qa/calib.js` discipline.
  */
 import type { Player } from "./player.js";
+import type { Club } from "./world.js";
 import type { LevelEnv } from "./levels.js";
+import { LVL, envFor } from "./levels.js";
 import { baFrom, expectedOver, hrFrom } from "./grades.js";
 import { clamp, nz } from "./util.js";
 
@@ -97,4 +99,24 @@ export function rateProfile(p: Player, env: LevelEnv, centre: number, sd: number
     f3: clamp(env.f3 * (1 + (spd - centre) * 0.012), 0.002, 0.12),
   };
   return batterRates;
+}
+
+/**
+ * `rateProfile()` for a whole population at once — ported from
+ * `rebuildRates()`. A pure cache, deliberately not stored on the players
+ * themselves: every value is a function of a player's true grades and his
+ * club's league, so it is cheap to rebuild whenever the population changes
+ * rather than kept in sync by hand.
+ */
+export function buildRates(players: readonly Player[], clubs: readonly Club[]): Map<string, Rates> {
+  const byId = new Map<string, Club>();
+  for (const c of clubs) byId.set(c.id, c);
+  const rates = new Map<string, Rates>();
+  for (const p of players) {
+    const lv = (p.lvl && LVL[p.lvl as keyof typeof LVL]) || LVL.INDY;
+    const c = p.cid ? byId.get(p.cid) : undefined;
+    const spread = Math.sqrt(lv.s * lv.s + 36);
+    rates.set(p.id, rateProfile(p, envFor(p.lvl ?? "", c?.lg), lv.c, spread));
+  }
+  return rates;
 }

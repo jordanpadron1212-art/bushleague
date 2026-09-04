@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 81 of them are already recorded, several against
+proposing anything that feels like a new idea — 82 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D81. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D82. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. Seventeen sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -93,8 +93,8 @@ the ten worst defects in the old build were found by eye with every harness gree
 
 ## Where this stands
 
-**A chassis, a verified player-generation engine, a real 218-club world, and a real schedule — still
-not a game you can open and play.**
+**A chassis, a verified player-generation engine, a real 218-club world, a real schedule, and — for the
+first time in this rewrite — a game that can actually be played end to end.**
 
 Working and verified: the pnpm workspace and its CI/CD to GitHub Pages · the token layer (two shells,
 two themes, three density tiers, contrast computed against DECISIONS.md D18's own rule) · the page
@@ -105,16 +105,20 @@ and grading, calibrated against RESEARCH.md §7.1 (`DECISIONS.md` D79) · **club
 218 real clubs (30 MLB + 120 affiliated + 68 independent) with correct divisions, leagues and unique
 ids/abbreviations · **the schedule** — every club lands on its exact published game count, home/away
 balanced (D34), opponent distribution fair (D46) — `DECISIONS.md` D80 · **plate-appearance resolution**
-— `log5`, `resolvePA` and `draw` ported and calibrated: the `log5(l,l,l) === l` identity proven exact,
-and 200,000-PA simulated populations at every affiliated level land within documented tolerance of
-RESEARCH.md §7.1's published rates — `DECISIONS.md` D81.
+— `log5`, `resolvePA` and `draw` ported and calibrated: the `log5(l,l,l) === l` identity proven exact
+— `DECISIONS.md` D81 · **roster construction, depth charts, and a full played game** — every club's
+roster generated legal-by-construction to its league's own published rule (age/service-year ranges,
+independent-league payroll capped exactly to the real published figure), a lineup/rotation/bullpen
+charted from it, and `simGame` playing a real nine-plus-inning game between two rosters through
+`resolvePA`, verified against RESEARCH.md §7.1 with 500 simulated games per level using real lineups —
+`DECISIONS.md` D82.
 
-**Not built yet:** roster construction and lineup/rotation assignment, the inning-by-inning game loop
-that turns a scheduled matchup into a played box score, the market, the winter cycle, scouting, the
-draft, trades, contracts, injuries in depth, player development, the ownership ladder, play-by-play,
-staff, awards and history. All of it existed and worked in `bush-league-v0.10.html`. See ROADMAP.md's
-"Next, in order." **Nothing plays yet — a single plate appearance can now be resolved, but no one has
-built a lineup, and no full game has ever been simulated.**
+**Not built yet:** the market, the winter cycle, scouting, the draft, trades, contracts in depth,
+injuries in depth, player development, the ownership ladder, play-by-play, staff, awards and history —
+and, closer at hand, wiring any of the engine above to the UI or a real save. All of the game-logic
+list existed and worked in `bush-league-v0.10.html`. See ROADMAP.md's "Next, in order." **A game can be
+simulated for the first time — nothing yet calls it from anywhere a player would see, and nothing
+persists what happens when it's played.**
 
 ---
 
@@ -138,6 +142,12 @@ built a lineup, and no full game has ever been simulated.**
 | `log5(l,l,l)` reproduces the league rate exactly | true for .245/.315/.08/.22, to 10 decimal places | `packages/sim-kit/test/pa-resolution.test.ts` |
 | `resolvePA` over 200,000 isolated-pairing PAs per level reproduces RESEARCH.md §7.1 | BA/OBP within 3%, SLG within 6%, HR/600 within 15%, BB%/K% within 8% at MLB/AAA/AA/HIA/A — tolerances documented as a real finding, not a relaxed bar (see next row) | same file |
 | the `ADV.hrCal`/`ADV.bbCal` constants (0.92/1.06) were tuned against the full lineup/rotation game, not isolated per-PA pairing | HR rate sits ~8-9% low even at near-zero simulated population spread, matching hrCal's own discount in direction and magnitude | diagnosed via a temporary spread-sweep test, documented in `pa-resolution.test.ts`'s header and `DECISIONS.md` D81 |
+| every independent club's roster is legal by construction | every player's age and service year falls inside its league's own published comp-table range, at all five independent leagues | `packages/sim-kit/test/roster.test.ts` |
+| every independent club's payroll lands exactly on its league's published cap | residual rounding absorbed by the best-paid man, verified at all five leagues | same file |
+| a full simulated game plays at least 9 innings, never ties, and never awards the same pitcher both the win and the loss | 20 games checked directly | `packages/sim-kit/test/game.test.ts` |
+| a full simulated season (500 games/level, real lineups) reproduces RESEARCH.md §7.1 | ERA within 8%, WHIP/K9 within 6-8%, BA/OBP/SLG within 3-4% at every affiliated level | same file |
+| the D81 hrCal hypothesis, re-checked with real lineup context | HR/9 lands within ~10% of published at every level (worst: AA +10.4%) — a large improvement over D81's isolated-PA ~8-9% LOW, confirming hrCal was tuned against real lineup context | same file, see `DECISIONS.md` D82 |
+| BB/9 with real lineup context | still runs high, up to +9.6% at Single-A — reproduces the ORIGINAL build's own documented "walks too many batters" red, not a new port defect | same file |
 
 **Nothing about the old build's own game-outcome numbers** (the +8.5 win materiality, the age-structure
 match, the per-league economics) was re-measured — none of that system is ported yet, so there is
@@ -164,16 +174,23 @@ longer runs.
 - **Player generation has no ERA/WHIP calibration.** Those are opponent-dependent (log5 against a
   batter) and need the box-score engine — see `packages/sim-kit/test/calibration.test.ts`'s own header
   comment. Not an oversight; stated as the reason ERA/WHIP aren't in the 50 checks above.
-- **A world and a schedule exist, and a single plate appearance can be resolved; no game has ever been
-  played.** `buildWorld()` and `buildFullSeasonSchedule()` produce real clubs and a real calendar of
-  matchups, and `resolvePA()` turns one batter/pitcher pairing into one outcome — but there is no roster,
-  no lineup, no rotation, and no inning-by-inning loop to call it from yet.
-- **The `hrCal`/`bbCal` calibration constants (0.92/1.06) are ported as-is, with a documented open
-  question.** They visibly correct `resolvePA`'s isolated-PA output toward the published lines, but the
-  diagnosis this pass (see the measured-table row above) is strong evidence they were originally tuned
-  against the full 162-game lineup/rotation engine, where the same pitcher faces the same ~9 hitters
-  repeatedly. Whether they need retuning once real lineups exist, or were already generically correct,
-  is unresolved until that engine is built — flagged now rather than left implicit.
+- **A game can be simulated end to end, but nothing calls it from anywhere a player would see, and
+  nothing persists what happens.** `simGame` plays a real game between two real rosters — but there is
+  no season-play driver (nothing advances a day, nothing walks the schedule and calls `simGame` for
+  each game on it), no save, and no UI wired to any of it.
+- **The `hrCal`/`bbCal` calibration constants (0.92/1.06) are ported as-is — D81's open question is now
+  answered, not still open.** With real lineup context (this pass), HR/9 lands within ~10% of published
+  at every level, confirming the constants were tuned against real lineup/rotation play and need no
+  further correction now that context exists.
+- **BB/9 (and WHIP) run consistently high with real lineup context too** — up to +9.6% at Single-A.
+  Confirmed to be the same "walks too many batters" red the ORIGINAL build's own QA left unresolved for
+  several builds (ROADMAP.md's "Engineering debt worth paying soon"), not a new port defect. Left
+  as-ported and documented — retuning the walk-rate formula is real work for whoever picks it up next,
+  not an incidental fix inside a porting pass.
+- **Free agency and the injured list are not generated.** The original's `buildRosters()` also builds a
+  free-agent pool and puts two players per club on the IL; neither is ported (`roster.ts`'s own header
+  note) — a free-agent pool has no meaning without the market pass that draws from it, and a game can be
+  simulated without either.
 - **The schedule placer's series-length cap has a verified fallback-scan interaction** (`DECISIONS.md`
   D80): a pair can occasionally play 5-6 unbroken calendar days instead of the intended 2-4-game series,
   when that pair's remaining need dominates every other candidate. Confirmed harmless to game totals and
@@ -191,21 +208,23 @@ longer runs.
 
 See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
-1. **Port roster construction, lineups, rotations, and `simGame`'s inning-by-inning loop** — plate-
-   appearance resolution exists now (this pass), but nothing yet builds a lineup to feed it or turns a
-   sequence of resolved PAs into base-out states, runs, and a real box score. This is what actually
-   unlocks ERA/WHIP calibration and turns a scheduled matchup into a played game.
-2. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
+1. **Merge the realism-research workflow's findings into `RESEARCH.md`.** A deep research sweep across
+   seven previously-unsourced domains (development curves by individual tool, Statcast-era pitch/
+   batted-ball modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule
+   effects, the NPB/KBO posting system, and more) completed this session — 15 agents, each finding
+   independently fact-checked before synthesis. Reconcile it into `RESEARCH.md` with the same rigor D77
+   used for the earlier §9.6/§14.3 conflict before treating any of it as sourced; do not paraphrase a
+   finding into a stronger tier than its own source supports.
+2. **A season-play driver: wire `simGame` to the schedule.** The engine can now play one game given two
+   rosters (this pass); nothing yet walks `buildFullSeasonSchedule`'s calendar day by day and calls
+   `simGame` for what's on it, tracking each club's games-played (for rotation) and won-loss record.
+   This is what turns "a game can be simulated" into "a season can be played."
+3. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
    project left honestly empty actually showing something. This is the "winnable and losable, not a menu
    mockup" bar the original project instructions always held V1 to.
-3. **Player development and ageing** — the pass that makes scouting mean anything, still queued behind
-   the two above.
 
-A deep realism-research workflow (development curves by individual tool, Statcast-era pitch/batted-ball
-modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule effects, the
-NPB/KBO posting system) was launched this session and should be merged into `RESEARCH.md` — check
-whether it landed and reconcile it with the same rigor D77 used for the earlier §9.6/§14.3 conflict
-before treating any of it as sourced.
+**Player development and ageing** — the pass that makes scouting mean anything — is next after those
+three, and now has real sourced material to build from (item 1 above) rather than waiting on it.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

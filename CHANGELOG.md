@@ -5,6 +5,27 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.4.0 · A GAME CAN BE PLAYED — 2026-09-04
+
+Roster construction (`clsOf`/`rosterPlan`/`buildRosters`/`contractFor`/`chartClub`, `roster.ts`) and
+the full inning-by-inning game loop (`simGame`, `game.ts`) ported into `@bushleague/sim-kit`, from
+`bush-league-v0.10.html`. For the first time in this rewrite, a real game can be simulated end to end:
+a world, a schedule, real rosters with real lineups and rotations, and a plate-appearance engine now
+all connect. **One genuine bug found and fixed, not reproduced:** the original's box score swapped
+home and away fielding errors (confirmed against its own display code, which expected them the other
+way around) — fixed here, not silently carried over. See `DECISIONS.md` D82.
+
+Verified with 500 simulated games per level, real lineups: HR/9 lands within ~10% of published at
+every affiliated level — a big improvement over the isolated-PA test two passes ago, confirming that
+test's own hypothesis that `ADV.hrCal` was tuned against real lineup context. BB/9 runs consistently
+high, up to +9.6% at Single-A — not a new defect, the same "walks too many batters" red the original
+build's own QA left unresolved for several builds (ROADMAP.md), reproduced and documented rather than
+silently retuned.
+
+Not yet ported: the winter cycle, the market, scouting, the draft, trades, player development, and
+wiring any of this to the UI or a real save. A game can be played for the first time — nothing yet
+calls it from anywhere a player would see.
+
 ## v2.3.0 · THE PLATE-APPEARANCE ENGINE — 2026-09-04
 
 `log5`, `resolvePA`, `draw`, `advOf`, `errRate` and the `ADV` calibration constants ported into
