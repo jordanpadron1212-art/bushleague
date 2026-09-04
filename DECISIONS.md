@@ -641,3 +641,50 @@ depth, injuries in depth, player development, the ownership ladder, play-by-play
 history, and — closer at hand — wiring any of this to the UI or a real save. A game can now be
 simulated end to end for the first time in this rewrite; nothing yet calls `simGame` from anywhere a
 player would see.
+
+---
+
+## 2026-09-04 — The realism-research sweep merged into RESEARCH.md
+
+**D83 · `RESEARCH.md` §18–24 added: development curves (component-specific aging), Statcast pitch
+modeling, batted-ball quality, defensive value units, platoon splits, modern baserunning rules, and the
+NPB/KBO international pipeline — seven domains this project had never sourced before.**
+
+**Process, not just content.** The background Workflow launched earlier this session ran 15 agents: one
+research pass per domain, one independent verification pass per domain (each a fresh re-fetch or
+re-derivation against the primary source, never a re-read of the research pass's own claim), then one
+synthesis pass merging everything into RESEARCH.md's existing tier/citation format. Before merging,
+this session independently re-checked four of the highest-stakes figures a second time, outside the
+workflow entirely: Yamamoto's exact $50.625M posting fee, the 2023 MLB stolen-base total (3,503) and
+success rate (80.2%), Statcast's Fielding Run Value out-to-run conversion (0.9 run/out OF, 0.75 run/out
+IF), and the Barrel definition's exact exit-velocity/launch-angle thresholds (98mph minimum, 26°-30° at
+that speed). **All four confirmed exactly** — real, independent evidence the pipeline's own verify
+phase was doing its job, not just asserting confidence.
+
+**The pipeline found and documented real errors in its own first-draft research, not just in old
+sources — exactly the discipline this project asks of a solo pass too.** Seven claims were refuted on
+independent re-check and are recorded as explicit corrections in RESEARCH.md rather than silently
+dropped or silently fixed: a FanGraphs glossary figure (walk-rate/ISO peak ages) that doesn't match the
+live page; a 2025 OAA-leaders list with four wrong entries (confirmed via independent Baseball Savant
+re-pull); a DRS right-field leader that was actually the NL-only leader; a catcher-framing pull that
+was a mis-scoped-query artifact; a rules-vote date off by days (traced to an article's publish date, not
+its subject's date); and two folk-physics/casual-aggregator figures that couldn't be traced to any
+primary source at all. Each is named explicitly in RESEARCH.md's own "not published / could not verify"
+subsections, with the correct figure given where one exists — so a future pass doesn't re-cite the wrong
+number by mistake.
+
+**Two structural findings, not single figures, worth flagging for whoever builds on this:**
+- **No 20-80-scale defensive grade exists anywhere in the current Statcast era** (§21.4) — the only two
+  conversion tables ever published are 12-13 years old and built on UZR, a metric FanGraphs itself has
+  since de-emphasized. Any defensive 20-80 grade this project builds will have to be authored, not
+  sourced, and should say so on the player screen the way §16's other design-knob figures already do.
+- **The LHH-vs-RHH "who has the bigger platoon split" question is a genuine, unresolved disagreement in
+  the public sabermetric literature** (§22.1) — two credible FanGraphs sources give opposite answers on
+  the same underlying question. Recorded as a range/uncertainty band in RESEARCH.md, not arbitrarily
+  picked one side to hard-code.
+
+**Scope, stated plainly:** this pass only merges the research. None of it is wired into `packages/sim-kit`
+yet — player development/ageing (ROADMAP.md's next pass) is what actually consumes §18's component-aging
+curves; §19-22's pitch/batted-ball/defense/platoon research has no consumer yet at all (the game
+currently resolves a plate appearance as one outcome draw, not a pitch-by-pitch or ball-in-play-physics
+simulation) and will wait for whichever future pass decides to model at that depth.

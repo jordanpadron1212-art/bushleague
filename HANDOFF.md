@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 82 of them are already recorded, several against
+proposing anything that feels like a new idea — 83 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,8 +26,8 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D82. Search before proposing |
-| `RESEARCH.md` | every real-world figure with source, date and tier. Seventeen sections |
+| `DECISIONS.md` | every decision with its reasoning, D1–D83. Search before proposing |
+| `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
 | `PROJECT-INSTRUCTIONS.md` / `STACK-AND-ENGINES.md` | the standing brief this mirrors, and the tooling inventory this pass's stack choices were drawn from |
@@ -208,23 +208,22 @@ longer runs.
 
 See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
-1. **Merge the realism-research workflow's findings into `RESEARCH.md`.** A deep research sweep across
-   seven previously-unsourced domains (development curves by individual tool, Statcast-era pitch/
-   batted-ball modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule
-   effects, the NPB/KBO posting system, and more) completed this session — 15 agents, each finding
-   independently fact-checked before synthesis. Reconcile it into `RESEARCH.md` with the same rigor D77
-   used for the earlier §9.6/§14.3 conflict before treating any of it as sourced; do not paraphrase a
-   finding into a stronger tier than its own source supports.
-2. **A season-play driver: wire `simGame` to the schedule.** The engine can now play one game given two
-   rosters (this pass); nothing yet walks `buildFullSeasonSchedule`'s calendar day by day and calls
+**Done: the realism-research workflow's findings are merged into `RESEARCH.md`** (§18–24, `DECISIONS.md`
+D83) — seven previously-unsourced domains (development curves by individual tool, Statcast-era pitch/
+batted-ball modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule
+effects, the NPB/KBO posting system), 15 agents' worth of research independently fact-checked before
+synthesis, plus four of the highest-stakes figures re-checked a second time outside the workflow before
+the merge. Not yet consumed by any code — this was the research, not the build.
+
+1. **A season-play driver: wire `simGame` to the schedule.** The engine can now play one game given two
+   rosters (v2.4.0); nothing yet walks `buildFullSeasonSchedule`'s calendar day by day and calls
    `simGame` for what's on it, tracking each club's games-played (for rotation) and won-loss record.
    This is what turns "a game can be simulated" into "a season can be played."
-3. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
+2. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
    project left honestly empty actually showing something. This is the "winnable and losable, not a menu
    mockup" bar the original project instructions always held V1 to.
-
-**Player development and ageing** — the pass that makes scouting mean anything — is next after those
-three, and now has real sourced material to build from (item 1 above) rather than waiting on it.
+3. **Player development and ageing** — the pass that makes scouting mean anything, and the first
+   consumer of §18's newly-sourced component-aging curves rather than something waiting on them.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

@@ -38,31 +38,30 @@ own open question is answered: with real lineup context, `ADV.hrCal` reproduces 
 published at every level, confirming it was tuned against real lineup/rotation play. A game can be
 simulated end to end for the first time in this rewrite.
 
-**1. Merge the realism-research workflow's findings into `RESEARCH.md`.** A deep sweep across seven
-previously-unsourced domains (development curves by individual tool, Statcast-era pitch/batted-ball
-modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule effects, the
-NPB/KBO posting system, and more) completed 2026-09-04 — 15 agents, each finding independently
-fact-checked before synthesis. Reconcile it into `RESEARCH.md` with the same rigor D77 used for the
-earlier §9.6/§14.3 conflict; ranked first because the player-development pass (item 4 below) needs it
-sourced, not because engine work is done.
+**Done: the realism-research workflow's findings are merged into `RESEARCH.md`** (§18–24, v2.4.1,
+DECISIONS.md D83) — development curves by individual tool, Statcast-era pitch/batted-ball modeling,
+defensive value in real units, platoon splits, the post-2023 baserunning rule effects, and the NPB/KBO
+posting system, all independently fact-checked (15 agents' worth), plus four of the highest-stakes
+figures re-checked a second time outside the workflow before the merge, all four confirmed exactly.
+Not consumed by any code yet — that's item 3 below.
 
-**2. A season-play driver.** `simGame` (v2.4.0) plays one game given two rosters; nothing yet walks
+**1. A season-play driver.** `simGame` (v2.4.0) plays one game given two rosters; nothing yet walks
 `buildFullSeasonSchedule`'s calendar day by day, calls `simGame` for what's on it, and tracks each
 club's games-played (for rotation) and won-loss record. This is what turns "a game can be simulated"
 into "a season can be played," and is what finally unlocks ERA/WHIP calibration at the population level
 (player generation's one stated gap — opponent-dependent stats need a real season of opponents, not one
 smoke-test game).
 
-**3. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
+**2. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
 player/world generators and the box-score engine (passes above) all need to meet in a Zustand store
 and an IndexedDB save. This is the "V1 must be winnable and losable" bar the pre-rewrite project always
 held itself to — a chassis with dark pages is not that yet.
 
-**4. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
-pass that makes scouting mean anything — now with sourced material from item 1 above to build from
-rather than waiting on it.
+**3. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
+pass that makes scouting mean anything — now with sourced component-aging curves (§18) to build from
+rather than waiting on them.
 
-**5. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+**4. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
 from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
 ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing — see DECISIONS.md
 D77.

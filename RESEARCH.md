@@ -1506,3 +1506,472 @@ figures.
 ---
 
 **Recorded 2026-09-04.**
+
+---
+
+# Part two — the realism-research sweep (2026-09-04)
+
+Everything above (§1–17) is this project's original research. What follows (§18–24) is a separate,
+later pass: a targeted sweep across seven domains the game's realism-focused rebuild specifically
+needed and the original research never covered — component-specific player aging, Statcast-era pitch
+and batted-ball modeling, a real defensive value system, platoon splits, the post-2023 baserunning
+rules, and the NPB/KBO posting system. Run as 15 parallel research/verification agents (one research
+pass per domain, one independent verification pass per domain's findings, then a synthesis pass), with
+every verification pass an independent re-fetch or re-derivation against the primary source — not a
+re-read of the research pass's own claim. Where verification found a claim wrong, it is recorded here
+as a correction with the wrong figure named explicitly (so it is never re-cited by mistake), not
+silently dropped. **Four of the highest-stakes figures below** (Yamamoto's exact posting fee, the 2023
+MLB stolen-base total and success rate, Statcast's out-to-run conversion table, and the Barrel exit-
+velocity/launch-angle definition) **were independently re-checked a second time**, outside the
+workflow, before this merge — all four confirmed exactly. Same tier key as the rest of this document:
+T1 = exact from a real document, T2 = within tolerance of a real distribution, T3 = a labelled estimate.
+
+---
+
+## 18. Development curves — component-specific aging (hitters, pitchers, defense)
+
+*Researched and independently verified 2026-09-04. Question behind this pass: does age affect a player's individual tools — power, contact, discipline, speed, stuff — at different rates, or does the field still only publish an aggregate value curve? Answer: a scattered patchwork, several outlets giving materially different peak ages for the same metric. No single unified study exists (§18.5).*
+
+### 18.1 Hitters — plate discipline and bat speed are the most rigorously aged components
+
+Bill Petti's original FanGraphs decomposition (2012) remains the cleanest hitter finding in the literature: most **plate-discipline rates vary less than 3 percentage points from age 21 to 40**. The one big mover is **O-Contact%** (contact on pitches outside the zone), which falls **~5 points age 21→40**. Contact rate rises through **~age 29** then declines, pulled down by falling O-Contact%; swinging-strike rate turns upward from ~29. T1 — Bill Petti, "Hitter Aging Curves: Plate Discipline," FanGraphs, 2012-10-08. https://blogs.fangraphs.com/hitter-aging-curves-plate-discipline/
+
+Companion work (Jeff Zimmerman, FanGraphs, 2013-12-13) established the still-cited era-adjusted baseline: era-adjusted wRC+ is **flat from debut through ~age 25–26**, then declines — no tool breakdown given, and a commenter explicitly requested one at the time (still unanswered in full — see §18.5). T1. https://blogs.fangraphs.com/hitters-no-longer-peak-only-decline/
+
+Tom Tango's own bat-speed aging curve (Jan 2025, delta method with chaining — the same rigorous methodology as the classic series) is the first genuine **age-based decline curve for a physical bat-tracking tool**: bat speed is nearly flat ages 22–31 (**-0.02 mph/yr**), then falls much faster from 31 on (**-0.31 mph/yr**); league-average at age 26 is **71.1 mph**. Built on only ~1.5 seasons of bat-tracking data (since mid-2023), so the tails (n=6 at ages 21–22; Jordan Walker's +2.4 mph outlier) are noisy by the author's own admission. T2 — Tom Tango, "Aging Curve - Swing Speed," tangotiger.com, 2025-01-14. http://tangotiger.com/index.php/site/article/aging-curve-swing-speed
+
+Ben Clemens (FanGraphs, 2025-02-13) is the direct caveat on how far bat-tracking-based aging conclusions can be trusted at the individual level: a player's own year-over-year change in bat speed (2023→2024) explained essentially nothing about his change in wRC+ (**r² = 0.03**). Gainers/losers: Gurriel +3.2 mph, Cowser +3.0 mph; Espinal -2.7 mph, Betts -2.1 mph. T1. https://blogs.fangraphs.com/early-notes-on-the-new-bat-speed-data-release/
+
+### 18.2 Hitters — power's sub-skills age in opposite directions from each other
+
+The most directly responsive new (2025) source: Travis Sawchik, for Driveline Baseball, splits "power" into physical and technique sub-skills that age in opposite directions.
+
+| Sub-skill | Aging pattern | Tier |
+|---|---|---|
+| SLG | declines ~10 pts/season after 26 | T3 |
+| Average exit velocity | declines from career start, no real peak | T3 |
+| Max exit velocity | peaks ~26; decline accelerates at 31 | T3 |
+| Bat speed | peaks 25; slow taper through 20s, steepens in 30s | T3 |
+| Z-minus-O swing% (decision quality) | flat, gentle mid-career decline | T3 |
+| Pull-Air% | the one metric that *improves* with age — approach compensating for lost raw power (e.g., Schwarber's age-32 career year) | T3 |
+
+T3 — Travis Sawchik, "How power ages (It might surprise you)," Driveline Baseball, 2025-10-02. https://www.drivelinebaseball.com/2025/10/how-power-ages-it-might-surprise-you/
+
+An independent (2026-07-31), pseudonymous Japanese sabermetrics blog (鯖茶漬/"Saba Chazuke" — not a SABR publication despite the URL slug) ran a larger sample (n=3,204 players, 2000–2025) incorporating bat-tracking data and got broadly consistent, if not identical, peak ages: OBP/SLG ~27, K% (best) ~27, BB% ~29, ISO ~28, contact% ~26–27, maxEV ~28, bat speed ~28, Fast-Swing% ~27 — while Squared-Up% and Ideal Attack Angle% (technique metrics) **keep rising into a player's 30s**. T3, corroborating data point only — no verifiable institutional affiliation or peer review. https://note.com/nana_metrics/n/nf8e2d361540e
+
+Older but foundational: Peter L'Oiseau's Statcast EV aging curve (2015–2019 data) puts exit-velocity peak at **age 29**, with launch angle rising **monotonically** with age across the whole career span studied. T2 — The Hardball Times/FanGraphs, 2019-07-25. https://tht.fangraphs.com/creating-aging-curves-for-statcast-metrics/
+
+### 18.3 Speed and defense peak earliest; pitcher components peak in a defined order
+
+Speed is the earliest-peaking physical tool, by exact figures now nearly a decade old and never re-run: **78.5%** of qualified players age ≤27 have above-average Sprint Speed (27 ft/s), vs. **47.5%** at 28–32, vs. just **15.2%** at 33+; decline runs roughly **1 in/sec per year** from debut on. T1 — Mike Petriello, MLB.com, 2017. https://www.mlb.com/news/statcast-sprint-speed-shows-speed-peaks-young-c239376598
+
+Defense: Sports Info Solutions (Mark Simon, in *The Fielding Bible Vol. V*, 2020-05-08) finds DRS peaks **age 25–26** with a sharper drop after 30 — illustrative curve: +5 DRS at 25 → +3 at 30 → 0 at 34. T2. https://www.sportsinfosolutions.com/2020/05/08/a-closer-look-at-defensive-aging-curves/ A newer (2025-12-15), position-specific OAA study for center fielders (all qualified CF seasons since 2016) finds the same shape at the position level: OAA peaks **age 25**, plateaus **28–30**, then declines further. Fan-blog source (Lookout Landing), named byline unconfirmed — T3. https://www.lookoutlanding.com/the-more-you-know/137519/julio-rodriguez-and-centerfielder-aging
+
+Pitchers, per the 2012 FanGraphs series (Zimmerman/Petti), still cited today as the field's most precise component breakdown, old or new:
+
+| Component | Finding | Tier |
+|---|---|---|
+| Fastball velocity, average pitcher | **-4 mph, age 21→38** | T1 |
+| Fastball velocity, velocity-maintainers | only **-0.3 mph** over the same span; peak years 25–30 | T1 |
+| Walk rate | improves to **~24**, then flat | T1 |
+| Starters' K/9 | flat until **~32** | T1 |
+| Relievers' K/9 | declines from **31**; loses 2+ K/9 by 34 (starters don't hit that loss until 39) | T1 |
+| Starters' BB/9 | stays within ±1.0 of peak the whole career | T1 |
+| Relievers' BB/9 | rises from the outset, full increase reached by **30** | T1 |
+| FB velocity by cohort age (2002–11 sample) | **91.1 mph (age 24) → 89.4 mph (age 34)** | T1 |
+| Pitcher attrition (failure to reach 40 IP next year) | spikes **age 25–27** and **34–39**, especially after a velocity drop | T1 |
+
+Source: Jeff Zimmerman, "Pitcher Aging Curves: Maintaining Velocity" (2012-05-09); Bill Petti, "Pitcher Aging Curves: Starters and Relievers" and "Velocity Decline and Pitcher Attrition by Age" (2012), all FanGraphs. https://blogs.fangraphs.com/pitcher-aging-curves-maintaining-velocity/ ; https://blogs.fangraphs.com/pitcher-aging-curves-starters-and-relievers/
+
+A secondary physical trait — spin rate — declines much slower, proportionally, than velocity: across a modeled age 21→36 span, four-seam velocity fell **~1.8 mph** while spin fell only **~18.8 rpm** cumulatively; two-seam spin fell faster (**-105.9 rpm by 33**). Case study built on Rich Hill's own tracked pitches (4-seam spin 2,316→2,470 rpm, 2015→17; curveball 2,682→2,798 rpm). T1 — Travis Sawchik, "Rich Hill Has a Theory About Spin and Aging," FanGraphs, 2018-03-27. https://blogs.fangraphs.com/rich-hill-has-a-theory-about-spin-and-aging/ **No study has re-run this using post-2021 (sticky-substance-crackdown) or post-2023 data — see §18.5.**
+
+### 18.4 Methodology: naive aging curves overstate decline, and cross-league work still isn't component-level
+
+Peer-reviewed (Journal of Sports Analytics 10 (2024), 77–85): a two-level multiple-imputation mixed model correcting for survivorship/dropout bias finds **naive delta-method aging curves systematically overstate decline** — players who stop appearing in the league are implicitly assumed by a naive curve to have performed at the population average, when in fact they were already declining faster. T1 — Quang Nguyen & Gregory J. Matthews. Studies only aggregate offensive value, not components. https://journals.sagepub.com/doi/10.3233/JSA-240744
+
+SABR Analytics Conference 2023 (John Asel & Jeremy Losak) computed and compared aggregate batter aging curves across MLB, KBO, and NPB — Lahman/Baseball-Reference, 1982–2022, **27,682 player-seasons** (16,694 MLB / 6,487 NPB / 4,501 KBO) across **5,157 players**. T1. Again aggregate, not component-level. https://sabr.org/analytics/presentations/2023
+
+A commonly-cited 2024 SABR Analytics Conference award winner, Patrick Dubuque's "The Other Aging Curve" (Baseball Prospectus, 2023-01-31), is a literary essay with **zero quantitative aging data** despite the title — flagged explicitly because it surfaces prominently in searches and could be mistaken for a data source. T1. https://www.baseballprospectus.com/news/article/80052/cold-takes-the-other-aging-curve/
+
+### 18.5 Not published / could not verify
+
+- **FanGraphs Sabermetrics Library glossary ("Aging Curve" entry) claim that walk rate peaks ~37 and ISO peaks ~34 — REFUTED.** The live page contains neither figure; it states only that "defense and running peak early" and decline starts "around 30." A companion FanGraphs Library page ("Beginner's Guide to Aging Curves") gives materially different, lower figures instead: **walk rate peaks 28–32, ISO holds on until 30.** Do not cite the 37/34 figures for anything. https://library.fangraphs.com/principles/aging-curve/
+- **Pitcher secondary-pitch-quality aging (Stuff+/PitchingBot vs. age):** no dated, named-author publication decomposes pitcher aging by pitch-quality-model output as a function of age, separate from raw velocity. Searched specifically for work by PitchingBot's creator; none found.
+- **Arm strength (throwing velocity) aging curve:** Statcast has published Arm Strength since 2020, but no dedicated age-decline curve for infielder/outfielder/catcher arm strength exists anywhere in the public record.
+- **Post-2021 spin-rate-decay-by-age, re-baselined for the sticky-substance crackdown:** the only spin-vs-age analysis (Sawchik/FanGraphs 2018, §18.3) predates the 2021 enforcement that materially changed league spin rates. No re-derivation exists.
+- **Minor-league year-over-year improvement deltas by age:** re-confirms this project's prior two passes from an independent angle — no rigorous, quantified, age-bucketed table exists on FanGraphs, Baseball Prospectus, Baseball America, SABR, or in the 2023–24 academic literature.
+- **A single unified, component-by-component aging study** (all five hitter tools + all three pitcher components, one methodology) does not exist. What exists is a scattered patchwork — plate discipline in one FanGraphs article, power in a different Driveline article, speed in a Statcast glossary post, defense in an SIS/fan-blog post, bat speed in a Tom Tango blog post, spin in an 8-year-old Sawchik article — from different authors, samples, and outlets, several giving **materially different peak ages for the same metric** (bat speed peak reported as 25, 28, or "flat 22–31 then declining" by three different 2025–26 sources). Any aggregation for this project's sim necessarily reconciles inconsistent independent estimates rather than citing one authoritative table.
+
+**Recorded 2026-09-04.**
+
+---
+
+## 19. Statcast pitch modeling — velocity, movement, Stuff+/PitchingBot, MiLB comparison
+
+*Researched and independently verified 2026-09-04, including direct reproduction of several self-computed leaderboard aggregations against live Baseball Savant CSV exports.*
+
+### 19.1 2025 league-wide pitch characteristics, by pitch type
+
+Self-computed, pitch-count-weighted from Baseball Savant per-pitcher CSV exports (min 50 pitches of that type), **independently reproduced to the decimal** during verification:
+
+| Pitch | Velo (mph) | Spin (rpm) | IVB (in) | HB (in, magnitude) |
+|---|---|---|---|---|
+| Four-seam (FF) | 94.5 | 2,324 | +15.8 | 7.8 |
+| Sinker (SI) | 93.8 | 2,189 | +7.4 | 15.2 |
+| Cutter (FC) | 89.7 | 2,415 | +8.2 | 2.5 |
+| Slider (SL) | 86.3 | 2,431 | +1.9 | 4.2 |
+| Curveball (CU) | 80.2 | 2,581 | -10.1 | 8.7 |
+| Changeup (CH) | 85.8 | 1,799 | +4.5 | 14.4 |
+| Splitter (FS) | 86.5 | 1,375 | +3.4 | 11.2 |
+
+T1. Baseball Savant "Pitch Movement" and "Spin Direction/Pitches" leaderboards, 2025 season. https://baseballsavant.mlb.com/leaderboard/pitch-movement
+
+League-wide season total: four-seam averaged **94.5 mph / 2,322 rpm** (record spin), up from 94.2/2,283 in 2023 and from 91.9 mph at the start of Statcast tracking (2008). RHP four-seamers hit 95.0 mph for the first time; RHP relievers 95.6 mph. **3,700 pitches ≥100 mph** thrown in 2025 (up from 3,321 in 2024). T1 — AP wire, published 2025-09-30. https://www.foxsports.com/articles/mlb/flamethrowers-rule-mound-as-righthander-average-4seam-fastball-reaches-95-mph
+
+### 19.2 2025 outcome quality by pitch type
+
+Self-computed, pitch-count-weighted (arsenals ≥100 pitches), **independently reproduced exactly** during verification:
+
+| Pitch | Whiff% | wOBA-against | xwOBA-against | Hard-Hit% | Put-Away% |
+|---|---|---|---|---|---|
+| FF | 21.6 | .339 | .343 | 46.6 | 18.1 |
+| SI | 13.9 | .349 | .343 | 44.8 | 18.3 |
+| FC | 22.3 | .353 | .347 | 39.1 | 17.3 |
+| SL | 33.3 | .296 | .289 | 37.1 | 20.8 |
+| CU | 32.5 | .291 | .276 | 37.5 | 20.4 |
+| CH | 31.1 | .283 | .283 | 33.1 | 18.2 |
+| FS | 34.5 | .263 | .254 | 34.6 | 20.8 |
+
+T1. Baseball Savant "Pitch Arsenal Stats," 2025. https://baseballsavant.mlb.com/leaderboard/pitch-arsenal-stats. Chase rate (O-Swing%) by pitch type was not found published or cleanly exportable — see §19.5.
+
+### 19.3 Stuff+/Location+/Pitching+ and PitchingBot — a scale, not a design tool
+
+Stuff+/Location+/Pitching+ (FanGraphs-hosted, built by Eno Sarris/Max Bay/Owen McGrattan) scale like wRC+, **100 = average**, 10 points = 1 SD at the pitch level. Season-level SD: Stuff+ **12.16 (SP) / 17.02 (RP)**; Location+ **3.34 / 5.87**; Pitching+ **4.94 / 6.61**. Reliability thresholds: Stuff+ readable after **~80 pitches**, Location+ needs **~400**. Per-pitch-type Stuff+ baselines differ (a known architecture quirk — breaking balls score systematically higher): FF 99.2±18.3, SI 92.5±13.6, SL 110.8±15.6, CU 105.5±16.8, CH 87.2±16.4. T1 — FanGraphs Sabermetrics Library, "Stuff+, Location+, and Pitching+ Primer," originally 2023-03-10, live-maintained. https://library.fangraphs.com/pitching/stuff-location-and-pitching-primer/
+
+PitchingBot (Cameron Grove, FanGraphs-hosted) instead speaks natively in the **20-80 scouting scale** — 50 = average MLB, 10 points = 1 SD — with three grades (Overall/Stuff/Command). Stuff uses only physical characteristics; Command uses only location/count. The model deliberately restricts its Stuff predictions to swing events (whiffs, fouls, balls in play), excluding called strikes as location-dominated. T1. https://library.fangraphs.com/pitching/pitchingbot-pitch-modeling-primer/ **This is the one major public model that already speaks 20-80 natively — useful if the sim wants to drive pitch quality off that scale directly — but it publishes no reverse table from grade to raw Statcast numbers (§19.5).**
+
+A single-analyst FanGraphs RotoGraphs piece (2023-05-05) fit an exponential regression converting season Stuff+/PitchingBot grades to expected ERA on 2021–22 data (min 40 IP): PitchingBot→ERA = 22.697·e^(-0.035·grade), r²=.992; Stuff+→ERA = 49.19·e^(-0.025·grade), r²=.996. Reference points: Stuff+ 135/PitchingBot 78 ≈ 1.50 ERA … Stuff+ 96/PitchingBot 50 ≈ 4.00 ERA. Author flags the model as "black box" and not guaranteed to hold as the league's velocity/spin environment keeps shifting (it already has, per §19.1). T2. https://fantasy.fangraphs.com/referencing-pitch-quality-models-to-more-traditional-stats/
+
+Driveline's own team (2024-05-31), revisiting its public Stuff+ model, states explicitly that pitch-type Stuff+ scores "can only be compared directly within their respective categories" — it is a relative ranking tool, not a design-prescription tool. Velocity is the dominant lever for breaking-ball Stuff+; sinkers outscore four-seams up to roughly 97 mph. **No formula exists anywhere for converting a target Stuff+ number into a velocity+spin+movement combination.** T2. https://www.drivelinebaseball.com/2024/05/revisiting-stuff-plus/
+
+Baseball Savant itself has **no native branded Stuff+-style grade** — confirmed directly against its own CSV schema (run_value, woba, xwoba, whiff_percent, put_away, hard_hit_percent — no physical-characteristics composite field). Stuff+/Location+/Pitching+/PitchingBot are independently-built, third-party models FanGraphs hosts, not Savant products. T2.
+
+Elite real-world anchor: Jhoan Duran's "splinker" (~99–101 mph) graded **142 Stuff+** in 2022, 2nd-highest among qualifying splitters (min 50 IP) — roughly +2.3 SD above the FF/SI baseline. T2 — FanGraphs, 2023-04-14. https://blogs.fangraphs.com/is-jhoan-duran-getting-even-nastier/
+
+### 19.4 20-80 velocity anchors have drifted upward; MLB vs. MiLB (2021-23)
+
+20-80 fastball-velocity anchor points are informal and drift: FanGraphs' 2014 primer set 50=90-91 mph, 80=97 mph; a 2026 informal recap instead anchors 50=92-93 mph, 80=99-100+ mph. Neither is a current, vetted, comprehensive institutional chart — the instability is itself the finding: there is no single authoritative 20-80→velocity table. T3 (the 2014 chart alone would be T2 but is stale; the 2026 recap is an unvetted Substack). https://blogs.fangraphs.com/scouting-explained-the-20-80-scouting-scale/ ; https://dodgersafterduty.substack.com/p/understanding-the-2080-scouting-scale
+
+The most substantive MLB-vs-MiLB pitch-characteristics comparison found, level by level, combined 2021–23 Statcast data:
+
+| Metric | MLB | Triple-A | Single-A |
+|---|---|---|---|
+| FF/SI velocity | 93.7 | 92.7 | 91.1 |
+| Rate of FF/SI ≥95 mph | 32% | 19% | 11% |
+| Whiff rate on ≥95 mph | 23% | 25% | 29% (inverse of the velocity gap) |
+| Curveball IVB | -9.6 in | -8.2 in | -6.0 in |
+| Whiff rate vs. curveball | 32% | 34% | 37% |
+| Sliders w/ ≥12in HB (2023 only) | 26% | 25% | 16% |
+| Hard-hit rate (batters) | 39% | 36% | 31% |
+| Avg HR distance | 400 ft | 396 ft | 386 ft |
+
+T1 — Mike Petriello, MLB.com/Baseball Savant, 2024-03-17. **Coverage caveat, stated directly in the source:** Triple-A = all 2023 + PCL/Charlotte home games 2022; Single-A = only the 8 Statcast-enabled Florida State League parks since 2021; **no Double-A data at all**; High-A/Low-A outside those 8 FSL parks not covered; no newer (2024–25) refresh exists. https://www.mlb.com/news/minor-league-statcast-data-compared-to-mlb
+
+Individual 2025 Triple-A pitch examples (illustrative outliers, not level averages — a mid-season feature, not a systematic study): a **97.3 mph / 2,575 rpm** four-seamer (highest among 146 qualifying Triple-A four-seam throwers); a 98.0 mph four-seamer; a 95.2 mph sinker with 16.9in of arm-side movement; sweepers at 79.3 mph/3,001 rpm and 82 mph/14.1in gloveside/2,728 rpm; a 77.4 mph/3,086 rpm curveball (highest curve spin among 10+-curve throwers); an 83.8 mph/1,194 rpm changeup. T3 — MLB.com (Sam Dykstra), 2025-05-21. https://www.mlb.com/news/statcast-triple-a-best-pitches-2025
+
+### 19.5 Not published / could not verify
+
+- **No official formula or tool converts a single 20-80 stuff grade into a full pitch-type Statcast target set** (velocity + spin + horizontal/vertical movement together). Public models are explicitly comparative/diagnostic within a pitch type, not generative (Driveline's own team says so directly, §19.3). Any such mapping this project uses will have to be authored/assumed, not sourced.
+- **A dated, sourced 2025 chase-rate (O-Swing%) breakdown by pitch type** — not located, though the rest of §19.2's table was.
+- **Any current (2024/2025) refresh of the MLB-vs-MiLB level comparison** — the one substantive comparison (§19.4) is 2021–23 combined; nothing newer found.
+- **Public Statcast pitch-tracking data for Double-A, High-A, or Low-A** (outside 8 specific FSL Single-A parks) — explicitly confirmed absent as of the source's 2024-03-17 publication.
+- **A pre-aggregated public leaderboard of league-average velocity/spin/movement by pitch type for Triple-A or any MiLB level**, analogous to Savant's MLB leaderboards. A raw pitch-level "Statcast Search - Minors" tool exists and could in principle be aggregated the same way §19.1's table was built, but no such aggregate exists today, and building one was out of scope for this pass.
+- **A current, single, authoritative, dated 20-80 fastball-velocity chart** — the two data points found (stale 2014 FanGraphs, informal 2026 Substack) do not constitute one.
+
+**Recorded 2026-09-04.**
+
+---
+
+## 20. Batted-ball quality — Statcast exit velocity, launch angle, barrels, bat speed
+
+*Researched and independently verified 2026-09-04. Most figures below were self-computed from Baseball Savant's raw Statcast Search CSV export and independently reproduced during verification by a second, from-scratch pull of the same public endpoint — as close to primary-source confirmation as this kind of derived statistic gets. The Barrel exit-velocity/launch-angle definition in §20.2 was independently re-checked a second time outside the workflow before this merge — confirmed exactly.*
+
+### 20.1 2025 league-wide exit velocity and launch angle distributions
+
+Full 2025 regular season, n≈124,441–124,887 batted-ball events (population-level, not the per-player leaderboard averages Baseball Savant itself publishes — no Savant page publishes this percentile table directly; both distributions below were derived from the raw event-level export and reproduced independently to the decimal).
+
+**Exit velocity (mph):** mean **88.8**, median **91.9**, SD **15.1**. Percentiles: p1=38.2, p5=60.9, p10=68.8, p25=80.4, p50=91.9, p75=100.0, p90=105.1, p95=107.4, p99=111.1, max observed=122.9.
+
+**Launch angle (°):** mean **13.1**, median **14.0**, SD **28.8**. Percentiles: p1=-63, p5=-36, p10=-22, p25=-5, p50=14, p75=31, p90=50, p95=62, p99=78.
+
+T1 both. https://baseballsavant.mlb.com/statcast_search/csv
+
+### 20.2 Barrels, hard-hit, and the quality-of-contact bucket table
+
+Statcast's Barrel rule: a batted ball barrels when its EV/LA combination has historically (since 2015) produced a minimum **.500 AVG / 1.500 SLG**. Minimum EV to ever qualify is **98 mph**; at 98 mph the qualifying LA window is 26°–30°, widening ~2–3°/mph up to 116 mph, where any LA 8°–50° qualifies. Realized outcome in 2016 was far above the definitional floor: **.822 AVG / 2.386 SLG**. T1 — MLB.com Glossary, "Barrel." https://www.mlb.com/glossary/statcast/barrel
+
+**2025 league barrel rate: 8.63%** of batted balls (10,737/124,439), using Statcast's own internal quality-of-contact classification field (not an approximation of the rule). T1, independently reproduced exactly.
+
+Full six-bucket breakdown, 2025, actual wOBA vs. Statcast's own xwOBAcon:
+
+| Category | Share | Actual wOBA | xwOBAcon |
+|---|---|---|---|
+| Weak | 4.4% | .209 | .166 |
+| Topped | 30.3% | .184 | .162 |
+| Under | 25.8% | .075 | .081 |
+| Flare/Burner | 24.4% | .638 | .626 |
+| Solid Contact | 6.5% | .517 | .554 |
+| Barrel | 8.6% | 1.192 | 1.181 |
+
+T1, independently reproduced exactly. Close agreement between actual and xwOBAcon per bucket validates the categorical field's predictive power — directly usable as a simplified 6-bucket contact-quality-to-outcome table.
+
+**Hard-hit rate (EV ≥95 mph): 41.05%** of batted balls in 2025. MLB's own stated rationale for the threshold: hard-hit balls have historically produced **.524 AVG / 1.047 SLG / .653 wOBA**, vs. **.219 / .259 / .206** below it — 95 mph is where EV starts to reliably "matter." T1 both. https://www.mlb.com/glossary/statcast/hard-hit-rate
+
+Launch-angle batted-ball buckets: ground ball <10°, line drive 10°–25°, fly ball 25°–50°, popup >50°; Sweet Spot (best hit-production zone) = **8°–32°**. T1 — MLB.com Glossary. https://www.mlb.com/glossary/statcast/launch-angle
+
+### 20.3 xwOBA is a lookup, not a formula — and a self-derived EV×LA grid to fill the gap
+
+xwOBA/xwOBAcon is a **nonparametric empirical lookup**: exit velocity + launch angle (plus, since 2019, seasonal Sprint Speed on weakly-hit/topped balls) against the historical wOBA outcome of comparable batted balls since 2015 — not a closed-form regression equation. T1 — MLB.com Glossary, "Expected Weighted On-base Average." https://www.mlb.com/glossary/statcast/expected-woba **No public, downloadable EV×LA bin table with explicit boundaries and wOBA values exists** — confirmed against Baseball Savant's own CSV field-documentation page, which is a data dictionary, not a lookup table. https://baseballsavant.mlb.com/csv-docs
+
+Self-derived replacement (5 mph × 10° bins, actual wOBA, 2025, n≥100/cell, independently reproduced exactly): 100mph/20°→n=3,509, wOBA=**.996**; 100mph/30°→n=2,090, **.975**; 105mph/20°→n=2,157, **1.604**; 90mph/10°→n=2,274, **.719**; 90mph/30°→n=2,226, **.099**; 75mph/10°→n=1,025, **.656**; 75mph/30°→n=877, **.102**; 60mph/60°→n=123, **.000**. Shows the standard pattern: wOBA rises steeply with EV inside the 5°–30° LA band and collapses above ~40°–45° or below 0° regardless of EV. T1.
+
+2025 wOBA-on-contact sanity bound: actual mean **.376** vs. Statcast's own xwOBAcon mean **.369** (n=124,887) — a ~2% gap even for Statcast's own model, a reasonable bound for how tightly a sim's EV/LA-derived xwOBA should be expected to track outcomes. T1.
+
+### 20.4 Bat speed — measurement, league distribution, and its (moderate) relationship to exit velocity
+
+Squared-up (≥80% of theoretical max EV for that swing's bat speed and the pitch's speed) and Blast ([squared-up% × 100] + bat speed ≥164, i.e., the average of the two ≥82) are officially defined; "fast swing" = bat speed ≥75 mph. T1 — MLB.com Glossary. https://www.mlb.com/glossary/statcast/squared-up ; https://www.mlb.com/glossary/statcast/bat-tracking-blasts Bat speed is measured at the bat's sweet spot, and a season average is the mean of a hitter's fastest 90% of competitive swings — plausible but not independently re-confirmed from a live page fetch (the MLB.com bat-speed glossary page would not render its body to either fetch attempt). T1, plausible.
+
+**2025 league bat speed, PA-weighted: 71.7 mph** (537 hitters ≥50 PA; unweighted mean 71.5, median 71.6, SD across hitters **2.6 mph**; range 62.5–80.6). T1, independently reproduced exactly. MLB.com's own 2024 reporting gives a very close **72 mph** league average and the same 75+ mph fast-swing threshold — the league average appears essentially flat year over year. T1 — leaders: Stanton 80.6, Cruz 77.7, Schwarber 77.0, Chapman 76.9, Acuña/Morel 76.7, Judge 76.5, Adell 76.3, Rodríguez 76.2, Soto 76.1. https://www.mlb.com/news/mlb-bat-speed-leaders-for-2024
+
+**Per-swing (not per-hitter) 2025 distribution is much wider,** as expected: n=119,495 swings, mean **71.1**, median **71.9**, SD **7.35 mph** (p1=49.6, p5=61.6, p10=64.5, p25=68.4, p75=75.1, p90=77.8, p95=79.6, p99=83.3; range 1.0–88.0). A sim modeling swing-to-swing noise should use the **7.35 mph SD**, not the 2.6 mph hitter-to-hitter SD. T1, independently reproduced exactly. Swing length, same population: mean **7.17 ft**, median 7.2, SD **0.84 ft**. T1.
+
+Bat speed's correlation with EV is only moderate and shrinks at finer grain:
+- Player-season level (FanGraphs/Podhorzer, 2024-05-20, 2024 partial season): **r = 0.575**. Other correlations with HR/FB rate in the same piece: Barrel% .737, HardHit% .579, Avg EV .535, Blast-per-contact .528, Avg Bat Speed .437, Fast-Swing-Rate .434, Max EV .372 — author's conclusion: bat-tracking metrics add "no additional value" over existing EV/Barrel/HardHit measures for predicting power. T2. https://fantasy.fangraphs.com/correlation-fun-with-statcasts-new-bat-tracking-data/
+- Swing level, pooled, full 2025 season: **r = 0.464** (r²=0.215, n=119,088). OLS: EV ≈ 0.94 × bat_speed + 21.8 mph. T1, independently reproduced exactly.
+- Split by quality-of-contact category, 2025: average bat speed rises monotonically from Weak (57.7 mph) through Barrel (74.9 mph) contact, but the within-category correlation stays only moderate (Weak r=.705 down to Topped/Under r≈.23, back up to Barrel r=.464). **Design implication: model bat speed as shifting the probability distribution over contact-quality tiers, not as a direct linear multiplier onto EV** — timing/contact quality within a bat-speed tier explains most of the swing-to-swing EV variance. T1, independently reproduced exactly.
+
+Launch-angle "tightness" (a hitter's own within-season LA consistency, indexed league-wide, distinct from the full-population LA spread in §20.1): SD ran 25.3° (2017) / 25.1° (2018) / 25.0° (2019) / **28.5° (2020)**, the 2020 spike attributed to the Hawk-Eye transition capturing previously-untracked batted balls. T2 — FanGraphs/Chamberlain citing Connor Kurcon, 2020-11-23. https://fantasy.fangraphs.com/a-needed-update-on-launch-angle-tightness/
+
+### 20.5 MiLB batted-ball data: real, searchable, uncalibrated
+
+Baseball Savant's Minor League Statcast Search tool is real and functions (level/org/team/park filters); Triple-A coverage runs since 2023, with PCL/Charlotte since 2022 and the Florida State League since 2021. T1. https://baseballsavant.mlb.com/statcast-search-minors One independent, non-peer-reviewed analysis (2023-03-04) comparing MLB vs. PCL/Triple-A exit velocity found MLB parks averaging **86.6–87.6 mph** vs. PCL/AAA parks at **90.4–91.7 mph** — Triple-A reading ~4 mph *higher* than MLB despite lower-skill hitters, while fastball pitch velocity matched closely between levels (~0.25 mph gap) — strongly suggesting a **bat-tracking/sensor calibration artifact** (Trackman vs. Hawk-Eye), not a real physics difference. All 80 hitters sampled who played both levels in 2021–22 recorded higher EV in the minors. T3 — MLB Data Warehouse Substack, Jon A. No newer (post-full-Hawkeye-rollout) validation exists. **Do not treat MiLB Statcast EV/LA figures as directly comparable to MLB figures without independent validation.** https://www.mlbdatawarehouse.com/p/studying-milb-statcast-exit-velo
+
+### 20.6 Not published / could not verify
+
+- **The commonly-repeated "each +1 mph of bat speed adds ~1.2 mph of exit velocity on squared-up contact" figure could not be traced to any primary MLB/Statcast source** despite targeted searching — appears to be informally circulated derivative content. This project's own pooled swing-level slope (0.94 mph EV per mph bat speed, all contact, §20.4) is in the same ballpark but is a different measurement. Do not cite the "1.2" figure as fact.
+- No official population-level percentile table for raw EV/LA is published as a static document by Savant/MLB — everything in §20.1 had to be derived from the raw event-level export.
+- No downloadable, official EV×LA→wOBA bin table exists; §20.3's grid is this project's own reconstruction.
+- No official league-average-by-MiLB-level batted-ball-quality comparison exists (barrel rate, EV, LA by AAA/AA/High-A/Low-A); the raw per-pitch minors search tool exists but nothing pre-aggregated does.
+- No current (2024/25) validation of MiLB Statcast calibration against MLB post-full-Hawk-Eye-rollout; the one relevant study (§20.5) is from 2023 and flags likely sensor-calibration bias, unresolved.
+- The MLB.com bat-speed glossary page would not render body content to either fetch attempt in this pass; its cited figures (§20.4) rest on search-indexed snippets, not a confirmed raw-page read.
+
+**Recorded 2026-09-04.**
+
+---
+
+## 21. Defensive value units — OAA, DRS, Fielding Run Value, and the missing 20-80 bridge
+
+*Researched and independently verified 2026-09-04. Central question: does a 20-80-style defensive grade exist anywhere in the public record, tied to OAA/DRS the way offensive grades tie to wRC+? It does not, in the current Statcast era — see §21.4. The out-to-run conversion table in §21.1 was independently re-checked a second time outside the workflow before this merge — confirmed exactly.*
+
+### 21.1 The one real, published conversion: OAA → Fielding Run Value → WAR
+
+Statcast's own, official conversion of outs to runs (Fielding Run Value): **1 out = 0.9 run for outfielders, 0.75 run for infielders.** Catcher components: blocking 1 saved block = 0.25 run; framing 1 saved strike = 0.125 run; throwing 1 SB prevented = 0.65 run; fielder throwing runs convert 1:1. T1 — MLB.com/Baseball Savant Statcast Glossary, "Fielding Run Value." https://baseballsavant.mlb.com/leaderboard/fielding-run-value
+
+This is the real answer to "how does OAA become WAR": OAA-derived Fielding Runs Prevented replaced UZR's range component in FanGraphs WAR, retroactive to 2016 (UZR's ARM and Double-Play-Runs components similarly replaced by Statcast-sourced equivalents). No single defense-specific "points per win" shortcut exists beyond this out→run step and the standard ~10 runs = 1 win rule used elsewhere in WAR. T1 — FanGraphs, "A FanGraphs WAR Fielding Update" / "2024 FanGraphs WAR Update." https://blogs.fangraphs.com/a-fangraphs-war-fielding-update/
+
+FanGraphs' Def component (includes positional adjustment) has a published 7-tier verbal scale, not framed as 20-80: Excellent +20, Great +12, Above Average +4, Average 0, Below Average -4, Poor -12, Awful -20 (Def runs). T2 — FanGraphs Sabermetrics Library, "Def." https://library.fangraphs.com/defense/def/
+
+### 21.2 Why single-season defensive metrics resist a 20-80 grade: reliability
+
+The load-bearing modern (2023) finding for why defense doesn't behave like offense on a 20-80 scale: **year-to-year (Spearman) reliability for team-changing players, 2016–2022, is OAA 0.31, DRS 0.23, UZR 0.15, FRAA 0.12**, vs. Baseball Prospectus's new RDA at **0.43**. Restricted to the Hawk-Eye era (2021–22) only: OAA 0.22, DRS 0.23, UZR 0.16, FRAA 0.11, RDA 0.57. T1 — Jonathan Judge, Baseball Prospectus, "Introducing Range Defense Added," 2023-02-08. https://www.baseballprospectus.com/news/article/80209/prospectus-feature-introducing-range-defense-added/ A 20-80 grade implies a stable true-talent point estimate; single-season OAA/DRS/UZR explain roughly (0.31² ≈) **10% of year-to-year variance** — too noisy to support that without multi-year aggregation.
+
+Older SD benchmark, never re-run on current data: OAA/1000 innings SD ≈10 (2016)/≈9 (2017) for outfielders; UZR range component (RngR)/1000 SD ≈8 (2016)/≈6 (2017) — OAA's year-to-year R² substantially exceeds UZR range's. T2 — FanGraphs, 2018-01-10. https://blogs.fangraphs.com/statcasts-outs-above-average-and-uzr/
+
+Baseball Prospectus's newest defensive work (RDA/DRP) was built specifically to raise reliability above OAA/DRS/UZR/FRAA (table above); a 2025-06-26 follow-up ("All the Range: An Update to Infield RDA" — an earlier draft of this research mis-dated it 2023-24) stays focused on reliability and coverage, not on building a scouting-grade bridge. The field's current research frontier is not aimed at the 20-80 conversion problem. T2. https://www.baseballprospectus.com/news/article/99395/all-the-range-an-update-to-infield-rda/
+
+### 21.3 2025 season figures
+
+Statcast Fielding Run Value / catcher framing, 2025 (directly re-pulled and reproduced): **Patrick Bailey (SF) led all catchers and all fielders at +25.05 framing runs**, 8.4 runs ahead of 2nd place (Alejandro Kirk, +16.66); Bailey also led with 120 called-strikes-above-expectation. Worst qualified: **Edgar Quero (CWS) at -12.90**; Logan O'Hoppe (LAA) also bottom-tier (-8.23). T1. https://www.mlb.com/news/patrick-bailey-catcher-framing-fielding-run-value
+
+DRS full-season 2025 leaders check out at 9 of 10 named positions (1B Olson 17, 2B Hoerner 17, 3B Hayes 19, SS Betts/Walls tied 17, LF Kwan 22, CF Rafaela 20, C Bailey 19, P Fried 10, multi-position Kwan/Clement tied 22); best single-season DRS values cluster **15–22**, consistent with the "15-20 = elite" rule of thumb repeated across secondary explainers (no codified DRS-to-grade table is published by SIS itself). T1/T2. https://www.sportsinfosolutions.com/2025/10/23/the-2025-fielding-bible-awards-winners/ (RF was NOT Tatís — see §21.5.)
+
+Historical framing range (plausible, not independently pinned to a primary pull): Elias Díaz posted -18.78 framing runs in an All-Star season, used as the league-worst-outlier anecdote — this figure independently corroborates. Tyler Stephenson's cited -9 in 2023 does not cleanly match this pass's search results (-4.9 framing / -11 total FRV found instead) — treat the Díaz figure as the more solid of the two. T3.
+
+### 21.4 The 20-80 defensive grade does not exist for the Statcast era — two 2013 attempts are the closest thing published
+
+Two FanGraphs pieces built the only defensive 20-80 conversion tables ever published, both **12-13 years old and built on UZR** (a metric FanGraphs itself has since de-emphasized in favor of OAA-derived Fielding Runs Prevented):
+
+- Mark Smith's UZR/150 z-score table (2013-02-19): 80=+22.8 UZR/150 (z=3 — "there are no 80 defenders in the game," no player actually reaches it), 70=+15.7 (Adrian Beltre), 60=+8.7, 50=+1.6, 40=-5.4, 30=-12.5, 20=-19.6 (z=-3 also unreached). T2. https://blogs.fangraphs.com/the-20-80-scale-sabr-style/
+- Carson Cistulli's grade↔Def-runs↔WAR table (2013-11-05): 20=-30 Def/-1.2 WAR … 50=0/2.0 … 80=+30/5.2 WAR, roughly **1.1 WAR per 10 grade points**. T2. https://blogs.fangraphs.com/the-20-80-scouting-scale-translated-to-wins/
+
+Both are instructive for *why* nobody has redone this with OAA/DRS/FRV since: Smith found the **realized distribution doesn't actually populate the 80/20 tails** the way a Gaussian z-score model assumes — elite-glove/weak-bat defenders don't get full-time playing time (selection bias), and the metric itself is too noisy. A companion Smith piece built 20-80 tables for wRC+, WAR/600, OBP, wOBA, and FIP but explicitly left fielding out, calling it a "whole player" metric problem. T2. FanGraphs' own current, canonical 20-80 scouting explainer (Kiley McDaniel, 2014, still linked as of 2026) gives hard numeric anchors for fastball velocity, batting average, HR, times-to-first, and 60-yard dash — and **nothing numeric for fielding**, folding "range, hands, instincts" into a qualitative grade instead. T2. https://blogs.fangraphs.com/scouting-explained-the-20-80-scouting-scale/
+
+The one commercial precedent checked directly — Out of the Park Baseball (OOTP), which must assign a defensive rating to every real MLB player every season — **discloses no formula** for deriving in-game Range/Error/Arm/Turn-Double-Play ratings from DRS/UZR/OAA/Fielding%; both the official manual and a 2025 community explainer describe the ratings only conceptually. T2. https://manuals.ootpdevelopments.com/index.php?man=ootp16&page=defensive_ratings
+
+Historical framing: a 2010 Baseball Prospectus piece (Colin Wyers) argued defensive metrics hadn't progressed meaningfully past 1980s tools, citing only **r=0.79** correlation between two metrics on identical data (vs. r=0.94 for offensive stats) — outside the 2023-26 window but useful as the baseline the 2023 BP reliability numbers (§21.2: OAA 0.31, RDA 0.43) are a measurable, partial improvement over. T3. https://www.baseballprospectus.com/news/article/11476/indefensible-what-do-we-really-know-about-defense/
+
+### 21.5 Not published / could not verify
+
+- **No official OAA→20-80 or DRS→20-80 grade conversion is published anywhere as of this search.** The two conversion attempts that exist (§21.4) are pre-Statcast, UZR-based, and neither has been redone with 2016+ OAA/DRS/FRV data by any outlet found.
+- **No current (2023-26) published SD table for OAA or DRS by position** exists for z-score-based grade construction; the most recent (§21.2) is outfield-only OAA from 2018.
+- **No single "OAA points per WAR" or "DRS points per WAR" constant** analogous to offense's "10 runs = 1 win" — the real pathway runs through the multi-step Fielding Run Value conversion (§21.1), not a single defense-specific multiplier.
+- **A "2025 OAA leaders by position" list circulated in an earlier draft of this pass — REFUTED on independent Baseball Savant re-pull.** Bobby Witt Jr.'s 2025 OAA (+24) is a **tie** with Pete Crow-Armstrong, not a sole lead; the actual 2025 low among qualified players is Jonathan India/Brandon Lowe at **-14** (2B), not Acuña's -11; the SS leader is Witt (+24), not Nick Allen (+17, actually 3rd); the 3B leader is Ke'Bryan Hayes (+21), not Maikel Garcia (+17, 2nd). Witt's 2023-25 cumulative OAA is **+53**, not +54 (still MLB's best over that span, next is Giménez at +50). Do not cite the earlier figures.
+- **A "2025 DRS leaders by position" list similarly had the RF slot wrong — REFUTED on that point.** Adolís García (16 DRS) led MLB right fielders, not Fernando Tatís Jr. (15 DRS, led only among *NL* right fielders). The other 9 positions in that list check out (§21.3).
+- **A separate "2025 catcher framing" pull (Valenzuela +7.54 best / O'Hoppe -10.69 worst) is a confirmed extraction artifact — REFUTED**, from a mis-scoped (unqualified-player) query. The real 2025 figures are Bailey +25.05 / Quero -12.90 (§21.3). Do not use the Valenzuela/O'Hoppe numbers for anything.
+
+**Recorded 2026-09-04.**
+
+---
+
+## 22. Platoon splits — magnitude, decision thresholds, pitch-type mechanics
+
+*Researched and independently verified 2026-09-04. Every finding below survived direct re-fetch of its cited source; the one open question the literature itself hasn't settled is flagged in §22.5, not resolved.*
+
+### 22.1 League-average platoon-split magnitude — and a real, unresolved disagreement over which side has it bigger
+
+The canonical figure, still cited everywhere (*The Book*, Tango/Lichtman/Dolphin, 2000–2004 MLB PA data): **RHB average platoon split ≈ .017 wOBA** better vs. LHP; **LHB average platoon split ≈ .027 wOBA** better vs. RHP. T1. https://tht.fangraphs.com/platooning-the-meaning-of-mean-part-1/ A FanGraphs companion piece (2007-09 data) restates this as **LHH ~8.6% / RHH ~6.1%** relative wOBA splits, and gives the regression-to-mean sample sizes that matter for a sim's confidence model: a hitter's observed platoon split needs **~1,000 career PA vs. LHP (LHH)**, **~2,200 PA (RHH)**, or **~600 PA (switch-hitters)** before it's regressed 50% toward league average — implying LHH and switch-hitters show more *true*, persistent platoon-skill variation than RHH. T2. https://blogs.fangraphs.com/estimating-hitter-platoon-skill/
+
+Actual year-by-year splits widen over time and are not stable: 2002 vs. 2012 — LHH split grew **9.33% → 12.77%** (largest in the sample), RHH grew **3.68% → 7.48%**. T2 — Matt Klaassen, FanGraphs, 2012-12-17. https://blogs.fangraphs.com/basic-hitter-platoon-splits-2002-2012/
+
+**Open disagreement, not resolved by this pass:** a separate FanGraphs Community analysis (2007-13 data, excluding switch-hitters) found the *opposite* pattern — **RHH averaging a larger split (.043 wOBA) than LHH (.031 wOBA)**. Both figures independently check out at their respective sources. Treat "LHH have bigger splits than RHH" as the majority-view default, not a settled fact. T2. https://community.fangraphs.com/what-types-of-hitters-have-large-platoon-splits/
+
+Recent pitcher-side confirmation (2024 starters): LHP allowed **.294 wOBA** vs. LHB (27.9% of PAs faced); RHP allowed **.320 wOBA** vs. LHB (48.2% of PAs faced) — lefty relievers get the platoon (same-handed) matchup roughly twice as often as lefty starters, a legacy of the 2020 three-batter-minimum rule's effect on bullpen usage. T2 — Michael Baumann, FanGraphs, 2024-08-29. https://blogs.fangraphs.com/are-you-a-starting-pitcher-who-wants-the-platoon-advantage-too-bad/
+
+### 22.2 Practical thresholds and predictability at the individual-hitter level
+
+Directly usable in-game decision heuristics (Ben Clemens, FanGraphs, 2020-03-31): lefties hit **.308 wOBA / 88 wRC+** vs. LHP, righties **.331 wOBA / 104 wRC+** vs. LHP. A same-handed pinch-hit replacement should be **~20 wRC+ points better**; forcing an opposing pitching change needs a **15-20 wRC+ edge**; simply swapping to the platoon-advantaged bench bat needs only **~10 wRC+ points better**. T2. https://blogs.fangraphs.com/updating-the-pinch-hit-penalty-with-a-few-rules-of-thumb/
+
+Individual hitters' platoon-split *magnitude* is barely predictable from other stats — batted-ball/plate-discipline indicators (ISO, K%, LD%) explain only **~4% of variance**; moving a hitter's split by .010 wOBA needs roughly a .100-point wOBA swing or a 10-point K%/LD% change. Conclusion: aside from a handful of extreme, long-track-record hitters (Shin-Soo Choo, Ichiro Suzuki cited as examples), **it's generally safe to assume a given hitter's true platoon split is close to league average**. T2 — Chris Mitchell, FanGraphs Community, 2014-08-11. https://community.fangraphs.com/what-types-of-hitters-have-large-platoon-splits/ **No public 20-80-style grading scale for "platoon skill" exists anywhere in the sabermetric literature** — confirmed absent from the FanGraphs Sabermetrics Library's own "Splits" page and targeted search. T3, absence finding. https://library.fangraphs.com/principles/split/
+
+Switch-hitters get only partial, uneven neutralization, not a clean fix: Ozzie Albies posted **.398 wOBA** batting right-handed vs. LHP but only **.318 wOBA** batting left-handed vs. RHP — an .080 gap despite always taking the nominal platoon advantage. The share of qualified switch-hitters has fallen from **21.1% (1986-95) to 13.1% (2021)**, evidence that many switch-hitters' weak-side production doesn't justify forgoing a strong natural-side platoon-advantaged bat. T2 — Jake Mailhot, FanGraphs, 2022-01-11. https://blogs.fangraphs.com/finding-switch-hitters-who-should-stop-switch-hitting/ A small (n=24), single-season (2013) BB/K check found no strong aggregate switch-hitting advantage — some players (Callaspo, Saltalamacchia) benefited, others (Crisp, V. Martinez) performed worse from their natural/weak side. T3, low-power corroboration only, consistent direction with the Mailhot finding. https://community.fangraphs.com/estimating-the-advantage-of-switch-hitting-on-bbk-splits/
+
+### 22.3 Pitcher-side platoon splits are driven by pitch mix and arm slot, and are precisely quantified per pitch type
+
+True reverse-split pitchers (worse vs. opposite-handed batters) are "not exceedingly rare"; roughly **three-quarters** of pitchers with large platoon splits lean heavily on a slider or a non-overhand curveball. Side-arm/¾-arm deliveries associate with larger same-handed splits; changeup/curveball-heavy repertoires associate with smaller or reverse splits. T1 — Jared Cross, SABR, 2015-08-14, citing *The Book* and John Walsh's 1957-2006 Retrosheet research. https://sabr.org/latest/cross-forecasting-pitcher-platoon-splits/
+
+Tom Tango's own pitch-type-level quantification (runs/100 pitches, 2023-09-19), the most precise figure in this domain: against RHP, **changeups+curveballs reverse the normal split** — RHB (same-handed) **+.18** vs. LHB (opposite-handed) **-.14**, a .32-run swing against the RHP's overall platoon effect of ~+.19; for **LH relief pitchers'** sliders specifically, LHB (same-handed) **-0.88** vs. RHB (opposite-handed) **+0.59**, a 1.47-run differential vs. a baseline LHP platoon advantage of ~+0.70 — the slider roughly doubles a lefty reliever's effectiveness against same-side hitters. (Note: the slider figures are scoped by the source to LH *relievers*, not LHP generally.) T1. https://tangotiger.com/index.php/site/article/platoon-splits-by-pitch-type
+
+Real pitchers restructure arsenals dramatically by batter handedness: Max Scherzer (since 2020) throws slider **39%**/curve **5%** to same-handed batters vs. slider **<1%**/curve **15%** to opposite-handed; Lance McCullers **36%** slider/6% curve/10% changeup same-handed vs. **6%** slider/48% curve/21% changeup opposite-handed. T2, same source.
+
+2021 Statcast data shows the platoon effect shaping batted-ball shape before it fully shows in outcomes: RHP sinkers vs. RHH average **.341 wOBA-on-contact / 2° launch angle**; vs. LHH, **.390 wOBA / 8°**. Ground-ball rate: RHH 43.4% vs. RHP / 41.4% vs. LHP; LHH 41.1% vs. RHP / 47.5% vs. LHP. RHH posted **.184 ISO vs. LHP vs. .161 vs. RHP** (23-point gap). T2 — Justin Choi, FanGraphs, 2022-01-10. https://blogs.fangraphs.com/the-platoon-split-you-may-have-never-heard-of/
+
+### 22.4 Rule-change context: shift ban and three-batter minimum
+
+Hard-hit pulled groundballs from LH hitters fell from **.366 wOBA (2015) to .299 wOBA (2021)** as shift deployment increased pre-ban — since shifts were deployed disproportionately against pull-heavy LH hitters (who face RHP ~70%+ of the time), this is a plausible mechanism (not a directly measured post-ban effect) for how the 2023 shift ban could partially restore LHB-vs-RHP production. T2 — Justin Choi, FanGraphs, 2022-03-10 (pre-ban). https://blogs.fangraphs.com/what-banning-the-shift-does-and-does-not-accomplish/ A real, if loosely-sourced, downstream trend: the OPS platoon gap for LHB vs. LHP shrank from **110 points (2021) to 52 points (2026, in-season)** — narrowing every season since 2021, per a local-outlet piece that does not attribute the cause to the pitch clock or shift ban specifically. T3. https://shepherdexpress.com/sports/brewers-on-deck/the-platoon-split-is-shrinking-but-not-in-milwaukee/
+
+The 2020 three-batter-minimum rule cut same-handed relief-specialist (LOOGY) single-batter usage by **roughly a factor of three**; the underlying Retrosheet study's actual headline finding is that the LOOGY *role* itself has not disappeared, only the single-batter appearance pattern. T3 — David W. Smith, Retrosheet. https://www.retrosheet.org/Research/SmithD/LOOGYandThreeBatterRule.pdf **Implication for realism: fewer late-game handedness-matched substitutions since 2020 means observed in-game platoon gaps may understate a sim AI manager's theoretical access to the platoon advantage** if it isn't itself constrained the way real bullpens now are.
+
+### 22.5 Not published / could not verify
+
+- No official, industry-wide numeric "platoon skill" grading scale (20-80 or otherwise) for individual hitters or pitchers exists; public sources substitute raw wOBA/wRC+ splits plus *The Book*'s regression-to-mean PA thresholds (§22.2).
+- No single, precise, current (2020s) study computes one aggregate "switch-hitters neutralize X% of the platoon penalty" figure; the evidence (§22.2) supports only a qualitative "partial, uneven" conclusion.
+- No rigorous published analysis isolates how the 2023 pitch clock and/or shift ban specifically changed platoon-split *magnitude*, as distinct from the concurrent 2020 three-batter-minimum rule or general offensive-environment shifts. The one relevant trend (§22.4, Shepherd Express) is T3 and doesn't attribute cause.
+- A commonly-repeated claim that switch-hitting yields "~28 points higher wOBA" or "5-8% overall improvement" over one-sided peers could not be traced to any checkable source — do not use it.
+- **The LHH-vs-RHH "who has the bigger platoon split" question is a genuine open disagreement in the public literature** (§22.1), not a data-entry error to reconcile — record it as a range/uncertainty band in the sim's design assumptions, not a single hard-coded number.
+
+**Recorded 2026-09-04.**
+
+---
+
+## 23. Modern baserunning rules — 2023 rule changes and their measured effect on stolen bases
+
+*Researched and independently verified 2026-09-04, including independent recomputation of every year's league-wide SB/CS totals directly from Baseball-Reference's own season tables. The 2023 total/success-rate figures in §23.2 were independently re-checked a second time outside the workflow before this merge — confirmed exactly.*
+
+### 23.1 The mechanics — bases, pitch timer, disengagement limit
+
+Base size grew from a 15-inch to an **18-inch square bag** for 2023, shortening the 1st-2nd and 2nd-3rd running distance by **4.5 inches each**. Pitch timer: **15 seconds** with bases empty, **20 seconds** with a runner on, **30 seconds** between batters; a batter not in the box by the **8-second mark** is charged an automatic strike. Pitchers are capped at **two disengagements** (step-offs or pickoff throws) per plate appearance, resetting if the runner(s) advance; a third, unsuccessful disengagement is a balk (runner awarded the next base). T1 — MLB.com, Anthony Castrovince. https://www.mlb.com/news/mlb-2023-rule-changes-pitch-timer-larger-bases-shifts **Correction:** the cited article is dated Feb. 1, 2023 but describes a vote that happened "Friday" — Jan. 27, 2023, not Feb. 1; other reporting places the original Competition Committee approval of this same rules package on **Sept. 9, 2022**. Do not cite Feb. 1, 2023 as the vote date (see §23.5).
+
+### 23.2 Stolen bases, before and after — every season 2021-2025, independently recomputed
+
+| Year | Total SB | Success rate | SB/team-game | Notes |
+|---|---|---|---|---|
+| 2021 (baseline) | 2,213 | 75.7% | 0.46 | lowest SB/game since 1967 |
+| 2022 (last pre-rule) | 2,486 | 75.4% | 0.51 | |
+| **2023 (rule-change year)** | **3,503** | **80.2%** | **0.72** | +41% vs. 2022; most since 1987; success rate highest since CS tracking began (1951); rate/game highest since 1997 |
+| 2024 | 3,617 | 79.0% | 0.73 | highest total since 1915 (109 years); 3rd-most since 1900 behind only 1914/1915 |
+| 2025 | 3,440 | ~79%† | — | 2nd-highest of the rule-change era |
+
+T1 for 2022–2024 (independently recomputed from raw Baseball-Reference season batting tables, exact match); T2 for 2021 and 2025 (Baseball-Reference totals confirmed directly; †2025's full-season success rate computes to 77.7% from Baseball-Reference's own final tally — an April-2025 in-season snapshot cited elsewhere gave 78.8%; both are recorded since they answer different questions). **Citation note:** cite Baseball-Reference's season batting tables directly for the 2022/2023 rows — the MLB.com URL originally attached to those figures does not actually contain them (it's a different, in-season 2023 Petriello piece with matching but not identical numbers). Derived caught-stealing rate (1 − success rate) by year: 24.3% (2021), 24.6% (2022), **19.8% (2023, record low)**, ~21% (2024), ~21–22% (2025). T3, arithmetic derived from the confirmed rates above.
+
+### 23.3 Causal isolation — the 2021 MiLB natural experiment
+
+MiLB tested the mechanics separately by level in 2021, which is what actually isolates the disengagement/pickoff limit — not base size — as the primary driver of the later MLB surge, vs. 2019 baseline:
+
+| Level | Rule tested | SB/game 2019→2021 | Change |
+|---|---|---|---|
+| Low-A | 2-disengagement limit | 0.83 → 1.42 | **+71%** |
+| High-A | mandatory step-off before throw | 0.80 → 1.41 | **+76%** |
+| Triple-A | bigger bases only, no pickoff limit | 0.63 → 0.83 | +32% |
+| Double-A (control) | shift limits only, no baserunning change | 0.76 → 0.79 | +4% |
+
+T2 — Dayn Perry, CBS Sports, 2021-05-23. https://www.cbssports.com/mlb/news/thanks-to-mlbs-experimental-rule-changes-stolen-bases-in-the-minor-leagues-are-way-up/ By 2022, with all three mechanics live at every full-season MiLB level, attempts rose **2.23 → 2.81/game (+26%)** and success rate rose **68.2% → 78% (+9.8 points)** vs. 2019. T2 — Anthony Castrovince, MLB.com, 2022-06-15. https://www.mlb.com/news/pitch-clock-may-bring-back-stolen-bases
+
+### 23.4 Second-order effects
+
+MLB's own officially-distributed mid-2023 data: BABIP **.292 (2021) → .290 (2022) → .297 (2023)**; batting average **.243 (2022) → .248 (2023)**; combined runs/game **8.6 (2022) → 9.2 (2023)**; league attendance **+8.1%** vs. 2022. T1 — reported by SI/FanNation, 2023-07-11, sourced to MLB's own data release. https://www.si.com/fannation/mlb/fastball/news/mlb-distributes-new-data-on-how-rule-changes-have-impacted-pace-of-play-attendance-babip
+
+Catcher pop time (throw to 2nd) kept improving even as it became less decisive: **1.98s (2022) → 1.96s (2023) → 1.945s (2024)**; pickoff throws per team-game rose **1.96 → 2.13** over the same span, and successful pickoffs rose too — 185 runners picked off through July 6, 2023 (full-season pace ~346) vs. 275 in each of 2021 and 2022, a >25% year-over-year jump. T2 — FanGraphs (Ben Clemens, 2024-04-11; Leo Morgenstern, 2023-07-07). https://blogs.fangraphs.com/the-stolen-base-explosion-hasnt-continued/
+
+Stolen-base behavior reverts sharply in the postseason under the same rules — runners get conservative when games matter most: 2023 regular season **0.72 SB/team-game, 0.90 attempts/team-game, 80.2% success**, vs. postseason **0.50 SB/team-game, 0.64 attempts/team-game, 78.4% success** — a ~40% drop in raw steal rate driven almost entirely by fewer attempts, not a lower success rate. T2 — FanGraphs, 2023-10-20. https://blogs.fangraphs.com/what-happened-to-all-those-stolen-bases/
+
+Doubles and triples got a small, non-persistent bump from bigger bases in 2023 before resuming a longer decline driven by better outfield positioning (a trend the shift-restriction rules don't touch): doubles fell from **8,254 (2016) to 7,771 (2024) to 7,745 (2025)** — confirmed directly against Baseball-Reference's own league tables, though the specific AP article originally cited for this framing could not be located and should not be re-cited without a better source (see §23.5). T2. One team-level anecdote for context: the 2023 Reds took an extra base on qualifying hits **47%** of the time, 3rd-best in MLB — a single-team figure, not a league average. T3 — MLB.com. https://www.mlb.com/news/reds-among-mlb-s-best-baserunning-teams-in-2023
+
+### 23.5 Not published / could not verify
+
+- **The claimed Feb. 1, 2023 rules-vote date is REFUTED** by the primary source's own text (it describes a "Friday" vote — Jan. 27, 2023) and by corroborating reporting placing the original Competition Committee approval on Sept. 9, 2022. Do not cite Feb. 1, 2023 as the vote date.
+- The AP article "Doubles and triples are dwindling in MLB. Blame better outfielders and sluggers" could not be located at any of its claimed mirror URLs or via exact-phrase search, despite the underlying doubles totals checking out independently against Baseball-Reference. Cite Baseball-Reference directly for the totals; treat the AP byline/article itself as unconfirmed.
+- theScore's specific historical pop-time data points (2015 record high 2.021s; "2020, first time under 2.0s") could not be independently located — the confirmed pop-time trend (§23.4) covers only 2022-2024, from FanGraphs.
+- A league-wide, full-season-final 2025 stolen-base success rate/CS total could not be confirmed from a single authoritative live page in this pass; §23.2 records two different, non-contradictory figures (an in-season snapshot and Baseball-Reference's own final tally) rather than picking one.
+- A true league-wide "extra bases taken %" (XBT%) before/after comparison (Baseball-Reference tracks this) could not be retrieved — baseball-reference.com blocked direct fetch in this session. The Reds anecdote (§23.4) is single-team, not league-wide.
+
+**Recorded 2026-09-04.**
+
+---
+
+## 24. International pipeline — the NPB/KBO posting system
+
+*Researched and independently verified 2026-09-04, including exact-dollar reconciliation of eight real posting/free-agency transactions against the published fee formula. Yamamoto's exact posting fee in §24.3 was independently re-checked a second time outside the workflow before this merge — confirmed exactly.*
+
+### 24.1 The posting fee formula and windows
+
+Posting fee for a player who signs a Major League contract (NPB and KBO alike, current agreements): **20% of the first $25M** of guaranteed value + **17.5% of the next $25M** ($25M-$50M) + **15% of anything over $50M**, plus a **15% supplemental fee** on later-earned bonuses/escalators and exercised options. T1 — confirmed exactly against eight independent real transactions (§24.3). If instead the player signs a **Minor League contract** (the path required when he's restricted to the international-amateur bonus pool, §24.2), the fee is a **flat 25% of the signing bonus** — confirmed to the dollar via Roki Sasaki (§24.3). https://en.wikipedia.org/wiki/Posting_system
+
+NPB: once posted, **all 30 MLB clubs get a 45-day exclusive window**; no deal in that window returns the player to his NPB club for the following season. T1, confirmed both via Wikipedia and independently via a real 2024-25 posting (Ogasawara) that states the same 45-day mechanic. https://www.mlbtraderumors.com/2024/12/shinnosuke-ogasawara-officially-posted-for-mlb-clubs.html KBO: **30-day exclusive negotiation window** once posted (confirmed directly); a stated "one player per club per offseason" limit could not be independently re-confirmed and should be treated as plausible, not certain. T2. https://en.wikipedia.org/wiki/Posting_system_(KBO)
+
+### 24.2 Eligibility — service-time thresholds on both sides, and the age/service trap that blocks a market contract
+
+KBO: posting requires **≥7 years of KBO service plus club consent**; without consent a player must instead wait for full free agency. A player who accrues **9 years of KBO service** is said to become a fee-free MLB free agent with no posting required — this specific 9-year KBO threshold could not be independently re-confirmed against a primary source this pass (directionally consistent with NPB's confirmed parallel rule below, since KBO's system is modeled on NPB's, but treat as plausible, not certain). T2. https://en.wikipedia.org/wiki/Posting_system_(KBO)
+
+NPB: a club can lawfully refuse a posting request only until the player completes **9 NPB seasons** — at that point he's an unrestricted international free agent, no fee owed. T2, confirmed directly (Kazuma Okamoto and Tatsuya Imai's posting eligibility explicitly tied to reaching 9 years after 2026; Tomoyuki Sugano's real 2024 free-agent move after 12 NPB seasons carried no posting fee). https://www.mlbtraderumors.com/2025/09/npb-kazuma-okamoto-tatsuya-imai-posted-mlb-free-agents.html
+
+**The critical crossover with the international amateur system, confirmed exactly:** a posted NPB/KBO player who is **under 25 years old AND has fewer than 6 years of service** in his home league is treated as an international amateur under the MLB CBA — even if formally posted, he can't sign a market MLB contract and is instead restricted to a club's international amateur bonus pool, typically landing a Minor League deal with a capped bonus. Players **25-or-older with 6+ years of experience can sign major league contracts of any length or amount.** T1. This is why Roki Sasaki (23, ~4 NPB seasons) got a $6.5M-bonus Minor League deal while Yamamoto (25, 7 NPB seasons) got a $325M market contract for what scouts considered comparable stuff. https://www.mlbtraderumors.com/2025/09/npb-kazuma-okamoto-tatsuya-imai-posted-mlb-free-agents.html
+
+### 24.3 Real transactions, 2023-2025 — every figure reconciled to the formula
+
+| Player | From | To | Contract | Posting fee | Tier |
+|---|---|---|---|---|---|
+| Yoshinobu Yamamoto | Orix (NPB) | Dodgers | 12yr/$325M | **$50.625M** | T1 |
+| Munetaka Murakami | Yakult (NPB) | White Sox | 2yr/$34M | **$6.575M** | T2 |
+| Roki Sasaki | Chiba Lotte (NPB) | Dodgers | MiLB, $6.5M bonus | **$1.625M** (25% of bonus) | T2 |
+| Shinnosuke Ogasawara | Chunichi (NPB) | Nationals | 2yr/$3.5M | **$700K** | T2 |
+| Lee Jung-hoo | Kiwoom (KBO) | Giants | 6yr/$113M | **$18.825M** | T2 |
+| Go Woo-suk | LG (KBO) | Padres | 2yr/$4.5M | **$900K** | T2 |
+| Hyeseong Kim | Kiwoom (KBO) | Dodgers | 3yr/$12.5M gtd (up to $22M w/ options) | **$2M** + 15% supplemental on earned amounts | T1 |
+| Kodai Senga | SoftBank (NPB) | Mets | 5yr/$75M | **$0** (reached FA via a contract opt-out, not posting) | T2 |
+
+Every fee above reconciles exactly to the §24.1 formula. **Yamamoto's $50.625M is the largest fee under the current (2018-format) rules** — still below the sport's all-time record, Boston's $51.1M to Seibu for Daisuke Matsuzaka (2006, old blind-auction system); Masahiro Tanaka's 2013 fee was capped at exactly $20M under the since-replaced 2013-18 rules.
+
+### 24.4 Scale and historical context
+
+Since 1998, **28 players** have used the NPB posting system (upper bound of a range some secondary sources give as low as 22 — 28 is the number independently confirmed at Wikipedia). T3. A small (n=21, 8 hitters/13 pitchers), non-peer-reviewed regression study found NPB hitters mostly *underperformed* a simple NPB-based MLB projection — Ohtani was the sole outperformer (+.247 OPS vs. predicted), Norihiro Nakamura the worst miss (.873 NPB OPS → .654 predicted → .350 actual). Explicitly flagged by its own author as having very low predictive power (R²) — illustrative, not authoritative. T3 — CJ Lu Sing, Sports Analytics Group at Berkeley, 2022-11-29. https://sportsanalytics.studentorg.berkeley.edu/articles/japan-to-mlb.html
+
+### 24.5 Not published / could not verify
+
+- **A widely-repeated general pattern — "NPB hitters' OPS drops ~15-20% in year one, pitchers' ERA rises ~0.75-1.25, walk rate falls ~2.9 points" — could not be traced to any locatable primary study.** The likely original source (a 2015 Beyond the Box Score piece) is unreachable. Do not cite this figure set as sourced.
+- No official, methodologically rigorous aggregate "success rate" or "bust rate" for posted NPB/KBO players in MLB has been published by MLB, NPB, or KBO; the only quantitative attempt found (§24.4) is a small, non-peer-reviewed student analysis with self-acknowledged low predictive power.
+- No single authoritative, continuously-updated count of "total players posted since 1998" exists; secondary sources disagree (22-28), and the specific named examples of posted players who never reached MLB (Alejandro Diaz, Shinji Mori) could not be independently confirmed.
+- The exact date/mechanism by which KBO adopted its current tiered (20%/17.5%/15%) fee formula, as distinct from any earlier KBO-specific formula, was not confirmed against a primary source.
+- MLB.com's own glossary pages for the Japanese and Korean posting systems (the likeliest primary/official source) blocked automated fetch (HTTP 406) throughout this research; all MLB.com-sourced claims above rest on independent cross-verification against real transactions and Wikipedia rather than a direct read of the glossary pages themselves.
+- The KBO "one posted player per club per offseason" limit and the KBO "9 years service = fee-free free agency" threshold (§24.1-24.2) could not be independently re-confirmed against a primary source this pass — treat both as plausible, not certain.
+
+**Recorded 2026-09-04.**

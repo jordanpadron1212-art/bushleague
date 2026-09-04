@@ -5,6 +5,26 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.4.1 · SEVEN NEW RESEARCH DOMAINS — 2026-09-04
+
+`RESEARCH.md` §18–24 added: component-specific player aging curves, Statcast pitch modeling, batted-
+ball quality, defensive value units, platoon splits, modern (2023+) baserunning rules, and the NPB/KBO
+posting system — a background research workflow (15 agents: research → independent verify → synthesize
+per domain) launched earlier this session, merged now that it completed. Before merging, four of the
+highest-stakes figures were independently re-checked a second time outside the workflow (Yamamoto's
+exact posting fee, 2023 stolen-base totals, Statcast's Fielding Run Value conversion, the Barrel
+definition) — all four confirmed exactly. Seven claims the pipeline's own verify phase found wrong are
+recorded as explicit corrections, not silently dropped. See `DECISIONS.md` D83.
+
+Two structural findings worth carrying forward: no 20-80-scale defensive grade exists anywhere in the
+current Statcast era (the only two conversion tables ever published are pre-Statcast and built on a
+metric FanGraphs has since de-emphasized), and the "which handedness has the bigger platoon split"
+question is a genuine, unresolved disagreement between two credible sources in the public literature —
+recorded as an uncertainty band, not arbitrarily resolved.
+
+Not yet consumed by anything in `packages/sim-kit` — this is research, not code. §18's aging curves are
+what the next pass (player development) will build from.
+
 ## v2.4.0 · A GAME CAN BE PLAYED — 2026-09-04
 
 Roster construction (`clsOf`/`rosterPlan`/`buildRosters`/`contractFor`/`chartClub`, `roster.ts`) and
