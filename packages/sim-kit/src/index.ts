@@ -20,5 +20,7 @@ export * from "./pa-resolution.js";
 export * from "./roster.js";
 export * from "./game.js";
 export * from "./season.js";
+export * from "./development.js";
+export * from "./rollover.js";
 export * from "./newgame.js";
 export * from "./advance.js";

@@ -941,3 +941,93 @@ ladder past "pick one of 30 MLB clubs," a season-reset/year-rollover function, a
 line (account 5300 exists in the chart of accounts; no dollar figure for it survived into this
 reconstruction — left unposted rather than invented, a real gap for whoever sources one). See
 `CHANGELOG.md` v2.7.0.
+
+---
+
+## 2026-09-04 — Player development and ageing, and the minimal rollover that lets a save reach it
+
+**D87 · `development.ts` gives every player real, sourced, component-specific aging — not a port
+(`bush-league-v0.10.html` never built this either), new logic built the way this project is supposed to
+build anything: research first, engine second — and `rollover.ts` provides the minimal season-to-season
+mechanism a save needs before ageing can ever actually matter during play.**
+
+**The gap this closes was named directly, not inferred**: RESEARCH.md §8.5, "now the binding gap" —
+"players age and nothing else... it makes a long career impossible rather than merely inaccurate."
+`Player.age` was a plain integer, set once at `makePlayer()` and never incremented anywhere in this
+rewrite; `Player.tru` (the hidden true grades Law 10 protects) never moved. A 22-year-old prospect and a
+38-year-old veteran with the same true grades were, mechanically, the same player forever.
+
+**Eleven tools, two of them role-aware, each individually cited to RESEARCH.md §18** — not a single
+aggregate "gets worse with age" curve, the component-specific system §8.5 explicitly asked for
+("power peaks later than speed; control later than stuff"). Peak ages and DIRECTIONS are real, sourced
+findings (§18.1-§18.3): speed peaks earliest (~23) and falls hardest; power peaks next (~26) and declines
+faster than contact or plate discipline (~29, the most stable hitter family); pitch movement (spin-
+derived) is dramatically more stable than raw velocity/stuff, matching §18.3's own finding that spin
+"declines much slower, proportionally, than velocity"; and pitcher CONTROL is genuinely role-aware —
+starters' walk rate "improves to ~24, then flat" while relievers' "rises from the outset, full increase
+reached by 30" (§18.3) — opposite shapes, not just different rates, and the one place this port could
+actually encode a real, sourced, non-obvious distinction the original build never had a chance to build
+either.
+
+**The exact annual grade-point magnitudes are this pass's own reconciliation, disclosed as such rather
+than presented as equally sourced** — `development.ts`'s own header states this plainly, echoing §18.5's
+own methodology note ("a scattered patchwork... necessarily reconciling inconsistent independent
+estimates rather than citing one authoritative table"). Most of §18's findings are in units — DRS points,
+sprint-speed percentile bands, SLG points/season — with no existing conversion to this engine's 20-80
+grade scale; inventing eleven precise new conversions would have been spurious precision the source
+material doesn't support. The one tool with an existing, already-verified conversion (`grades.ts`'s
+`FB_PTS`: fastball velocity, 60 grade points spans 11.5 mph) anchors `stf`'s own rate — the most precisely
+reasoned of the eleven. `arm` has no dedicated aging study anywhere in the public record (§18.5, checked
+directly, none found) — modelled on `def`'s own sourced curve as the closest disclosed proxy, stated
+plainly rather than left unexplained.
+
+**Verified against the sourced findings' own SHAPE, not chased for an exact replica of any one published
+number** (`development.test.ts`, 8 tests, a 2,000-3,000-player simulated population aged from 20 to 40+
+so the population MEAN's own noise floor is small enough to read a real signal): speed peaks before power,
+which peaks at or before contact/plate discipline — the sourced ordering, reproduced directly; pitch
+movement swings far less over a full career than raw stuff/velocity; starters' control trends up through
+the 20s while relievers' trends down over the identical span **from the same starting population** (same
+RNG seed feeding both role variants, isolating the role effect from the noise) — confirmed opposite in
+sign, not just different in magnitude. A quick diagnostic run (not part of the permanent suite, deleted
+after) printed the actual measured peak ages against the sourced targets before trusting any of this:
+hit@29, pow@26, eye@29, spd@23, def@26, arm@25, SP stf@26, SP mov@27, SP ctl@24, SP sta@28, SP dur@27 —
+every one landing exactly where its curve was designed to, and RP ctl declining monotonically from age 20
+as designed (no growth phase at all, matching "rises from the outset").
+
+**`rollover.ts` — deliberately NOT the original's own winter system, and the scope boundary is the whole
+point of the file, stated in its own header.** `bush-league-v0.10.html`'s Build 0.9 ("THE WINTER" —
+`CHANGELOG.md`'s own historical entry) is free agency, contract expiration, an age-curve population exit,
+a demand-sized amateur intake, an exclusive re-sign window and a four-month open market — real, substantial,
+separately-scoped future work (`ROADMAP.md`'s "the market"/"the winter cycle"), not something this pass
+attempts or fakes a smaller version of. `startNewSeason(state, r)` does exactly three things: ages and
+develops the EXISTING population in place (`development.ts`), resets every club's season record to a
+fresh zero (the same fields a brand-new `buildWorld()` already zeroes), and regenerates the schedule for
+`year + 1`, jumping the clock to 14 days before the new season's own opener — the identical convention
+`newgame.ts` already established for a save's first day, reused rather than re-invented. No player enters
+or leaves the world.
+
+**That simplification has a known, disclosed consequence, verified directly rather than assumed away**:
+`rollover.test.ts`'s own last test proves a club's average roster age climbs monotonically across four
+consecutive rollovers with no churn to offset it — the SAME "closed population under an age rule has
+exactly one destination" finding `CHANGELOG.md`'s Build 0.9 entry already recorded from the original
+build's own history, reproduced here on purpose, as a stated fact about what this pass does and does not
+solve, not rediscovered as a surprise later. Retirement is not modelled either — no sourced retirement-
+hazard-by-age curve exists anywhere in this project's research (§8.5 asks for one; none found) — a real,
+disclosed gap, not an invented number standing in for one.
+
+**Scope, stated plainly: sim-kit only, no UI wiring this pass.** `startNewSeason` is a real, tested,
+callable primitive — `advanceDay` itself never calls it automatically (would silently change an
+already-tested contract, `newgame.test.ts`'s own "advancing past the end of the schedule reports
+seasonOver and stops finding games" test, for no reason this pass needs). A UI affordance ("Season over —
+start a new one") is the natural next integration point, deferred the same way several earlier passes
+this rewrite shipped sim-kit-only work verified by tests before a UI pass touched it (v2.1.0 through
+v2.5.0, per their own `CHANGELOG.md` entries). Bundle size is unchanged (356.14 KB → 356.34 KB) —
+confirms neither file is dead-imported into `apps/web` yet, consistent with that scope.
+
+Rejected: inventing precise unit conversions for tools with no sourced numeric scale (would have been
+spurious precision); silently porting `bush-league-v0.10.html`'s own winter system's SHAPE without its
+substance (a fake age-and-nothing-else "rollover" that still looked complete); hiding the closed-population
+consequence behind a test that only checks the mechanism works once rather than what it does across
+several consecutive years. What's still not built: retirement, free agency/contract expiration/an
+amateur intake (the actual fix for the disclosed closed-population consequence), and the UI affordance to
+reach `startNewSeason` from the app at all. See `CHANGELOG.md` v2.8.0.

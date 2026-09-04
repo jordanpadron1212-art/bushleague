@@ -5,6 +5,32 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.8.0 · PLAYER DEVELOPMENT AND AGEING — 2026-09-04
+
+`development.ts` gives every player real, component-specific ageing for the first time in this rewrite —
+new logic, not a port (the original never built this either). Eleven tools, sourced individually to
+RESEARCH.md §18: speed peaks earliest (~23) and falls hardest; power peaks next (~26); contact and plate
+discipline are the most stable, peaking ~29; pitch movement is far more stable than raw stuff/velocity;
+and pitcher control is genuinely role-aware — starters improve into their mid-20s and hold, relievers
+erode from the outset, opposite shapes pulled directly from §18.3's own table. `rollover.ts` gives a save
+the minimal mechanism to reach a second year at all: ages and develops the existing population, resets
+every club's season record, and regenerates the schedule — deliberately NOT the original's own winter
+system (free agency, contract expiration, an amateur intake), which stays real, separately-scoped future
+work. See `DECISIONS.md` D87.
+
+Verified against the sourced findings' own shape, not an exact replica of any one number: a 2,000-3,000-
+player simulated population aged 20-40+ reproduces the sourced peak-age ordering exactly, and starters'
+and relievers' control trend in opposite directions from an identical starting population. Also verified,
+and disclosed rather than hidden: with no roster churn yet, a club's average age climbs monotonically
+across consecutive rollovers — the same closed-population effect the original build's own v0.9 pass found
+and solved with real churn, reproduced here on purpose as a stated, known consequence of this pass's own
+deliberately smaller scope, not a surprise for later.
+
+Sim-kit only this pass — no UI wiring. `startNewSeason` is a real, tested, callable primitive; nothing in
+`apps/web` calls it yet (bundle size unchanged, confirming it). Not yet built: retirement (no sourced
+hazard curve exists to build one from), free agency/contract expiration/an amateur intake, and the UI
+affordance to actually reach a new season from the app.
+
 ## v2.7.0 · GATE REVENUE AND PAYROLL POST FOR REAL — 2026-09-04
 
 `ECON`/`econFor`/`attFor`/`gateFor`/`gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll` ported into
