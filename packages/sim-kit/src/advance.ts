@@ -37,6 +37,7 @@ import { chartWorld } from "./roster.js";
 import { buildRates } from "./rates.js";
 import { playDay, type PlayedGame } from "./season.js";
 import { econFor, gateDay, postMonth } from "./economics.js";
+import { refineScout, scoutBoostFor } from "./scouting.js";
 import type { JeCounter } from "./ledger.js";
 import type { GameState } from "./state.js";
 
@@ -93,7 +94,21 @@ export function advanceDay(state: GameState): AdvanceResult {
     if (monthCrossed) {
       const newDay = dateToSerial(state.date);
       const inSeason = newDay >= state.season.open && newDay <= state.season.close;
-      postMonth(state.ledger, counter, newDay, mine, state.players, E, inSeason);
+      postMonth(state.ledger, counter, newDay, mine, state.players, E, inSeason, state.scoutingBudget);
+
+      // Scouting only ever tightens what the owner already knows about their
+      // OWN organization (DECISIONS.md D90) — recomputed here, monthly, for
+      // exactly the reason `refineScout` was otherwise dead all season: it
+      // was only ever called once, at roster construction, so a real look
+      // at an established player's growing `p.st` sample never actually
+      // reached `p.rel` until the next winter's churn regenerated him. This
+      // is the fix, scoped to the owned roster only — the same "only ever
+      // resolves for the ONE owned club" performance pattern `economics.ts`'s
+      // own header already established for this file.
+      const boost = scoutBoostFor(state.scoutingBudget, E.scouting);
+      for (const p of state.players) {
+        if (p.cid === mine.id) refineScout(p, {}, boost);
+      }
     }
     state.nextJe = counter.value;
   }

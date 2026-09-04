@@ -76,6 +76,7 @@ export function newGame(opts: NewGameOptions): GameState {
     ownedClubId: opts.ownedClubId,
     ticketPrice: E.ticketFace,
     payrollBudget: E.payroll,
+    scoutingBudget: E.scouting,
     season: { ...base.season, year, open, close, worldOpen },
     world: { ...base.world, clubs },
     players,

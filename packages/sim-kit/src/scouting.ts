@@ -57,17 +57,46 @@ export interface CareerSample {
 }
 
 /**
+ * Scouting spend narrows an org's own reliability the same bounded way
+ * `FRONT-OFFICE-DESIGN-PROPOSAL.md` §3 already sources for a scouting
+ * director hire: "tightens toward, never below" a real ceiling — spend
+ * buys clarity, not certainty. A bounded ADDITIVE term on top of
+ * `refineScout`'s existing sample-size-driven reliability (D24), not a
+ * replacement for it: `SCOUT_BOOST_MAX` is small enough that a five-PA
+ * rookie is still read with real uncertainty no matter the budget, and
+ * `refineScout`'s own [0.15, 0.93] clamp still applies after this is added
+ * — a maxed-out scouting department cannot buy its way past the same
+ * ceiling D24 already found (nobody reads as a fully known quantity).
+ * Both constants are T3 design knobs (DECISIONS.md D90) — no sourced
+ * dollar-to-clarity conversion exists — sized so a club spending twice its
+ * own level's baseline (`Economy.scouting`) saturates the full boost, and
+ * spending nothing gets none.
+ */
+const SCOUT_BOOST_MAX = 0.12;
+const SCOUT_BOOST_SATURATE_AT = 2;
+
+/** `spend`/`baseline` are both annual dollar figures — the same convention every other `Economy` line already uses. */
+export function scoutBoostFor(spend: number, baseline: number): number {
+  if (!(baseline > 0)) return 0;
+  return SCOUT_BOOST_MAX * clamp(nz(spend) / (SCOUT_BOOST_SATURATE_AT * baseline), 0, 1);
+}
+
+/**
  * Recomputes a player's reliability, overall and potential grades from his
  * accumulated sample (season stats via `p.st` plus a caller-supplied career
  * total — the original read `p.car`, which belongs to the not-yet-ported
- * season/career-rollup system; passed in explicitly here instead of assumed).
+ * season/career-rollup system; passed in explicitly here instead of assumed)
+ * plus `scoutBoost` (`scoutBoostFor` above) — 0 by default, so every
+ * existing caller (`roster.ts`'s fresh-world build, `churn.ts`'s fresh
+ * signees) is unaffected unless it opts in.
  */
-export function refineScout(p: Player, career: CareerSample = {}): void {
+export function refineScout(p: Player, career: CareerSample = {}, scoutBoost = 0): void {
   const sample =
     p.role === "P"
       ? (IPof(p) + nz(career.outs) / 3) * 4.3
       : nz(p.st["pa"]) + nz(career.pa);
-  p.rel = round2(clamp(0.18 + 0.62 * (1 - Math.exp(-sample / 380)) + (p.age - 18) * 0.006, 0.15, 0.93));
+  const base = 0.18 + 0.62 * (1 - Math.exp(-sample / 380)) + (p.age - 18) * 0.006;
+  p.rel = round2(clamp(base + scoutBoost, 0.15, 0.93));
   p.ovr = ovrOf(p);
   // Potential must not move on every recompute, so it comes off the player's own seed, not a fresh roll.
   const jit = nz(p.ns) % 7;

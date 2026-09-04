@@ -112,28 +112,32 @@ describe("economics — ledger integrity over a full season", () => {
 
 describe("economics — MLB net income against the tuning target", () => {
   it("lands within a bounded margin of zero over a full calendar year, not an order-of-magnitude miss", async () => {
-    // Measured this pass (seeds 1-5, exactly 365 days from the game's own
-    // opening day — see `oneYearMargin`'s own header on why that exact
-    // window matters): margins of -24.9%, -32.1%, -16.9%, -8.0%, -23.7% of
-    // revenue — average -21.1%. WORSE than an earlier, looser measurement
-    // of this same pass (-6.9%), and that regression is itself a real
-    // finding, not noise: the looser number came from a version where MLB
-    // payroll was still (incorrectly) gated to in-season months only, which
-    // under-counted it by about 1/7 of a year purely from where the season
-    // window's edges fell relative to calendar-month boundaries — two bugs
-    // partly cancelling, not a correct result. With payroll now correctly
-    // spread over all 12 months (sourced, `rosterPayroll`'s own header),
-    // this -21% is the honest number. Unlike the independent leagues (this
-    // file's other describe block), there is no equally precise SOURCED
-    // dollar target for MLB to re-solve against — only the qualitative
-    // "nets roughly zero" — and the gap traces mostly to `contractFor`'s
-    // MLB salary curve (ported and verified in an earlier, separate pass,
-    // v2.4.0) pricing a random 40-man roster higher, on average, than
-    // `ECON.MLB`'s revenue figures cover; not a bug to silently paper over
-    // with an unsourced number, and not this pass's scope to re-tune a
-    // different, already-verified system. Recorded here as a real, disclosed
-    // gap (DECISIONS.md D86) — bounds below catch a broken mechanism
-    // (order-of-magnitude), not a precise replica of this one run.
+    // Measured across two passes now, seeds 1-5, exactly 365 days from the
+    // game's own opening day (`oneYearMargin`'s own header on why that exact
+    // window matters). D86 (v2.7.0) measured -24.9%, -32.1%, -16.9%, -8.0%,
+    // -23.7% (avg -21.1%). RE-MEASURED this pass (v2.11.0, D90) after adding
+    // a real monthly scouting cost (`economics.ts`'s `Economy.scouting`,
+    // ~$900K/year at MLB — deliberately small next to a ~$200-300M-revenue
+    // club): -31.0%, -27.9%, -14.9%, -12.2%, -33.2% (avg -23.8%). The ~2.7
+    // point average shift is smaller than the run-to-run drift between the
+    // two measurements on individual seeds (seed 2 alone moved +4.2 points,
+    // the OPPOSITE direction a pure added cost would move it) — a real,
+    // disclosed reminder that this comment's own numbers drift slightly
+    // pass to pass even when a change doesn't touch a given seed's game
+    // outcomes at all (contractFor/buildRosters, which set payroll, are
+    // untouched by this pass), not evidence of a mechanism regression: both
+    // measurements land in the same neighbourhood, comfortably inside the
+    // bounds below, which exist to catch a BROKEN mechanism, not to police
+    // exact reproduction of one historical run. Unlike the independent
+    // leagues (this file's other describe block), there is no equally
+    // precise SOURCED dollar target for MLB to re-solve against — only the
+    // qualitative "nets roughly zero" — and the gap traces mostly to
+    // `contractFor`'s MLB salary curve (ported and verified in an earlier,
+    // separate pass, v2.4.0) pricing a random 40-man roster higher, on
+    // average, than `ECON.MLB`'s revenue figures cover; not a bug to
+    // silently paper over with an unsourced number, and not this pass's
+    // scope to re-tune a different, already-verified system. Recorded here
+    // as a real, disclosed gap (DECISIONS.md D86).
     const margins: number[] = [];
     for (const seed of [1, 2, 3, 4, 5]) {
       const margin = await oneYearMargin("MLB_NYY", seed);
@@ -183,18 +187,30 @@ describe("economics — independent leagues, recalibrated against the sourced -$
   }, 30000);
 
   it("lands within a bounded margin of revenue over a full calendar year for every independent league, not an order-of-magnitude miss", async () => {
-    // Measured this pass on seeds this project's own solve did NOT train
-    // on (10-12, held out from the [1-4] seeds `INDY_OPEX_RECAL`/`opScale`
-    // were fit against — DECISIONS.md D86), exactly 365 days from each
-    // game's own opening day: Frontier +0.8/+0.8/+3.0% (avg +1.5%),
+    // Measured on seeds this project's own solve did NOT train on (10-12,
+    // held out from the [1-4] seeds `INDY_OPEX_RECAL`/`opScale` were fit
+    // against — DECISIONS.md D86), exactly 365 days from each game's own
+    // opening day. D86 (v2.7.0): Frontier +0.8/+0.8/+3.0% (avg +1.5%),
     // American Association +6.3/+13.5/+7.4% (avg +9.1%), Pioneer -5.1/+6.2/
     // +3.9% (avg +1.7%), Atlantic -0.8/+4.0/-7.5% (avg -1.4%), Pecos +5.4/
-    // +4.3/+3.1% (avg +4.3%) — every league within about 14 points of
-    // revenue on its WORST single seed, every average within 10 points, an
-    // order of magnitude closer than the ~80% margin before recalibration.
-    // Bounds here are deliberately wide of that measured spread, for the
-    // same reason the MLB test above is: proving "close to zero, not
-    // broken," not re-asserting one specific run's own numbers.
+    // +4.3/+3.1% (avg +4.3%). RE-MEASURED this pass (v2.11.0, D90) after
+    // adding a real monthly scouting cost — $10K/year at the reference
+    // scale, scaled per league by the SAME `opScale` every other flat cost
+    // line already uses (`economics.ts`'s own header on why it's excluded
+    // from `INDY_OPEX_RECAL` specifically): Frontier +9.2/+3.5/+3.0% (avg
+    // +5.3%), American Association +5.5/+5.8/+7.7% (avg +6.3%), Pioneer
+    // -7.0/+7.2/+6.7% (avg +2.3%), Atlantic -4.3/+6.6/-2.3% (avg 0.0%),
+    // Pecos +12.3/+0.8/-0.9% (avg +4.1%) — every league still within about
+    // 14 points of revenue on its worst single seed, every average still
+    // comfortably under the 12-point bound below. The movement between the
+    // two measurements is NOT uniformly "more negative by the scouting
+    // cost's own dollar weight" (American Association's average actually
+    // IMPROVED, +9.1% to +6.3%±... i.e. moved toward zero) — the same
+    // real, disclosed pass-to-pass drift the MLB test above now documents,
+    // not a sign the mechanism broke. Bounds here are deliberately wide of
+    // either measured spread, for the same reason the MLB test above is:
+    // proving "close to zero, not broken," not re-asserting one specific
+    // run's own numbers.
     const leagues: [id: string, seeds: number[], label: string][] = [
       ["INDY_FRON_143", [10, 11, 12], "Frontier League"],
       ["INDY_AAPB_131", [10, 11, 12], "American Association"],

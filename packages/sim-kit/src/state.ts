@@ -90,6 +90,8 @@ export interface GameState {
   ticketPrice: number;
   /** Owner-set payroll budget — same story as `ticketPrice` (`G.club.payrollBudget` originally). Defaulted from `econFor(ownedClub).payroll` in `newGame()`. */
   payrollBudget: number;
+  /** Owner-set scouting budget (DECISIONS.md D90) — an annual dollar figure, same convention as `payrollBudget`. Defaulted from `econFor(ownedClub).scouting` in `newGame()`, and unlike `ticketPrice`/`payrollBudget` it is REAL, not inert: `advance.ts` posts it to the ledger every month crossing (account 5300) and feeds it into `scoutBoostFor` to narrow the owned roster's own scouting reliability. No owner-facing control to move it off that default exists yet (a disclosed gap, not an oversight) — see CHANGELOG.md v2.11.0. */
+  scoutingBudget: number;
   world: WorldState;
   players: Player[];
   /** `[day, homeClubIndex, awayClubIndex][]`, sorted by day — `schedule.ts`'s `WorldSchedule.games`, indices into `world.clubs`. */
@@ -144,6 +146,7 @@ export function createInitialState(opts: CreateStateOptions = {}): GameState {
     ownedClubId: null,
     ticketPrice: 0,
     payrollBudget: 0,
+    scoutingBudget: 0,
     world: { clubs: [], renames: {}, grads: [], wage: {} },
     players: [],
     sched: [],

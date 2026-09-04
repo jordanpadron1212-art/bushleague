@@ -44,6 +44,7 @@ export interface Economy {
   mktg: number;
   ins: number;
   dev: number;
+  scouting: number;
   /** MLB only. */
   minors?: number;
   media?: number;
@@ -60,12 +61,29 @@ export interface Economy {
  * TUNING TARGET stated above. `qa/econ.js` measured the result across
  * seeds in the original; this port's own equivalent check is
  * `test/economics.test.ts`'s full-season net-income assertion.
+ *
+ * `scouting` (DECISIONS.md D90) closes this file's own long-disclosed gap
+ * ("No monthly SCOUTING cost is posted... account 5300 exists, no dollar
+ * figure survived") — a genuinely invented T3 figure, same status as every
+ * other flat line here, since RESEARCH.md §17.5 confirms staff cost at this
+ * scale is not published anywhere. Sized deliberately SMALL relative to
+ * `dev` (player development) — a real indy-ball scouting operation is a
+ * couple of area scouts and a truck, not a farm department — and
+ * deliberately NOT included in `INDY_OPEX_KEYS` below: that multiplier was
+ * empirically solved (D86) against a sourced net-income target measured
+ * BEFORE any scouting cost existed, and folding a brand-new line into an
+ * already-fitted multiplier would silently redistribute weight the fit was
+ * never asked to carry. `scouting` IS scaled by each independent league's
+ * own `opScale` (`econFor` below) and by `PECOS_SCALE`
+ * (`deriveEconPecos` below), the same way every other flat cost line already
+ * is — a bigger league's scouting department costs more, the same shape as
+ * its stadium or staff line.
  */
 const BASE_ECON = {
   INDY: {
     cap: 4500, gate: 7.25, conc: 4.4, park: 1.2, merch: 2.1,
     spons: 18000, payroll: 128000, staff: 26500, travel: 19300, stad: 43400,
-    gameday: 5800, fo: 34900, mktg: 9000, ins: 5100, dev: 3600,
+    gameday: 5800, fo: 34900, mktg: 9000, ins: 5100, dev: 3600, scouting: 10000,
     // A club opens in the PRE-SEASON and carries four or five months of
     // payroll, stadium and front-office cost before a single dollar of
     // gate. Working capital has to cover that gap or the club is
@@ -82,7 +100,7 @@ const BASE_ECON = {
   MLB: {
     cap: 41000, gate: 38, conc: 19, park: 6, merch: 8,
     spons: 3750000, payroll: 14600000, staff: 2050000, travel: 750000, stad: 2850000,
-    gameday: 195000, fo: 3100000, mktg: 1900000, ins: 660000, dev: 1700000,
+    gameday: 195000, fo: 3100000, mktg: 1900000, ins: 660000, dev: 1700000, scouting: 900000,
     minors: 850000, media: 7900000, dist: 6250000,
     equity: 300000000, note: 340000000, plant: 470000000, apr: 0.058,
     ticketFace: 41,
@@ -117,7 +135,7 @@ const PECOS_CAP_SCALE = 0.1;
 
 function deriveEconPecos(indy: Economy): Economy {
   const out = { ...indy };
-  for (const key of ["spons", "staff", "travel", "stad", "gameday", "fo", "mktg", "ins", "dev"] as const) {
+  for (const key of ["spons", "staff", "travel", "stad", "gameday", "fo", "mktg", "ins", "dev", "scouting"] as const) {
     out[key] = Math.max(250, Math.round((indy[key] * PECOS_SCALE) / 50) * 50);
   }
   for (const key of ["equity", "note", "plant"] as const) {
@@ -213,7 +231,7 @@ export function econFor(club: Pick<Club, "lvl" | "lg">): Economy {
   const base = pecos ? ECON.PECOS : ECON.INDY;
   const out = { ...base };
   const s = league.opScale || 1;
-  for (const key of ["staff", "travel", "stad", "fo", "mktg", "ins", "dev", "gameday"] as const) {
+  for (const key of ["staff", "travel", "stad", "fo", "mktg", "ins", "dev", "gameday", "scouting"] as const) {
     out[key] = Math.round(base[key] * s);
   }
   if (league.cap) out.payroll = league.cap;
@@ -266,10 +284,12 @@ export function gateFor(club: Pick<Club, "lvl" | "lg" | "w" | "l" | "cap">, r: R
  * has confirmed (the `Economy` fields above, the real chart of accounts,
  * `leagueMonths`' real proration), not from invented numbers. Two honest
  * gaps, disclosed rather than papered over:
- *   - No monthly SCOUTING cost is posted. `accounts.ts`'s 5300 exists, but
- *     no dollar figure for it survived into `Economy` — inventing one here
- *     would be exactly the kind of unverified figure this note is warning
- *     about. Left unposted until a real pass sources one (ROADMAP.md).
+ *   - ~~No monthly SCOUTING cost is posted.~~ RESOLVED (D90, v2.11.0):
+ *     `postMonth` now posts one, from `Economy.scouting`/`state.scoutingBudget`
+ *     — an invented T3 figure like every other flat line here, sized small
+ *     and disclosed as such (`BASE_ECON`'s own header comment). Kept struck
+ *     through rather than deleted so this note stays a complete record of
+ *     what this pass found, same convention ROADMAP.md's debt list uses.
  *   - The MLB local-media accrual/collection LAG (accrued this month,
  *     collected next) is a reasonable real-world pattern, not a confirmed
  *     replica of the original's own timing.
@@ -449,6 +469,8 @@ export function postMonth(
   players: readonly Player[],
   E: Economy,
   inSeason: boolean,
+  /** The owner's own current scouting spend (annual figure, same convention as every other `Economy` line) — `state.scoutingBudget`, defaulted from `E.scouting` in `newGame()` but a real, separately-read state field so a future owner-facing dial actually changes what posts here, not a re-read of the level baseline. */
+  scoutingSpend = E.scouting,
 ): void {
   const isMLB = club.lvl === "MLB";
   const line = (amount: number | undefined): number => round2(nz(amount) / 12);
@@ -484,6 +506,7 @@ export function postMonth(
   expense(5800, E.mktg, "Marketing");
   expense(6000, E.ins, "Insurance");
   expense(5400, E.dev, "Player development");
+  expense(5300, scoutingSpend, "Scouting");
 
   if (isMLB || inSeason) {
     const payroll = rosterPayroll(players, club);

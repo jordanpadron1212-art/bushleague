@@ -1166,3 +1166,115 @@ the original" without checking, the same discipline that caught the INDY economi
 What's still not built: free agency (the owner or any AI club acting on a specific player by name),
 retirement as its own concept (the exit hazard covers the same real-world outcome without pretending to
 model it separately), and the amateur draft. See `CHANGELOG.md` v2.10.0.
+
+---
+
+## 2026-09-04 — Scouting: a real monthly cost, and the dead half of D24 finally reads
+
+**D90 · A club-level scouting budget closes two disclosed gaps at once — `economics.ts`'s "no monthly
+SCOUTING cost is posted" (D86) and a genuinely NEW finding this pass surfaced: `refineScout` was only ever
+called ONCE per player, at roster construction, so D24's whole sample-size-driven reliability mechanism
+never actually re-read a player's accumulated season stats after his roster was built.** Confirmed by
+grep before writing a line of code, not assumed: `refineScout`'s only callers anywhere in the engine were
+`roster.ts`'s fresh-world build and `churn.ts`'s fresh signees — both called once, before a player had
+played a single game that season. `p.rel`/`p.ovr`/`p.pot` were frozen from day one of a save's own
+roster-build until the next winter's churn regenerated the player outright. `advance.ts` now recomputes
+`refineScout` for the OWNED club's own roster on every real month crossing — the same "only ever resolves
+for the ONE owned club" performance pattern `economics.ts`'s own header already established for this
+file — so a season's worth of real plate appearances and innings pitched actually reaches the reliability
+number for the first time.
+
+**Scope, decided and confirmed with Jordan before any code was written (not assumed): scouting only, not
+the amateur draft or the ownership ladder.** `FRONT-OFFICE-DESIGN-PROPOSAL.md` is explicit that it's
+unsigned and gates staff/ladder work on resolving its own §1 question first; the draft needs an
+amateur-talent-pool generator that doesn't exist yet as its own system. Building either inside this pass
+would have meant guessing past an open gate this project's own docs already flag, or inflating a
+well-scoped pass into an unscoped one. Both stay explicitly deferred, same discipline `churn.ts` (D89)
+already used to defer free agency.
+
+**Mechanism: a bounded ADDITIVE reliability term, not a replacement for D24's sample-size mechanism.**
+`scoutBoostFor(spend, baseline)` (`scouting.ts`) returns 0 at zero spend, rises to a max of 0.12 by twice
+the level's own baseline scouting budget, and is added to `refineScout`'s existing formula BEFORE the
+same [0.15, 0.93] ceiling D24 already established — a maxed-out scouting department cannot buy a player
+past the same ceiling a maxed-out sample size already can't cross. Matches
+`FRONT-OFFICE-DESIGN-PROPOSAL.md` §3's own bound language for a scouting-director hire ("tightens toward,
+never below... scouting gets you clarity, not certainty"), applied here to a budget dial instead — no
+staff-hiring UI exists yet to apply it to a hire directly.
+
+**`Economy.scouting` is a genuinely invented T3 dollar figure, same status as every other flat cost line
+in `economics.ts` — disclosed, not silently upgraded.** RESEARCH.md §17.5 confirms staff cost at this
+scale is not published anywhere. Sized deliberately small relative to `dev` (player development) — a real
+indy-ball scouting operation is a couple of area scouts and a truck, not a farm department — and
+deliberately EXCLUDED from `INDY_OPEX_RECAL`: that multiplier was empirically solved (D86) against a
+sourced net-income target measured before any scouting cost existed; folding a new line into an
+already-fitted multiplier would silently redistribute weight the fit was never asked to carry. It IS
+scaled by each independent league's own `opScale` and by `PECOS_SCALE`, the same as every other flat cost
+line already is.
+
+**Re-measured against `economics.test.ts`'s existing sourced-target tolerances rather than assumed safe —
+confirmed with a temporary diagnostic run, not guessed.** Adding the new cost shifted MLB's average margin
+from -21.1% to -23.8% (bound: <30% avg, <40% per seed) and moved the five independent leagues' averages to
++5.3%/+6.3%/+2.3%/0.0%/+4.1% (bound: <12% avg, <20% per seed, each still comfortably inside). The shift is
+NOT uniformly "more negative by the new cost's own weight" — American Association's own average actually
+IMPROVED between the two measurements (+9.1% to +6.3%) — a real, disclosed reminder that this project's
+own measured-number comments drift slightly pass to pass even where a change doesn't touch a given seed's
+game outcomes at all (`contractFor`/`buildRosters`, which set payroll, are untouched by this pass); both
+measurements land in the same neighbourhood, comfortably inside bounds that exist to catch a BROKEN
+mechanism, not to police exact reproduction of one historical run. `economics.test.ts`'s own comments were
+updated to the newly-measured numbers rather than left to go stale.
+
+**A real, positive, UNPLANNED emergent effect discovered while writing the verification, not designed in
+advance — disclosed rather than silently relied on.** `roster.ts`'s `chartClub` sorts by `p.ovr` (the
+SCOUTED overall, not the true one) to build every lineup, rotation and bullpen order, and `chartWorld`
+recomputes it fresh from current `state.players` on every single `advanceDay` call. Because a scouting
+boost shrinks `estOf`'s noise band, a well-scouted club's `p.ovr` tracks its players' true talent more
+closely, sooner in a season, than an unscouted club's — meaning real spend can measurably improve WHO
+ACTUALLY PLAYS, not just a displayed number. This is exactly the effect
+`FRONT-OFFICE-DESIGN-PROPOSAL.md` §3 describes for a scouting director ("how fast a prospect's true grade
+becomes visible") landing for free from a much smaller mechanism than a full staff system — but it also
+means an otherwise-identical scouted-vs-unscouted state comparison is NOT a strict per-player guarantee
+(a scouted club's different depth-chart calls change who accumulates playing time, decoupling any one
+player's own sample between the two runs) — `scouting.test.ts`'s own integration test checks the robust,
+population-level claim (average roster reliability, not a per-player ordering) for exactly this reason,
+recorded there rather than only here so a future reader hits the explanation at the point the test's
+design looks surprising.
+
+**No owner-facing UI control exists yet to move `scoutingBudget` off its level-default value — a real,
+disclosed gap, not an oversight.** `payrollBudget`/`ticketPrice` (D85) already established the precedent
+that an owner-setting `GameState` field can exist, sensibly defaulted, without a UI control — this field
+follows the same shape but is NOT inert like those two: `advance.ts` reads it for real every month
+crossing, both for the ledger posting and the reliability boost. UI.md's own Office spec (§13.1, Jordan's
+sign-off) is a fixed six-panel layout with no room for a new panel, and no Settings/owner-controls surface
+exists anywhere in the app yet to host an editable input instead — inventing one now, for this field
+alone, would be new UI precedent bigger than this pass's own scope. What the pass DOES deliver needed zero
+new UI code at all: Books' Income pane already itemizes every ledger account generically
+(`accountName()`/`LineRows`, `BooksPage.tsx`), so "Scouting" appears there automatically once posted —
+confirmed in a real browser, not assumed (temporary Playwright spec: advanced a real save through a real
+month crossing, opened Books' income pane, screenshotted, and read "Scouting $75K" printed plainly
+alongside every other expense line — then deleted the spec per D16).
+
+**Verified, not assumed, at every layer**: `packages/sim-kit/test/scouting.test.ts` (10 tests, new) —
+`scoutBoostFor`'s own shape (zero at zero spend/non-positive baseline, monotonic, saturates at exactly
+0.12 by 2x baseline); `refineScout`'s new term defaults to 0 (every existing caller unaffected), measurably
+raises reliability for an identical sample, never breaches the existing [0.15, 0.93] ceiling even at
+maximum boost and a huge sample, and still leaves a near-zero-sample rookie clearly uncertain even at
+maximum boost; idempotent recomputation. Three end-to-end tests through the real `advanceDay` path: a real
+monthly posting lands on account 5300 and leaves every OTHER club's reliability frozen exactly where
+world-construction's own one-time `refineScout` call left it; a real season of accumulated plate
+appearances measurably raises `p.rel` for the owned roster where before this pass it never moved past
+day one; a scouted state's average roster reliability is measurably higher than an otherwise-identical
+unscouted one. `newgame.test.ts` extended to assert `state.scoutingBudget > 0` on a fresh save, the same
+check already established for `ticketPrice`/`payrollBudget`. `economics.test.ts`'s existing six tests
+re-run and re-measured (numbers above); full workspace suite (265 sim-kit + 8 apps/web tests), typecheck,
+build, and the 24-test Playwright visual gate all pass; manual browser verification as described above.
+
+Rejected: folding `scouting` into `INDY_OPEX_RECAL`'s existing multiplier (would silently redistribute an
+already-fitted multiplier's weight onto a line it was never solved against); a full scouting-director/
+area-scout staff system (real, substantial, UI-shaped work that stays with
+`FRONT-OFFICE-DESIGN-PROPOSAL.md`'s own still-open §1 gate); building a new owner-settings UI surface just
+for this one field (bigger than this pass's own scope, and `payrollBudget`/`ticketPrice` already establish
+that an un-wired-to-UI owner setting is an accepted, disclosed shape in this project); asserting a strict
+per-player reliability ordering between a scouted and unscouted state (a real emergent lineup-selection
+effect makes that claim false, not the weaker population-level one this pass actually checks). What's
+still not built: the amateur draft, the ownership ladder, staff hiring of any kind, and an owner-facing
+control to actually move the scouting dial. See `CHANGELOG.md` v2.11.0.

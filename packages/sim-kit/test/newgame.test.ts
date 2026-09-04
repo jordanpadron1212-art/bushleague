@@ -43,6 +43,7 @@ describe("newGame", () => {
     expect(cash(state.ledger)).toBeGreaterThan(0);
     expect(state.ticketPrice).toBeGreaterThan(0);
     expect(state.payrollBudget).toBeGreaterThan(0);
+    expect(state.scoutingBudget).toBeGreaterThan(0);
     const mine = state.world.clubs.find((c) => c.id === "MLB_NYY")!;
     expect(mine.cap).toBeGreaterThan(0);
   });

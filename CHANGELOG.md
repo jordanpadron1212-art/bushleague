@@ -5,6 +5,40 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.11.0 · SCOUTING: A REAL MONTHLY COST, AND THE DEAD HALF OF D24 FINALLY READS — 2026-09-04
+
+A club-level scouting budget closes two disclosed gaps: `economics.ts`'s long-standing "no monthly
+SCOUTING cost is posted" (v2.7.0), and a genuinely new finding this pass surfaced while wiring it up —
+`refineScout` was only ever called ONCE per player, at roster construction, so the sample-size-driven
+reliability mechanism (v2.1.0, D24) never actually re-read a player's accumulated season stats after his
+roster was built. `advance.ts` now recomputes it for the owned club's own roster on every real month
+crossing, so a season of real plate appearances and innings finally reaches the reliability number. See
+`DECISIONS.md` D90.
+
+Scope, decided before any code was written: scouting only, not the amateur draft or the ownership ladder
+— `FRONT-OFFICE-DESIGN-PROPOSAL.md` stays unsigned and gates staff/ladder work on its own open §1
+question, and the draft needs an amateur-talent-pool system that doesn't exist yet. `scoutBoostFor` adds a
+bounded reliability term (0 to 0.12, saturating at twice a level's baseline scouting spend) on top of the
+existing sample-size formula, before the same [0.15, 0.93] ceiling already in place — spend buys clarity,
+never certainty. `Economy.scouting` is a new, disclosed T3 dollar figure, sized deliberately small and
+kept OUT of the empirically-solved `INDY_OPEX_RECAL` multiplier so it doesn't silently redistribute a fit
+that was never asked to carry it; re-measured against `economics.test.ts`'s existing sourced-target
+tolerances (MLB avg -21.1% → -23.8%, still inside the ±30% bound; the five independent leagues still
+comfortably inside their own bounds) rather than assumed safe.
+
+A real, unplanned emergent effect turned up while writing the verification: `roster.ts` builds every
+lineup/rotation by sorting on the SCOUTED overall, so a well-scouted club's depth chart tracks true talent
+sooner in a season than an unscouted one's — spend can measurably change who actually plays, not just a
+displayed number. No owner-facing control exists yet to move the budget off its default (the same
+disclosed shape `payrollBudget`/`ticketPrice` already established) — but the cost and its effect are both
+real: "Scouting" appears in Books' income statement automatically, with zero new UI code, confirmed in a
+real browser.
+
+Verified: `scouting.test.ts` (10 new tests) covering the boost formula, the reliability ceiling, and three
+end-to-end checks through the real `advanceDay` path; `economics.test.ts`'s six existing tests re-measured
+and its comments updated to the new real numbers; full workspace suite (265 sim-kit + 8 apps/web tests),
+typecheck, build, and the 24-test Playwright visual gate all pass.
+
 ## v2.10.0 · REAL ROSTER CHURN — 2026-09-04
 
 `churn.ts` closes the exact gap v2.8.0 measured and disclosed: with no turnover, a rolled-over population
