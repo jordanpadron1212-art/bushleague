@@ -11,6 +11,7 @@ import { describe, expect, it } from "vitest";
 import { newGame } from "../src/newgame.js";
 import { advanceDay } from "../src/advance.js";
 import { scanNonFinite } from "../src/state.js";
+import { auditBooks, cash } from "../src/ledger.js";
 
 describe("newGame", () => {
   it("throws on an unknown club id rather than silently building an empty world", () => {
@@ -27,11 +28,23 @@ describe("newGame", () => {
     expect(someoneElse.length).toBe(32); // ROSTER_N.MLB
   });
 
-  it("opens on the earliest scheduled day in the whole world", () => {
+  it("opens 14 days before the earlier of the owned club's own window or the world's earliest game", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 7 });
     const earliestDay = state.sched[0]![0];
+    expect(state.season.worldOpen).toBe(earliestDay);
     const stateDaySerial = Date.UTC(state.date.y, state.date.m - 1, state.date.d) / 86400000;
-    expect(stateDaySerial).toBe(earliestDay);
+    expect(stateDaySerial).toBe(Math.min(state.season.open, state.season.worldOpen) - 14);
+  });
+
+  it("seeds the ledger with real opening capital before a single game is played", () => {
+    const state = newGame({ ownedClubId: "MLB_NYY", seed: 7 });
+    expect(state.ledger.length).toBe(3);
+    expect(auditBooks(state.ledger).fails).toEqual([]);
+    expect(cash(state.ledger)).toBeGreaterThan(0);
+    expect(state.ticketPrice).toBeGreaterThan(0);
+    expect(state.payrollBudget).toBeGreaterThan(0);
+    const mine = state.world.clubs.find((c) => c.id === "MLB_NYY")!;
+    expect(mine.cap).toBeGreaterThan(0);
   });
 
   it("the same seed produces the same world, roster and schedule", () => {
@@ -48,15 +61,21 @@ describe("newGame", () => {
 });
 
 describe("advanceDay", () => {
-  it("plays real games, mutates club records, advances the date and cursor", () => {
+  it("plays no games during the 14-day pre-season, then plays real games once it starts", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 9 });
     const before = { date: { ...state.date }, sp: state.sp };
-    const result = advanceDay(state);
-    expect(result.played.length).toBeGreaterThan(0);
-    expect(state.sp).toBeGreaterThan(before.sp);
+    const day1 = advanceDay(state);
+    expect(day1.played.length).toBe(0); // pre-season — the world hasn't opened yet
+    expect(state.sp).toBe(before.sp);
     const beforeSerial = Date.UTC(before.date.y, before.date.m - 1, before.date.d) / 86400000;
     const afterSerial = Date.UTC(state.date.y, state.date.m - 1, state.date.d) / 86400000;
     expect(afterSerial).toBe(beforeSerial + 1);
+
+    let result = day1;
+    let guard = 0;
+    while (result.played.length === 0 && guard++ < 30) result = advanceDay(state);
+    expect(result.played.length).toBeGreaterThan(0);
+    expect(state.sp).toBeGreaterThan(before.sp);
     const anyClub = state.world.clubs.find((c) => c.gp > 0);
     expect(anyClub).toBeDefined();
   });

@@ -13,6 +13,7 @@ export * from "./player.js";
 export * from "./scouting.js";
 export * from "./rates.js";
 export * from "./world-data.js";
+export * from "./economics.js";
 export * from "./world.js";
 export * from "./schedule.js";
 export * from "./pa-resolution.js";

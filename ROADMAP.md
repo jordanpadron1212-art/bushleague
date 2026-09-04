@@ -2,7 +2,7 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D85):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D86):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
@@ -10,13 +10,20 @@ What's next and what's genuinely open. Updated against reality — not against t
 > generation and the full schedule (v2.2.0), plate-appearance resolution (v2.3.0), roster construction/
 > depth charts/`simGame`'s full inning loop (v2.4.0), the realism-research merge (v2.4.1), and the
 > season-play driver (v2.5.0) — a full real season plays end to end, verified against RESEARCH.md §7.1
-> at full scale. **As of v2.6.0: state, save/load, and two real screens.** `newGame()`/`advanceDay()`
+> at full scale. **v2.6.0: state, save/load, and two real screens** — `newGame()`/`advanceDay()`
 > assemble and drive a real `GameState`, IndexedDB persists it, and Office + Books are lit for real —
-> UI.md §13.3's own signed-off checkpoint. A real game can be started, played, saved and reloaded for
-> the first time in this rewrite, verified with actual browser screenshots at every step. What's still
-> real logic sitting in the old build and not yet ported: the gate-revenue/payroll posting system (ranked
-> first — Books is real but near-empty without it), the ownership ladder, a season-reset/year-rollover
-> function, the market, the winter cycle, and everything below.
+> UI.md §13.3's own signed-off checkpoint. **As of v2.7.0: the money loop.** Opening capital seeds the
+> ledger, gate revenue posts on every home date against real attendance, operating costs and payroll post
+> monthly, and Office + Books show real, populated, audited financial data — no longer real-but-empty.
+> `bush-league-v0.10.html`, the primary source every pass through v2.6.0 read code out of, was NOT
+> available in this pass's container (never committed to git, only ever a session attachment) — this
+> pass's `gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll` are reconstructed from working notes,
+> cross-checked hard against this project's own committed historical record (an empirical re-solve of the
+> independent-league economics against `CHANGELOG.md`'s own Build 0.7 / D49's sourced "-$385 to +$963 at
+> .500" target), not a re-verified line-for-line port — see HANDOFF.md's "Waiting for you" item 4.
+> What's still real logic sitting in the old build and not yet ported: the ownership ladder, a
+> season-reset/year-rollover function, the market, the winter cycle, a sourced monthly scouting-cost
+> figure, and everything below.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -33,27 +40,30 @@ What's next and what's genuinely open. Updated against reality — not against t
 **Done: player generation and grading** (v2.1.0, D79), **club/world generation plus the full schedule**
 (v2.2.0, D80), **plate-appearance resolution** (v2.3.0, D81), **roster construction, depth charts, and
 a full played game** (v2.4.0, D82), **the realism-research merge** (§18–24, v2.4.1, D83), **the
-season-play driver** (v2.5.0, D84), and — **state, save/load, and Office + Books lit for real** (v2.6.0,
-DECISIONS.md D85). UI.md §13.3's own signed-off checkpoint ("Office + Books") is met: a real club
-picker, a real Office page (real standings/next-game/streak), a real five-pane Books page, a real
+season-play driver** (v2.5.0, D84), **state, save/load, and Office + Books lit for real** (v2.6.0,
+D85), and — **the money loop** (v2.7.0, DECISIONS.md D86). UI.md §13.3's own signed-off checkpoint
+("Office + Books") is met AND populated: a real club picker, a real Office page (real standings/
+next-game/streak/this-month financials), a real five-pane Books page with real audited numbers, a real
 Advance button, IndexedDB save/load verified with a real round trip and a reload test. The RNG stream is
 now fully save-reproducible — a genuine improvement over the original, which never closed that gap.
 
-**1. The gate-revenue/payroll posting system** (`ECON`/`econFor`/`gateFor`/`gateDay` — real logic
-sitting in `bush-league-v0.10.html`, none of it ported). Ranked first because Office and Books, just lit
-this pass, can't show anything meaningful without it — the ledger engine has been real and tested since
-the original chassis pass, and nothing has ever posted to it.
-
-**2. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
+**1. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
 pass that makes scouting mean anything — now with sourced component-aging curves (§18) to build from
 rather than waiting on them.
 
-**3. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+**2. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
 from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
 ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing (DECISIONS.md D77).
 This is also where a new game's club choice needs to grow past "one of the 30 MLB clubs" into the real
 indy → MiLB → MLB climb — `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks
-designing it properly.
+designing it properly. Also where a real monthly scouting-cost dollar figure needs sourcing — the chart
+of accounts already has an account (5300) for one; v2.7.0's money loop left it unposted rather than
+inventing a number (DECISIONS.md D86).
+
+**3. A season-reset/year-rollover function.** A fresh `buildWorld()` zeroes every record, so year one
+works; nothing re-zeroes an EXISTING world's records for year two yet. Low priority until there's a
+second year worth playing through for its own sake — v2.7.0's money loop is what makes that true for the
+first time (a club's finances now carry real meaning across a full year, not just its win-loss record).
 
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
 plan.** Still directionally right once the game exists again; re-sequence it against passes 1-3 above
@@ -99,9 +109,9 @@ Then, roughly:
 - **The engine walks too many batters.** BB/9 runs 10.4% and WHIP 6.4% above the published 2025 line, every other figure within 1–5%. Pre-dates v0.8. `simcal.js` has been red on this for several builds. **Reproduced in the new engine (v2.4.0, DECISIONS.md D82):** BB/9 runs up to +9.6% high (Single-A) with 500 simulated games of real lineup play — same characteristic, not a new port defect, still unfixed.
 - **Batting order barely matters** — `sweep3.js` measures lineup quality capturing 44% of the achievable signal at MLB. The owner can set a lineup and it does not do much.
 - **Difficulty is dead state.** `G.diff` is written and never read. Either wire it to something measurable or delete the field.
-- **All 30 major-league clubs open financially identical**, which blocks the takeover scenarios. This is the finance pass in disguise.
+- **All 30 major-league clubs still open financially identical** (v2.7.0's `econFor()` returns the same `ECON.MLB` for any MLB club — only the five independent leagues get per-league differentiation via `opScale`), which blocks the takeover scenarios. This is the finance-DEPTH pass in disguise, not the money-loop pass itself (v2.7.0, D86) — media-by-market-size and revenue sharing (item 8 above) are what would actually differentiate MLB clubs from each other.
 - **Save growth.** 5.1MB after a decade, driven by **box scores**, not players — v0.9's purge keeps the player array flat. Roll closed years into summary rows.
-- **The RNG stream is not in the save.** `SIMR` reseeds from `G.seed` on a new game but not on a load, so a reloaded save has a different future than an unbroken session.
+- ~~The RNG stream is not in the save.~~ **RESOLVED in the rewrite (v2.6.0, DECISIONS.md D85)** — each day's games now draw from a fresh RNG seeded by `state.seed + that day's serial number`, so a reload reproduces the same future an unbroken session would have played. A genuine improvement over the original, kept here struck through rather than deleted so the old build's own debt list stays a complete record.
 - **The series planner leaves ~33 single-game "series" a season** where a real schedule would have 2–4.
 - **The wire holds forty items and the winter generates hundreds.** It needs a real surface before it needs a bigger buffer.
 ## Genuinely open (needs research or Jordan's call — do not assume)

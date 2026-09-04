@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 85 of them are already recorded, several against
+proposing anything that feels like a new idea — 86 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D85. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D86. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -98,14 +98,26 @@ the ten worst defects in the old build were found by eye with every harness gree
    NewGamePage.tsx`) rather than leaving the checkpoint's own "all 30 MLB clubs" target unreachable —
    kept deliberately minimal (a plain grouped list, no styling pass) and flagged here rather than
    presented as if it were signed off. Worth a real design pass once Jordan's seen it.
+4. **`bush-league-v0.10.html` — the primary source every porting pass through v2.6.0 read code out of —
+   is gone from whatever container the next session runs in.** Found the hard way this pass (D86): it was
+   never committed to this git repository (only the composed `.html` artifact ever existed, and only as a
+   session attachment, never a repo file), so a fresh container has no way to re-read it. Everything
+   through v2.6.0 was ported having actually read the real source; this pass's `gateDay`/`postMonth`/
+   `seedOpeningBooks`/`rosterPayroll` were reconstructed from working notes instead (flagged in
+   `economics.ts`'s own header, cross-checked hard against this project's own committed CHANGELOG.md/
+   DECISIONS.md historical record, but still not a verified line-for-line port). If a future pass needs to
+   read the original source directly — to re-verify this pass's reconstruction, or to port a system this
+   project hasn't reached yet — **re-attach `bush-league-v0.10.html` to that session**, or nobody can
+   check anything in it against ground truth again.
 
 ---
 
 ## Where this stands
 
-**For the first time in this rewrite: a real game you can actually open, play, close, and come back
-to.** Choose a club, watch a real world and schedule generate, advance days, watch real standings move,
-reload the page and get your save back exactly as you left it.
+**For the first time in this rewrite: a real game you can open, play, watch post real money, close, and
+come back to.** Choose a club, watch a real world and schedule generate, advance days, watch real
+standings move and real gate revenue and payroll hit the books, reload the page and get your save back
+exactly as you left it.
 
 Working and verified: the pnpm workspace and its CI/CD to GitHub Pages · the token layer (two shells,
 two themes, three density tiers, contrast computed against DECISIONS.md D18's own rule) · the page
@@ -122,18 +134,20 @@ nine-plus-inning game — `DECISIONS.md` D82 · **the season-play driver** — t
 world's full real schedule plays end to end in under 3 seconds, every closed-system identity holds
 EXACTLY, the full real MLB season reproduces RESEARCH.md §7.1 within 4% at every stat — `DECISIONS.md`
 D84 · **state, save/load, and two real screens** — `newGame()`/`advanceDay()` assemble and drive a
-`GameState`, IndexedDB persists it (`idb`), and **Office and Books are lit for real** (UI.md §13.3's own
-checkpoint scope): a real club picker (all 30 MLB clubs), real standings/next-game/streak on Office, a
-real five-pane ledger (income/balance/cash/ledger/audit) on Books, a real Advance button, verified with
-actual browser screenshots at every step including a page reload — `DECISIONS.md` D85. The RNG stream
-is now fully save-reproducible, closing a gap the original build never closed.
+`GameState`, IndexedDB persists it (`idb`) — `DECISIONS.md` D85 · **the money loop** — opening capital
+seeds the ledger before a game is played, gate revenue posts on every home date against real attendance
+(a 40-game prior blended with last season's finish), operating costs and payroll post monthly (MLB over
+all 12 calendar months, independent leagues in-season only), MLB local media accrues to a receivable and
+collects with a one-month lag, and both **Office and Books show real, populated, audited financial
+data** — a real income statement, a real balanced balance sheet, `auditBooks()` reading PASSES, verified
+with actual browser screenshots including a page reload — `DECISIONS.md` D86. The RNG stream is fully
+save-reproducible, closing a gap the original build never closed.
 
-**Not built yet:** the market, the winter cycle, scouting, the draft, trades, contracts in depth,
-injuries in depth, player development, the ownership ladder (an owner picks only among the 30 MLB clubs
-today), play-by-play, staff, awards and history — and, ranked first because Office/Books can't show
-anything real without it, **the gate-revenue/payroll posting system**: the ledger has been real and
-tested since the original chassis pass; nothing has ever posted to it, so Books is real but honestly
-near-empty. See ROADMAP.md's "Next, in order."
+**Not built yet:** the market, the winter cycle, scouting (including a monthly scouting cost — chart-of-
+accounts entry 5300 exists, no sourced dollar figure survived this pass's reconstruction), the draft,
+trades, contracts in depth, injuries in depth, player development, the ownership ladder (an owner picks
+only among the 30 MLB clubs today), play-by-play, staff, awards and history, and a season-reset/
+year-rollover function. See ROADMAP.md's "Next, in order."
 
 ---
 
@@ -171,20 +185,38 @@ near-empty. See ROADMAP.md's "Next, in order."
 | a real IndexedDB save round-trips exactly | against `fake-indexeddb`, not a mock of `idb`'s own API | `apps/web/test/save.test.ts` |
 | the whole app mounts and moves through its real states | no save → club picker → real game → Office, and a save from a prior session loads straight to Office | `apps/web/test/app.test.tsx` |
 | Office, Books and the club picker render clean | 24/24 — 2 shells × 2 themes × 2 widths, 0 console errors, 0 horizontal overflow; screenshots looked at, not just captured (choose a club → real standings → advance → reload → byte-identical) | `apps/web/e2e/visual.spec.ts`, manual verification this pass |
+| the ledger stays balanced across a full simulated season | `auditBooks()`: 0 fails, checked mid-run and at year end, across several MLB seeds | `packages/sim-kit/test/economics.test.ts` |
+| the opening-capital seed covers the pre-season runway | cash never goes negative at any point across a full simulated year | same file |
+| MLB net income against the tuning target ("nets roughly zero over a full calendar year") | averages -21.1% of revenue across 5 seeds (worst seed -32.1%) — a real, disclosed, quantified gap, not silently hidden; see `DECISIONS.md` D86 on why | same file |
+| the four flat-cost independent-league economies against the sourced "-$385 to +$963 at .500" target (`CHANGELOG.md` Build 0.7, `DECISIONS.md` D49) | after an empirical re-solve (`INDY_OPEX_RECAL`, per-league `opScale`), every league lands within ~14 points of revenue on its worst held-out seed and within 10 points on its 3-seed average — an order of magnitude closer than the ~80% margin the first reconstruction produced | same file, see `DECISIONS.md` D86 |
+| the MLB local-media receivable (account 1100) never grows unbounded | stays at or below one month's accrual throughout a full simulated year | same file |
+| Office's "This month" panel and all five Books panes show real, non-zero, populated data | screenshotted at 1440px and 360px, both shells, both themes: real gate-revenue ledger entries with real attendance figures, a real income statement, a balanced balance sheet ($648.04M assets = $340.00M liabilities + $308.04M equity in one run), `auditBooks()` reading PASSES (48 entries / 144 lines) | temporary Playwright spec, run and screenshots looked at, then deleted per D16 |
 
-**Nothing about the old build's own game-outcome numbers** (the +8.5 win materiality, the age-structure
-match, the per-league economics) was re-measured — none of that system is ported yet, so there is
-nothing yet to measure it against. Restating those old numbers here would be citing a build that no
-longer runs.
+**Nothing about the old build's own game-outcome numbers not yet re-verified here** (the +8.5 win
+materiality, the age-structure match) was re-measured this pass — neither system is ported yet. The
+per-league economics ARE now measured against the old build's own numbers (rows above) — restating the
+old build's own dollar figures beyond what's cited above would be citing a build that no longer runs.
 
 ---
 
 ## Known gaps — say these out loud, do not let them look solved
 
-- **Books is real but honestly near-empty.** Every pane (income/balance/cash/ledger/audit) reads the
-  real ledger — there's just almost nothing posted to it yet. No gate-revenue or payroll posting system
-  exists (`ECON`/`econFor`/`gateFor`/`gateDay`, all unported). Ranked first in "next passes" because
-  Office and Books can't show anything real without it.
+- **`bush-league-v0.10.html` is not in this container and never was in the repo.** See "Waiting for
+  you" item 4 above — anyone who needs to re-verify this pass's reconstructed money-loop functions
+  (`gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll`) against the real primary source needs it
+  re-attached to a session first.
+- **MLB net income runs about -21% of revenue over a full simulated calendar year, not "roughly zero."**
+  A real, measured, disclosed gap (`DECISIONS.md` D86), not silently loosened test tolerances. Unlike the
+  independent leagues (which WERE re-solved against a sourced target this pass found in the project's own
+  historical record and now land within ~10 points on average), there is no equally precise sourced
+  dollar target for MLB — only the qualitative "nets roughly zero" — and the gap traces mostly to
+  `contractFor`'s MLB salary curve (a different, already-verified system, v2.4.0) pricing a random 40-man
+  roster higher than `ECON.MLB`'s reconstructed revenue figures cover. Re-tuning either system further is
+  real work for whoever picks it up next armed with either the primary source or a sourced MLB target,
+  not a fix to slip inside another pass.
+- **No monthly scouting cost is posted.** `accounts.ts`'s chart-of-accounts entry 5300 ("Scouting")
+  exists; no dollar figure for it survived this pass's reconstruction. Left unposted rather than
+  inventing one — a real gap for the scouting pass to close, not an oversight.
 - **The ownership ladder doesn't exist — a new game picks only among the 30 MLB clubs.** The checkpoint's
   own stated target ("all 30 MLB clubs"), not a smaller slice of it, but not the indy-to-MLB climb
   either. `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question is still unresolved and still
@@ -235,19 +267,20 @@ longer runs.
 See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
 **Done: the realism-research merge** (§18–24, `DECISIONS.md` D83), **the season-play driver** (D84),
-and **state/save/Office/Books** (D85) — a real game you can start, play, save and reload exists for the
-first time in this rewrite. UI.md §13.3's own checkpoint ("Office + Books") is met.
+**state/save/Office/Books** (D85), and **the money loop** (D86) — a real game you can start, play, save,
+reload, and watch post real gate revenue and payroll exists for the first time in this rewrite. UI.md
+§13.3's own checkpoint ("Office + Books") is met AND populated.
 
-1. **The gate-revenue/payroll posting system** (`ECON`/`econFor`/`gateFor`/`gateDay`, all real logic
-   sitting in `bush-league-v0.10.html`, none of it ported). This is what turns Books from real-but-empty
-   into real-and-populated, and it's ranked first because nothing about the Office/Books screens this
-   pass just lit can show anything meaningful without it.
-2. **Player development and ageing** — the pass that makes scouting mean anything, and the first
+1. **Player development and ageing** — the pass that makes scouting mean anything, and the first
    consumer of §18's newly-sourced component-aging curves rather than something waiting on them.
-3. **Scouting, the amateur draft, then the ladder itself** — club valuation and purchase, per
-   ROADMAP.md's unchanged pre-rewrite reasoning. This is also where the ownership ladder (indy → MiLB →
-   MLB, not just "pick one of 30 MLB clubs") needs to get designed — `proposals/
-   FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks it.
+2. **Scouting, the amateur draft, then the ladder itself** — club valuation and purchase, per
+   ROADMAP.md's unchanged pre-rewrite reasoning. This is also where a real monthly scouting-cost dollar
+   figure needs sourcing (account 5300 exists, unposted — D86's own disclosed gap), and where the
+   ownership ladder (indy → MiLB → MLB, not just "pick one of 30 MLB clubs") needs to get designed —
+   `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks it.
+3. **A season-reset/year-rollover function.** A fresh `buildWorld()` zeroes every record, so year one
+   works; nothing re-zeroes an EXISTING world's records for year two yet, and the money loop (D86) now
+   makes a second year worth actually playing through.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

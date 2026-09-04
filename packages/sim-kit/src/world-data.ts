@@ -143,7 +143,10 @@ export const INDY: readonly IndyLeague[] = [
   {
     id: "ALPB", name: "Atlantic League", games: 126, att: 2529, roster: [0, 0],
     note: "MLB's rules laboratory. The league claims 40%+ of its players have major-league service time.",
-    opScale: 1.076, cap: 250000,
+    // Re-solved 2026-09-04 (DECISIONS.md D86) against economics.ts's own
+    // recalibrated INDY opex base — the biggest-gate league needed the
+    // biggest re-solve (1.076 -> 1.292) to keep pace with its own revenue.
+    opScale: 1.292, cap: 250000,
     comp: [{ k: "OPEN", l: "No class limit", n: 26, age: [22, 36], svc: [0, 12] }],
     divs: [
       ["North", ["Hagerstown", "Lancaster", "Long Island", "Staten Island", "York"]],
@@ -153,7 +156,8 @@ export const INDY: readonly IndyLeague[] = [
   {
     id: "AAPB", name: "American Association", games: 100, att: 2668, roster: [20, 25],
     note: "25-man. Max 6 veterans (6+ yrs service), min 5 rookie-or-LS1, max 6 LS-4 of whom 2 LS-5.",
-    opScale: 1.058, cap: 120000,
+    // Re-solved 2026-09-04 (DECISIONS.md D86), see the Atlantic entry above.
+    opScale: 1.077, cap: 120000,
     comp: [
       { k: "ROOK", l: "Rookie/LS-1", n: 6, age: [20, 24], svc: [0, 1] },
       { k: "LS23", l: "LS-2/LS-3", n: 8, age: [22, 27], svc: [2, 3] },
@@ -169,6 +173,9 @@ export const INDY: readonly IndyLeague[] = [
   {
     id: "FRON", name: "Frontier League", games: 102, att: 2146, roster: [22, 25],
     note: "22-25 man. Min 10 aged 25-or-under, min 6 aged 26, max 8 aged 27+, max 2 aged 30+.",
+    // Unchanged by the 2026-09-04 re-solve (DECISIONS.md D86) — this is the
+    // reference league `economics.ts`'s own `INDY_OPEX_RECAL` was solved
+    // against directly, so its opScale carries none of that correction.
     opScale: 0.883, cap: 85000,
     comp: [
       { k: "PRO1", l: "Professional-1", n: 8, age: [20, 24], svc: [0, 3] },
@@ -191,7 +198,8 @@ export const INDY: readonly IndyLeague[] = [
     // is the honest encoding; an invented one asserted as a rule is not.
     id: "PION", name: "Pioneer League", games: 96, att: 2248, roster: [0, 25],
     note: "25 active. No player with more than three years of prior professional service. No age cap.",
-    opScale: 0.879, cap: 95000,
+    // Re-solved 2026-09-04 (DECISIONS.md D86), see the Atlantic entry above.
+    opScale: 0.895, cap: 95000,
     comp: [
       { k: "Y0", l: "1st year", n: 9, age: [19, 22], svc: [0, 0] },
       { k: "Y1", l: "2nd year", n: 7, age: [20, 23], svc: [1, 1] },
@@ -212,7 +220,10 @@ export const INDY: readonly IndyLeague[] = [
     id: "PECO", name: "Pecos League", games: 54, att: 400, roster: [22, 25],
     partner: false, elev: 4870,
     note: "Not an MLB Partner League — the floor. 22-man, $50-a-week players, 4,870 ft average elevation.",
-    opScale: 0.965, cap: 12100,
+    // Re-solved 2026-09-04 (DECISIONS.md D86), see the Atlantic entry above
+    // — applied on top of `economics.ts`'s already-separate PECOS_SCALE
+    // (0.05), which D42 already confirmed correct and this pass left alone.
+    opScale: 0.895, cap: 12100,
     comp: [
       { k: "ROOK", l: "Rookie", n: 12, age: [19, 24], svc: [0, 1] },
       { k: "VET", l: "Veteran", n: 10, age: [23, 33], svc: [1, 8] },

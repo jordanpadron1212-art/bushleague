@@ -27,9 +27,21 @@
  * world needs it initialized regardless. `z` is left alone — also unread
  * anywhere in the original, but untouched here since nothing in this pass
  * needs to touch it.
+ *
+ * Third adaptation, found while porting the economics pass (`economics.ts`,
+ * DECISIONS.md D86): the original sets `c.cap` (stadium capacity) in a
+ * separate `forEach` bolted onto the new-game flow, AFTER `buildWorld()`
+ * returns — meaning any other caller of `buildWorld()` (a test, a future
+ * tool) gets clubs with no capacity unless it remembers to run that pass
+ * too. `cap` is a real structural property of a club, not an owner setting
+ * (the owned club's own capacity IS overridden later, in `newgame.ts`, same
+ * as the original's `mine.cap=E.cap`) — so this port computes it once, here,
+ * for every club, via `attFor(lvl, lg) * 1.55` (RESEARCH.md's own
+ * capacity-to-average-attendance ratio), so a club is never capacity-less.
  */
 import { MLB, MILB, INDY, type MilbLevelKey } from "./world-data.js";
 import { abbrFor } from "./names.js";
+import { attFor } from "./economics.js";
 
 export interface Club {
   id: string;
@@ -50,6 +62,8 @@ export interface Club {
   l10: number[];
   strk: number;
   z: number;
+  /** Stadium capacity — `gateFor`'s ceiling. Overridden for the owned club in `newgame.ts`. */
+  cap: number;
 }
 
 export function makeClub(
@@ -62,7 +76,8 @@ export function makeClub(
   div: string,
   park = "",
 ): Club {
-  return { id, city, name, abbr, lvl, lg, div, park, w: 0, l: 0, rs: 0, ra: 0, gp: 0, l10: [], strk: 0, z: 0 };
+  const cap = Math.round(attFor(lvl, lg) * 1.55);
+  return { id, city, name, abbr, lvl, lg, div, park, w: 0, l: 0, rs: 0, ra: 0, gp: 0, l10: [], strk: 0, z: 0, cap };
 }
 
 export function buildWorld(): Club[] {

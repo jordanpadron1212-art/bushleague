@@ -20,12 +20,24 @@
  * persisted. Rebuilding both for the whole world costs low milliseconds
  * (`game.test.ts`/`season.test.ts` already do this every test run), cheap
  * next to the game simulation itself.
+ *
+ * The money loop (`economics.ts`'s `gateDay`/`postMonth`) is wired in here
+ * too — RECONSTRUCTED, not re-verified against the primary source (see
+ * `economics.ts`'s own header). One judgment call specific to this file,
+ * disclosed rather than silent: `gateDay` is passed the owned club's record
+ * from BEFORE today's games are played, not after — a fan decides whether
+ * to show up on the team's record heading into tonight, not the result of
+ * the game they haven't watched yet. `playDay` already mutates `w`/`l` in
+ * place before this function can read them, so the pre-game record is
+ * captured first and passed in explicitly.
  */
 import { dateToSerial, fromSerial } from "./date.js";
 import { mulberry32 } from "./rng.js";
 import { chartWorld } from "./roster.js";
 import { buildRates } from "./rates.js";
 import { playDay, type PlayedGame } from "./season.js";
+import { econFor, gateDay, postMonth } from "./economics.js";
+import type { JeCounter } from "./ledger.js";
 import type { GameState } from "./state.js";
 
 export interface AdvanceResult {
@@ -54,8 +66,12 @@ export function advanceDay(state: GameState): AdvanceResult {
   const players = new Map(state.players.map((p) => [p.id, p] as const));
   const r = mulberry32((state.seed + day) >>> 0);
 
+  const mine = state.ownedClubId ? state.world.clubs.find((c) => c.id === state.ownedClubId) : undefined;
+  const recordBefore = mine ? { w: mine.w, l: mine.l } : null;
+
   const { played, nextCursor } = playDay(day, { games: state.sched }, state.sp, state.world.clubs, charts, players, rates, r);
   state.sp = nextCursor;
+  const prevDate = state.date;
   state.date = fromSerial(day + 1);
 
   const ownedGames = state.ownedClubId
@@ -64,6 +80,22 @@ export function advanceDay(state: GameState): AdvanceResult {
   if (ownedGames.length) {
     state.box.push(...ownedGames);
     if (state.box.length > BOX_CAP) state.box.splice(0, state.box.length - BOX_CAP);
+  }
+
+  if (mine && recordBefore) {
+    const E = econFor(mine);
+    const counter: JeCounter = { value: state.nextJe };
+    for (const g of ownedGames) {
+      if (g.homeClubId !== mine.id) continue;
+      gateDay(state.ledger, counter, day, { ...mine, w: recordBefore.w, l: recordBefore.l }, E, r);
+    }
+    const monthCrossed = state.date.m !== prevDate.m || state.date.y !== prevDate.y;
+    if (monthCrossed) {
+      const newDay = dateToSerial(state.date);
+      const inSeason = newDay >= state.season.open && newDay <= state.season.close;
+      postMonth(state.ledger, counter, newDay, mine, state.players, E, inSeason);
+    }
+    state.nextJe = counter.value;
   }
 
   return { played, ownedGames, seasonOver: state.sp >= state.sched.length };

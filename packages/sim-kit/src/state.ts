@@ -59,8 +59,11 @@ export interface SeasonState {
   gp: number;
   sched: number;
   phase: "offseason" | "spring" | "season" | "playoffs";
+  /** The OWNED club's own season window — `schedule.ts`'s `seasonWindow(ownedClub, year)`, not the whole world's. */
   open: number;
   close: number;
+  /** Earliest scheduled game across the ENTIRE world — different levels/leagues open on different real dates, and the rest of the sport is already underway on the day any one club's own season begins. Set once in `newGame()`. */
+  worldOpen: number;
   dates: number;
 }
 
@@ -83,6 +86,10 @@ export interface GameState {
   season: SeasonState;
   /** The owner's own club — a reference into `world.clubs`, not a duplicated snapshot. `null` before a club is chosen. */
   ownedClubId: string | null;
+  /** Owner-set ticket face price — lived on the original's `G.club` snapshot (`ticket`); now a top-level owner setting since `Club` itself carries no per-owner configuration. Defaulted from `econFor(ownedClub).ticketFace` in `newGame()`. */
+  ticketPrice: number;
+  /** Owner-set payroll budget — same story as `ticketPrice` (`G.club.payrollBudget` originally). Defaulted from `econFor(ownedClub).payroll` in `newGame()`. */
+  payrollBudget: number;
   world: WorldState;
   players: Player[];
   /** `[day, homeClubIndex, awayClubIndex][]`, sorted by day — `schedule.ts`'s `WorldSchedule.games`, indices into `world.clubs`. */
@@ -133,8 +140,10 @@ export function createInitialState(opts: CreateStateOptions = {}): GameState {
       rwarn: "",
     },
     date: { y: 2026, m: 6, d: 14 },
-    season: { year: 2026, gp: 0, sched: 162, phase: "offseason", open: 0, close: 0, dates: 0 },
+    season: { year: 2026, gp: 0, sched: 162, phase: "offseason", open: 0, close: 0, worldOpen: 0, dates: 0 },
     ownedClubId: null,
+    ticketPrice: 0,
+    payrollBudget: 0,
     world: { clubs: [], renames: {}, grads: [], wage: {} },
     players: [],
     sched: [],

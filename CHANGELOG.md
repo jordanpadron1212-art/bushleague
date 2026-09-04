@@ -5,6 +5,40 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.7.0 · GATE REVENUE AND PAYROLL POST FOR REAL — 2026-09-04
+
+`ECON`/`econFor`/`attFor`/`gateFor`/`gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll` ported into
+`economics.ts` and wired into `newgame.ts`/`advance.ts`. Books stops being real-but-empty and becomes
+real-and-populated: opening capital seeds the ledger before a game is played, gate revenue posts on every
+home date against real attendance, and operating costs and payroll post monthly. See `DECISIONS.md` D86.
+
+The primary source (`bush-league-v0.10.html`) was not available in this container for this pass — never
+committed to git, only ever an attachment in an earlier session. `ECON`/`econFor`/`attFor`/`gateFor` were
+already fully ported before that was discovered; `gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll`
+were reconstructed from this project's own detailed working notes instead, explicitly flagged as such.
+
+That reconstruction caught two real, order-of-magnitude bugs, both against this project's own committed
+historical record (`CHANGELOG.md`'s own Build 0.7 entry, `DECISIONS.md` D42/D48/D49), not assumed fixed:
+every flat operating line was posting 12x/year while divided by a 5-7-month season length (**-$188M** on
+a $200M-revenue MLB club before the fix), and — after that fix — every independent league still netted
+roughly **80% of revenue as profit**, an order of magnitude off the sourced "-$385 to +$963 at .500"
+target those same historical entries state directly. Re-solved the same way the original build's own
+D49 describes solving it the first time: fit net against win% across simulated seasons, read the
+intercept at .500. Landed within roughly 10 points of revenue on average across all five independent
+leagues, on seeds the solve never trained on. MLB payroll also turned out to spread over all 12 calendar
+months, not in-season only (D48, stated directly) — the opposite of this pass's own first draft.
+
+Verified: `economics.test.ts` (6 tests) — the ledger stays balanced across full simulated seasons, cash
+never collapses during the pre-season runway, MLB and all five independent leagues land within a bounded
+margin of the tuning target (not an order-of-magnitude miss), the MLB media receivable stays bounded to
+one month's accrual. Manually, in a real browser: a fresh save's ledger seeded with real opening capital,
+45 days of advancing producing real gate-revenue and monthly-cost entries, a real balanced balance sheet,
+`auditBooks` reading PASSES — at both 1440px and 360px, both shells, both themes, zero console errors.
+
+Not yet built: a monthly scouting cost (chart-of-accounts entry 5300 exists; no sourced dollar figure
+survived the reconstruction, left unposted rather than invented), player development/ageing, the ownership
+ladder past "pick one of 30 MLB clubs," and a season-reset/year-rollover function.
+
 ## v2.6.0 · A GAME CAN BE STARTED, PLAYED, SAVED AND RELOADED — 2026-09-04
 
 `GameState` carries real types, `newGame()`/`advanceDay()` assemble and drive a save, IndexedDB

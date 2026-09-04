@@ -815,3 +815,129 @@ either), a season-reset/year-rollover function, the decision queue ("Needs you")
 named explicitly as the very next pass, ranked first because Office/Books can't show anything real
 without it — the `ECON`/gate-revenue/payroll posting system. The ledger engine has been real and tested
 since the original chassis pass; nothing has ever posted to it. See `CHANGELOG.md` v2.6.0.
+
+---
+
+## 2026-09-04 — The money loop: gate revenue and payroll post for real
+
+**D86 · `ECON`/`econFor`/`attFor`/`gateFor`/`gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll` are
+ported into `economics.ts`, wired into `newgame.ts` and `advance.ts`, and Office + Books show real,
+populated, audited financial data for the first time.** Books stops being "real but honestly near-empty"
+(v2.6.0's own stated gap) and becomes real-and-populated, matching this pass's own ranking as the next
+thing to build.
+
+**A genuine environment gap, disclosed rather than worked around silently: `bush-league-v0.10.html` —
+the primary source every prior pass this rewrite read code out of — was not available in this
+container.** It was never committed to this git repository (confirmed: full history search, all 8 prior
+commits, turns up nothing); it existed only as an attachment in an earlier session. Asked directly how to
+proceed rather than reconstructing from memory and calling it a port: the answer was to reconstruct from
+this session's own detailed working notes, explicitly flagged as such rather than presented as a verified
+line-for-line port. `ECON`/`econFor`/`attFor`/`gateFor` (already fully drafted before the gap was hit)
+carried through with high confidence; `gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll` are marked
+in `economics.ts`'s own header as RECONSTRUCTED, not re-verified — a real, load-bearing distinction the
+rest of this entry is largely about closing.
+
+**The reconstruction found a genuine mechanism bug in its own first draft, caught by this pass's own
+diagnostic run, not by inspection.** Every flat operating cost line was divided by `leagueMonths` (5-7
+months, a league's own season length) but posted once per REAL calendar month (12/year) regardless of
+season — a systematic 12/leagueMonths overcharge on every single line. A full simulated MLB year read
+net income at **-$188M on ~$200M of revenue** — not "roughly zero," an order of magnitude broken. Fixed:
+every flat revenue/expense line (`spons`/`staff`/`travel`/`stad`/`fo`/`mktg`/`ins`/`dev`/`minors`/`media`/
+`dist`) now prorates over 12 real calendar months and posts every month, in-season or not — matching the
+`ECON.MLB` tuning-target comment's own words, carried through from the reconstruction: winter "stadium and
+front office" cost lands with no gate to offset it, which only holds if those lines keep posting through
+the off-season.
+
+**A second, much larger gap surfaced only after that fix: every one of the four independent leagues
+tested netted roughly 80% of revenue as pure profit — an order of magnitude off "roughly zero" in the
+OTHER direction.** Rather than accept this as an unresolvable consequence of the missing source, this
+project's OWN committed historical record turned out to carry the real, sourced target: `CHANGELOG.md`'s
+Build 0.7 entry ("THE ROSTER COSTS MONEY") and this file's own D42/D48/D49 state, in the original's own
+words, **"all five [independent] economies... sit between −$385 and +$963 at .500."** Three further
+direct confirmations from that same historical record, each closing a specific uncertainty this pass had
+flagged as unverified:
+- **D48, verbatim: "annual contracts spread over twelve months at MLB, monthly wages in season only below
+  it."** The reconstruction had MLB payroll gated to in-season months, dividing by `leagueMonths` (7) —
+  backwards from the sourced design. Fixed: `rosterPayroll` divides MLB by 12 and posts every month;
+  every other level keeps the season-only, `leagueMonths` proration `contractFor` already established for
+  indy contracts.
+- **D49, verbatim: "`opScale` multiplies the operating cost lines only, never revenue... solved from the
+  measured net, not picked."** Confirms `econFor`'s existing design (opScale scales
+  staff/travel/stad/fo/mktg/ins/dev/gameday, never gate/conc/park/merch) needed no change — only the
+  BASE figures and the per-league opScale VALUES did.
+- **D42, verbatim on the Pecos floor: "Operating k ≈ 0.05; capital scaled separately at 0.10."** Confirms
+  `PECOS_SCALE`/`PECOS_CAP_SCALE` (already reconstructed at exactly 0.05/0.10) needed no change either.
+
+**Re-solved the same way D49 itself describes solving it the first time**: fit net income against win%
+across several full-calendar-year simulated seasons per league, and read the intercept at .500. Binary-
+searched a shared base multiplier for the seven flat INDY operating lines first (against the Frontier
+League, ~10 minutes of simulated seasons across 7 iterations x 6 seeds), landing at **`INDY_OPEX_RECAL` ≈
+11.465x** the as-reconstructed base — then each OTHER Partner League's `opScale` independently
+(American Association 1.058 → 1.077, Pioneer 0.879 → 0.895, Atlantic 1.076 → 1.292, Pecos 0.965 → 0.895;
+Frontier's own opScale, 0.883, is unchanged — it is the league the base was solved against directly).
+Verified on seeds the solve never trained on (10-12, held out from the [1-4] solving seeds): every league
+lands within roughly 14 points of revenue on its worst held-out seed and within 10 points on its
+three-seed average — Frontier +1.5%, American Association +9.1%, Pioneer +1.7%, Atlantic −1.4%, Pecos
++4.3% — an order of magnitude closer than the ~80% pre-recalibration margin, though a real, honest
+remaining gap from the sourced target's own tight sub-$1K band, attributable to how much a single random
+25-man roster's payroll swings seed to seed rather than a mechanism defect.
+
+**MLB itself was NOT re-solved the same way, and that asymmetry is deliberate, not an oversight.** Once
+MLB payroll was correctly fixed to post over all 12 months (the D48 correction above), a full calendar
+year measured EXACTLY (not the earlier, looser un-bounded read — see below) reads **net income averaging
+-21.1% of revenue across five seeds (worst seed -32.1%)** — worse than an earlier, looser reading of
+-6.9%, and that earlier number is now understood to have been two bugs partly cancelling (the
+12/leagueMonths overcharge fixed above, plus MLB payroll's own in-season gating under-counting it by
+about 1/7 of a year), not a correct result. Unlike the independent leagues, there is no equally precise
+SOURCED dollar target for MLB in this project's own historical record — only the qualitative "nets
+roughly zero" — and the gap traces mostly to `contractFor`'s MLB salary curve (a DIFFERENT, already-
+ported-and-verified system from an earlier pass, v2.4.0/D82) pricing a random 40-man roster higher, on
+average, than `ECON.MLB`'s reconstructed revenue figures cover. Re-tuning that curve is out of this
+pass's scope; re-tuning `ECON.MLB`'s own revenue/cost figures against a target this project has not
+sourced would be inventing a number, not reconstructing one. Recorded here as a real, disclosed,
+quantified gap rather than silently loosened test tolerances or an unsourced "fix."
+
+**A genuine measurement-methodology bug this pass's own verification caught in itself, not in the
+engine**: `economics.test.ts`'s first version measured a "full calendar year" by reading whatever
+`incomeStatement` found across the WHOLE ledger after a fixed 400-day `advanceDay` guard — which, once
+MLB payroll posted every real month instead of being in-season-gated, could span a 13th partial month and
+overcount a seed's margin. Fixed: net income is now measured over an EXPLICIT 365-day window from the
+game's own opening day (`oneYearMargin`), not "whatever accumulated." The mechanism was right; the test's
+own measurement window was not — worth recording because it is exactly the kind of self-inflicted
+methodology bug that would otherwise look like a real economic finding.
+
+**`newgame.ts` gained real scope it was missing, found while reading this pass's own working notes on the
+original's new-game flow**: the game now opens 14 days before the earlier of the owned club's own season
+window or the world's earliest scheduled game (not on the world's earliest game directly, v2.6.0's
+placeholder); `state.season.open`/`close`/`worldOpen` are real, set from `seasonWindow()`; the owned
+club's `cap` is overridden with `econFor()`'s own figure rather than left at the world-gen default;
+`ticketPrice`/`payrollBudget` are new top-level `GameState` fields (owner settings that used to live on
+the retired `ClubRef` snapshot, D85); and `seedOpeningBooks` posts three real opening journal entries
+(owner equity, note payable, ballpark & equipment capitalization) dated before the season starts, without
+which the ledger opened at $0 and the first month's payroll and stadium cost posted the club straight
+into a negative balance before a single game was played.
+
+**Verified, not assumed, at every layer**: `packages/sim-kit/test/economics.test.ts` (6 tests) — the
+ledger stays balanced (`auditBooks`: 0 fails) mid-run and at year end across several MLB seeds; cash never
+collapses to a catastrophic negative (the opening-capital seed covers the pre-season runway); MLB net
+income lands within a bounded, honestly-wide margin of the tuning target (not an order-of-magnitude miss)
+across 5 seeds; the MLB local-media receivable (account 1100) stays bounded to roughly one month's accrual
+— accrued, collected with a one-month lag, never unbounded; all five independent leagues stay balanced,
+solvent and finite; all five land within a bounded margin of revenue on held-out seeds. Manually, in a
+real browser (temporary Playwright spec, screenshotted and looked at, then deleted per this project's own
+D16 discipline): a fresh save's ledger seeded with three real opening entries before a game is played;
+advancing 45 days produces real gate-revenue entries per home date with real attendance figures, real
+monthly operating-cost entries, a real income statement with a real revenue/expense breakdown, a real
+balanced balance sheet ($648.04M assets = $340.00M liabilities + $308.04M equity), and `auditBooks`
+reading PASSES at 48 entries / 144 lines — at both 1440px and 360px, both shells, both themes, zero
+console errors, zero horizontal overflow.
+
+Rejected: silently accepting the reconstructed dollar figures without checking them against anything
+(would have shipped an ~80%-margin INDY economy and called it "ported"); inventing a precise MLB
+correction with no sourced target to solve against (would have been indistinguishable from a guess dressed
+up as a fix); hiding the missing-primary-source gap by presenting the reconstruction as a verified
+line-for-line port. What's still not built: player development/ageing, scouting/the draft, the ownership
+ladder past "pick one of 30 MLB clubs," a season-reset/year-rollover function, and a monthly scouting cost
+line (account 5300 exists in the chart of accounts; no dollar figure for it survived into this
+reconstruction — left unposted rather than invented, a real gap for whoever sources one). See
+`CHANGELOG.md` v2.7.0.

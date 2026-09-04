@@ -9,10 +9,12 @@
  * empty even with a real save: "Needs you" (no decision-queue system
  * exists yet — nothing yet generates a lineup-not-set or an offer-expiring
  * entry) and "Wire" (no news system exists yet). The financial panel
- * shows the REAL ledger's this-month income statement, which is real and
- * currently near-zero — no gate-revenue or payroll posting system exists
- * yet either (`DECISIONS.md`, the pass after this one) — not a fabricated
- * placeholder standing in for one.
+ * shows the REAL ledger's this-month income statement — real gate revenue
+ * (posted on the owned club's own home dates) and real monthly operating
+ * costs (`economics.ts`'s `gateDay`/`postMonth`, wired into `advanceDay`),
+ * not a placeholder. It reads zero for exactly as long as it's true: the
+ * 14-day pre-season before the first home date and the first month
+ * crossing.
  */
 import { dateToSerial, formatShort, incomeStatement, money, toSerial, winPct } from "@bushleague/sim-kit";
 import { useGameStore } from "../store/gameStore.js";
@@ -132,8 +134,8 @@ export default function OfficePage() {
       <Panel title="This month">
         {monthIS.totalRev === 0 && monthIS.totalExp === 0 ? (
           <EmptyLine>
-            No entries this period. Gate revenue and payroll posting are a later pass — the ledger engine
-            itself (LAWS.md Law 4) is real and tested; nothing posts to it yet.
+            No entries yet this month — gate revenue posts on your first home date, and operating costs post
+            when the calendar rolls into the next month.
           </EmptyLine>
         ) : (
           <div className="num text-[var(--fs-sm)]">

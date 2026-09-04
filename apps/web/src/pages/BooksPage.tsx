@@ -11,21 +11,22 @@
  * react-table` — the installed version (9.x) turned out to be a genuine
  * API rewrite from the well-established v8 shape this project's docs were
  * written against (`useTable`/`createCoreRowModel`, not `useReactTable`/
- * `getCoreRowModel`), and the ledger has few or no rows to show for it
- * yet (no gate-revenue or payroll posting system exists — the pass after
- * this one). §13.3 itself calls this pass's grid proof "narrower" than
- * the roster pass's, where the column customizer, saved views AND
- * `@tanstack/react-virtual`'s row virtualization get their real test
- * against a 26-column, many-row grid — a real justification for the
- * library, which a 5-column, near-empty ledger doesn't have yet. Betting
- * this pass on an unfamiliar major-version rewrite to sort five columns
- * of nothing is the wrong trade; revisit both libraries together when
- * Roster actually needs what they're for.
+ * `getCoreRowModel`), and even with the money loop wired in (`economics.ts`'s
+ * `gateDay`/`postMonth`/`seedOpeningBooks`), a fresh save's ledger is still a
+ * few dozen rows, not the hundreds a roster grid needs to make virtualization
+ * or a column customizer pay for themselves. §13.3 itself calls this pass's
+ * grid proof "narrower" than the roster pass's, where the column customizer,
+ * saved views AND `@tanstack/react-virtual`'s row virtualization get their
+ * real test against a 26-column, many-row grid — a real justification for
+ * the library. Betting this pass on an unfamiliar major-version rewrite to
+ * sort a few dozen rows is the wrong trade; revisit both libraries together
+ * when Roster actually needs what they're for.
  *
- * Real numbers, honestly sparse otherwise too: the ledger engine itself
- * (LAWS.md Law 4) is real and tested, and exactly what `auditBooks()` on
- * this page proves live — nothing here is a placeholder standing in for
- * fabricated figures.
+ * Real numbers throughout: the ledger engine itself (LAWS.md Law 4) is real
+ * and tested, opening capital is seeded before the season starts, gate
+ * revenue and monthly operating costs post for real, and `auditBooks()` on
+ * this page proves the whole thing live — nothing here is a placeholder
+ * standing in for fabricated figures.
  */
 import { useMemo, useState } from "react";
 import {
@@ -106,8 +107,8 @@ function IncomePane({ ledger, year }: { ledger: JournalEntry[]; year: number }) 
       {!is.rev.length && !is.exp.length ? (
         <div className="pt-[var(--sp-4)]">
           <EmptyLine>
-            No revenue or expense posted yet. Gate revenue posts after your first home date; payroll posts
-            when the winter/roster passes wire it — both are the pass after this one.
+            No revenue or expense posted yet this year — gate revenue posts after your first home date, and
+            operating costs post on the next month crossing.
           </EmptyLine>
         </div>
       ) : (
