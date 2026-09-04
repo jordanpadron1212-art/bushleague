@@ -1084,3 +1084,85 @@ above); giving the new store action and its sim-kit primitive the same name (wou
 file's own established convention silently). What's still not built: everything D87 already disclosed
 (retirement, free agency/contract expiration, an amateur intake) — this pass closes only the UI-reachability
 gap, not the underlying closed-population consequence. See `CHANGELOG.md` v2.9.0.
+
+---
+
+## 2026-09-04 — Real roster churn: the population stops marching uniformly older forever
+
+**D89 · `churn.ts` closes the exact gap D87 measured and disclosed rather than solved — with no
+turnover, a rolled-over population ages uniformly forever, "the same closed population under an age rule
+has exactly one destination" finding `CHANGELOG.md`'s own committed Build 0.9 entry records from the
+original build's own history.** `rollover.ts`'s `startNewSeason` now ages, develops, AND churns every
+club's roster in the world each year — some contracts expire and the player leaves outright, of those who
+don't some are retained onto next year's roster, and the rest is filled exactly the way a brand-new
+world's ever was (`roster.ts`'s already-tested `rosterPlan`/`contractFor`), so a churned indy roster stays
+exactly as legal-by-construction as a freshly-generated one.
+
+**Deliberately a smaller slice than the original build's own Build 0.9, stated in `churn.ts`'s own header
+rather than left to be discovered later.** Build 0.9 is a full annual cycle: weekly in-season contract
+purchases by affiliated organisations, an exclusive re-sign window, a four-month open market with AI GM
+valuation and negotiation, and a demand-sized amateur intake. Free agency — the owner (and every AI club)
+actively signing and releasing SPECIFIC players by name, mid-season — is real, substantial, UI-shaped work
+of its own (a market/free-agent screen with no home yet) and stays with the scouting/draft/ownership-ladder
+pass ROADMAP.md already tracks separately. This pass ships only the population-turnover mechanism: an
+age-curve exit, an instant retention step standing in for the "exclusive re-sign window," and fresh
+signings for whatever's left.
+
+**Re-solved against a real, sourced numeric target found in this project's own committed historical
+record — the same discipline the economics pass's INDY recalibration already established (D86), applied
+here to a second system.** `CHANGELOG.md`'s Build 0.9 entry states its own measured outcome directly,
+after ten simulated years of the original build: median Frontier age **26** (real 24-25), **14.6%** aged
+28+ (real 15%), **2.4%** aged 30+ (real 2%, "rulebook allows 8%"), **32.6%** roster continuity (real
+24-41%). `exitProbability`'s two constants (a flat floor below age 26, a rising slope past it — the same
+pivot age `roster.ts`'s own `SVC_EDGE` centres on, and Build 0.9's own "discount per year over 26"
+language) were fit by iterate-and-measure against three of those four targets — median lands at exactly
+26 every single year across six consecutive rollovers; aged 28+ averages in the high teens against a
+14.6% target; roster continuity averages ~44% against a 24-41% target range (running somewhat above it,
+not further tuned away — see below).
+
+**One target is structurally unreachable by this port's own design, and that's a real finding, not a
+tuning failure — worked out and disclosed, not fudged.** The Frontier League's own published composition
+table (`world-data.ts`, already real and already tested for a fresh world — `roster.test.ts`) reserves
+EXACTLY 2 of 25 roster spots for its Veteran class (age 30-34) — 8.0%, a REQUIRED count `rosterPlan` fills
+every single year, churn or not, not a maximum. That 8.0% is precisely the "rulebook allows 8%" ceiling
+Build 0.9's own measurement table already names as distinct from what the original's own population
+actually reached (2.4%) — meaning the original's own veteran slots were not always filled at the top of
+their published range, a nuance no longer verifiable without the primary source (`bush-league-v0.10.html`,
+still not available in this container — HANDOFF.md's own "Waiting for you" item 4). Weakening the
+retention match to chase 2.4% would mean generating a roster that ISN'T legal-by-construction on the one
+dimension this port can currently prove it is — the wrong trade for a number this project cannot re-verify
+against ground truth right now. Measured, understood, and left as a disclosed 8.0%, not asserted against.
+
+**Continuity running above the sourced band (~44% average vs. a 24-41% target) is real and understood,
+not unexplained.** Raising `EXIT_BASE` from 0.34 to 0.42 barely moved it — confirming the bottleneck is
+which comp row a survivor's post-rollover age/service time still fits, not the exit hazard's own survival
+rate. Tightening that match further to force continuity down would trade away the SAME legal-by-
+construction guarantee the 30+ finding above already explains is load-bearing. Left as a modest, disclosed
+overshoot rather than chased with a change that would cost more than it fixes.
+
+**Verified, not assumed, at every layer**: `packages/sim-kit/test/churn.test.ts` (5 tests) —
+`exitProbability`'s own shape (flat to the pivot, rising past it, always in [0,1]); the Frontier League's
+median/28%+/continuity against the sourced target across six consecutive rollovers; the 30+ finding
+landing at exactly the composition table's own 2/25 share, every year, not approximately; the world's
+total population size staying exactly constant across a churned rollover; the owned club still getting its
+bigger `OWNED_N` roster, not the plain `ROSTER_N`, after churn. `rollover.test.ts`'s own D87-era tests
+updated for the new reality: "ages every player by exactly one year" now correctly distinguishes SURVIVORS
+(who age +1, per `development.ts`) from FRESH ARRIVALS (who never had a "before" age to compare against —
+the previous version of this test would have failed the moment churn started generating real replacements,
+exactly the assertion-rot this project's own discipline exists to catch); the old "climbs monotonically"
+test (a deliberately-disclosed FINDING under D87) is replaced with one proving the opposite now holds —
+average age STABILIZES across eight consecutive rollovers instead of climbing every single year. Manually,
+in a real browser (temporary Playwright spec, screenshotted and looked at, then deleted per D16): played a
+full season to exhaustion, clicked "start the next season" (now running `churnWorld` across all 218
+clubs), watched the new season open with a real 1-0 record after one game, a real next opponent, real
+division standings, cash carried over correctly — no console errors, no crash, at the scale of the whole
+world's population turning over at once.
+
+Rejected: loosening comp-row retention matching to chase the 2.4%-aged-30+ figure exactly (would have
+traded away an already-proven legality guarantee for a number this project cannot currently re-verify);
+building the full Build-0.9-equivalent winter cycle in this pass (free agency, a market screen, AI
+negotiation — real, separately-scoped future work); silently asserting the churned population "matches
+the original" without checking, the same discipline that caught the INDY economics gap in the prior pass.
+What's still not built: free agency (the owner or any AI club acting on a specific player by name),
+retirement as its own concept (the exit hazard covers the same real-world outcome without pretending to
+model it separately), and the amateur draft. See `CHANGELOG.md` v2.10.0.

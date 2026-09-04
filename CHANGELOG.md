@@ -5,6 +5,32 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.10.0 · REAL ROSTER CHURN — 2026-09-04
+
+`churn.ts` closes the exact gap v2.8.0 measured and disclosed: with no turnover, a rolled-over population
+ages uniformly forever — "a closed population under an age rule has exactly one destination," this
+project's own committed CHANGELOG.md records from the original build's own Build 0.9. Every rollover now
+ages, develops, AND churns every club's roster in the world: some contracts expire and the player leaves
+outright, some survivors are retained (an "exclusive re-sign window," simplified to instant retention),
+and the rest is filled exactly the way a brand-new world's ever was — legal-by-construction, not made
+legal after the fact. See `DECISIONS.md` D89.
+
+Deliberately a smaller slice than the original build's own Build 0.9 winter cycle — no free agency, no
+market screen, no AI negotiation, no amateur draft; those stay real, separately-scoped future work. Re-
+solved against Build 0.9's own measured target already sitting in this project's committed history: median
+Frontier age 26 (exact, every year across six rollovers), 14.6% aged 28+ (close), 32.6% roster continuity
+(running somewhat above the 24-41% real range, understood not chased further). One target — 2.4% aged
+30+ — is structurally unreachable by this port's own legal-by-construction design (the Frontier comp
+table reserves exactly 2 of 25 Veteran slots, 8.0%, the "rulebook allows 8%" ceiling the source itself
+names as distinct from what the original actually reached) — measured, explained, and disclosed rather
+than chased by weakening the same legality guarantee the rest of this project already proved.
+
+Verified: `churn.test.ts` (5 tests) against the sourced target; `rollover.test.ts`'s own D87-era tests
+updated for the new reality — the population's average age now STABILIZES across eight consecutive
+rollovers instead of climbing every year, verified directly, not assumed. Manually, in a real browser: a
+full season played to exhaustion, "start the next season" clicked (running churn across all 218 clubs),
+the new season opening clean with real games, real standings, real cash — no console errors.
+
 ## v2.9.0 · A SAVE CAN REACH ITS SECOND YEAR, FROM THE APP — 2026-09-04
 
 `rollover.ts`'s `startNewSeason` (v2.8.0) gets a real caller: the action bar detects an exhausted

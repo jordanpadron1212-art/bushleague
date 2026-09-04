@@ -1,11 +1,15 @@
 /**
- * Verification for `rollover.ts` — the minimal mechanism that lets a save
- * reach a second year. Checks the mechanical guarantees this file actually
- * makes (a fresh, playable, non-finite-free state for the new year) and
- * the disclosed consequence of NOT modelling churn (the population ages
- * uniformly, same as `bush-league-v0.10.html`'s own v0.9 build found before
- * it built real churn to fix it) — recorded here as an honest finding, not
- * asserted away.
+ * Verification for `rollover.ts` — the mechanism that lets a save reach a
+ * second year AND survive many of them. Checks the mechanical guarantees
+ * this file actually makes (a fresh, playable, non-finite-free, legal
+ * state for the new year), that churn (`churn.ts`, DECISIONS.md D89)
+ * actually happens (some players leave, some arrive, survivors age
+ * correctly), and — the whole point of this pass — that the population's
+ * age distribution STABILIZES across many consecutive rollovers instead of
+ * climbing forever, closing the gap D87's own tests deliberately measured
+ * and disclosed rather than fixed. `churn.test.ts` covers the churn
+ * mechanism's own numeric calibration against the sourced target
+ * (DECISIONS.md D89); this file covers rollover's end-to-end use of it.
  */
 import { describe, expect, it } from "vitest";
 import { newGame } from "../src/newgame.js";
@@ -47,17 +51,27 @@ describe("rollover — mechanical guarantees", () => {
     expect(myGames.length).toBe(162);
   });
 
-  it("ages every player by exactly one year and leaves no non-finite value anywhere in state", () => {
+  it("ages every SURVIVING player by exactly one year, churns in real new players too, and leaves no non-finite value anywhere in state", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 6, year: 2026 });
-    const agesBefore = new Map(state.players.map((p) => [p.id, p.age]));
+    const before = new Map(state.players.map((p) => [p.id, p.age]));
     playToSeasonEnd(state);
 
     const r = mulberry32(state.seed + 12345);
     startNewSeason(state, r);
 
+    let survivors = 0;
+    let arrivals = 0;
     for (const p of state.players) {
-      expect(p.age).toBe(agesBefore.get(p.id)! + 1);
+      const priorAge = before.get(p.id);
+      if (priorAge != null) {
+        expect(p.age).toBe(priorAge + 1); // a survivor — development.ts's own +1/year, unchanged by churn
+        survivors++;
+      } else {
+        arrivals++; // a fresh signee churn.ts generated — never existed before this rollover
+      }
     }
+    expect(survivors).toBeGreaterThan(0); // churn is real retention, not 100% turnover
+    expect(arrivals).toBeGreaterThan(0); // churn is real turnover, not 100% retention
     expect(scanNonFinite(state)).toEqual([]);
   });
 
@@ -86,18 +100,27 @@ describe("rollover — mechanical guarantees", () => {
     expect(mine.age).toBeGreaterThan(18); // sanity: still a real, bounded age, not runaway or NaN
   }, 20000);
 
-  it("DISCLOSED, not hidden: with no roster churn, a club's average age climbs monotonically across consecutive rollovers — the same closed-population effect the original build's own v0.9 pass found and fixed with real free agency/contract expiration, none of which is ported yet", () => {
+  it("FIXED, verified directly: a club's average age STABILIZES across many consecutive rollovers instead of climbing forever — D87's own disclosed consequence, closed by churn.ts (DECISIONS.md D89)", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 9, year: 2026 });
     const avgAge = () => {
       const mine = state.players.filter((p) => p.cid === "MLB_NYY");
       return mine.reduce((t, p) => t + p.age, 0) / mine.length;
     };
     const ages = [avgAge()];
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 8; i++) {
       playToSeasonEnd(state);
       startNewSeason(state, mulberry32(state.seed + i * 777));
       ages.push(avgAge());
     }
-    for (let i = 1; i < ages.length; i++) expect(ages[i]!).toBeGreaterThan(ages[i - 1]!);
-  }, 20000);
+    // A closed, churn-free population would climb roughly +1 every single
+    // year (D87's own now-superseded test proved exactly that). With real
+    // turnover, the LAST few years should be landing in a stable band, not
+    // still climbing at the same unbroken rate the first few did.
+    const early = ages[1]! - ages[0]!;
+    const late = ages[ages.length - 1]! - ages[ages.length - 2]!;
+    expect(Math.abs(late)).toBeLessThan(Math.abs(early) + 0.5);
+    // And a real sanity bound: nowhere near the ~35+ a fully closed
+    // population reaches after just a handful of years (see D87's history).
+    expect(ages[ages.length - 1]!).toBeLessThan(32);
+  }, 40000);
 });

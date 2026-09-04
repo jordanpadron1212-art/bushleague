@@ -43,7 +43,7 @@ import type { Rng } from "./rng.js";
 import { gauss } from "./rng.js";
 import type { Player, Tool } from "./player.js";
 import { BAT_TOOLS, PIT_TOOLS } from "./player.js";
-import { clamp } from "./util.js";
+import { clamp, round2 } from "./util.js";
 
 export interface ToolCurve {
   /** Growth phase, `age < peak`: grade points per year (usually positive). */
@@ -187,6 +187,14 @@ export function developPlayer(p: Player, r: Rng): void {
     p.tru[k] = clamp(Math.round(g + rate + gauss(r) * NOISE_SD), 20, 80);
   }
   p.age += 1;
+  // A year of service accrues for anyone who spends it in an affiliated
+  // organisation — the same real-world definition RESEARCH.md's own D-A
+  // roster rules already use (75 AB/30 IP a season, simplified here to
+  // "played through a rollover") — needed so `churn.ts`'s retained
+  // players actually progress toward a league's higher-service comp rows
+  // instead of staying frozen at whatever `svc` they were generated or
+  // last retained with.
+  p.svc = round2(p.svc + 1);
 }
 
 /** Ages and develops every player in a population by one year — `rollover.ts`'s own per-player call, exposed separately so a test can verify the curve shapes directly against a large population without needing a whole `GameState`. */

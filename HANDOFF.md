@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 88 of them are already recorded, several against
+proposing anything that feels like a new idea — 89 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D88. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D89. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -149,16 +149,24 @@ develops the existing population, resets club records, regenerates the schedule)
 **and the action bar can actually reach it** — once a save's schedule is exhausted, it detects that
 directly from state and offers "START THE [next year] SEASON," wired to a real `gameStore.startNewSeason`
 action — `DECISIONS.md` D88. The RNG stream is fully save-reproducible, closing a gap the original build
-never closed.
+never closed. **And real roster churn** — `churn.ts`, wired into `startNewSeason` itself: every rollover
+now retires a real, age-weighted share of each club's roster and fills every vacated (and freshly-grown,
+for a level's own comp table) slot with a fresh, legally-composed signee, re-solved against Build 0.9's
+own sourced Frontier League target (median age, aged-28+ share, roster continuity) the same empirical
+method D86 used for the economics pass — `DECISIONS.md` D89. A club's average age now measurably
+stabilizes across many consecutive rollovers instead of climbing forever, closing half of D87's own
+disclosed gap; free agency, contract expiration, and an amateur intake as their own systems remain
+deliberately out of this pass's scope (see "Not built yet").
 
-**Not built yet:** the market, the winter cycle (free agency, contract expiration, an amateur intake —
-the actual fix for D87's own disclosed "no churn means the population only ages" consequence),
-retirement (no sourced hazard curve exists), scouting (including a monthly scouting cost — chart-of-
+**Not built yet:** the market and free agency AS THEIR OWN SYSTEM (a named player signing with a specific
+club, AI GM valuation/negotiation, a free-agent pool UI) — `churn.ts` (D89) replaces retiring/departing
+players anonymously, it does not model any individual player's free agency, retirement as its own modelled
+concept (no sourced hazard curve exists), scouting (including a monthly scouting cost — chart-of-
 accounts entry 5300 exists, no sourced dollar figure survived the economics pass's reconstruction), the
-draft, trades, contracts in depth, injuries in depth, the ownership ladder (an owner picks only among the
-30 MLB clubs today), play-by-play, staff, awards and history. The one item D87 itself listed as "not yet
-built" that WAS closed this pass — a UI caller for `startNewSeason` — is resolved, not carried forward.
-See ROADMAP.md's "Next, in order."
+amateur draft, trades, contracts in depth, injuries in depth, the ownership ladder (an owner picks only
+among the 30 MLB clubs today), play-by-play, staff, awards and history. The two items D87 itself listed as
+"not yet built" that WERE closed since — a UI caller for `startNewSeason` (D88) and real roster turnover
+(D89) — are resolved, not carried forward. See ROADMAP.md's "Next, in order."
 
 ---
 
@@ -207,8 +215,12 @@ See ROADMAP.md's "Next, in order."
 | starters' and relievers' control diverge in the sourced opposite directions | from an IDENTICAL starting population (same RNG seed, only role differs): starter control trends up 20→30, reliever control trends down over the same span | same file |
 | ageing never produces a grade outside the 20-80 scale | checked at every simulated age, every tool | same file |
 | `startNewSeason` produces a real, complete, playable next season | every club's record resets to zero, the regenerated schedule gives the owned club its exact published game count (162 for MLB), `advanceDay` plays real games again immediately after rollover, three consecutive rollovers all succeed | `packages/sim-kit/test/rollover.test.ts` |
-| rollover leaves no non-finite value anywhere in state, and ages every player by exactly one year | checked directly against each player's pre-rollover age | same file |
-| DISCLOSED: with no roster churn, a club's average age climbs monotonically across consecutive rollovers | measured directly across 4 consecutive rollovers, not assumed — the same closed-population effect the original build's own v0.9 pass found | same file, see `DECISIONS.md` D87 |
+| rollover leaves no non-finite value anywhere in state, ages every SURVIVING player by exactly one year, and churns in real new players too | checked directly against each player's pre-rollover age; both survivor and arrival groups confirmed non-empty | `packages/sim-kit/test/rollover.test.ts` |
+| FIXED, verified directly: a club's average age STABILIZES across many consecutive rollovers instead of climbing forever | measured across 8 consecutive rollovers — the year-over-year age delta shrinks rather than staying constant, and age stays under 32 throughout — closing D87's own disclosed gap | same file, see `DECISIONS.md` D89 |
+| the Frontier League's median age and aged-28%+ share land close to Build 0.9's own sourced target across six consecutive rollovers | median age exactly 26 every year (target 26); aged-28+ averages high teens (target 14.6%) | `packages/sim-kit/test/churn.test.ts` |
+| roster continuity runs somewhat above Build 0.9's sourced 24-41% band | averages ~44% across six rollovers — diagnosed as a comp-row age-matching bottleneck, not an under-tuned exit hazard (doubling the hazard's relative slope barely moved it) — disclosed, not fudged away | same file, see `DECISIONS.md` D89 |
+| DISCLOSED, structurally explained, not an unexplained miss: aged-30+ lands at exactly 8.0% (2/25), not the sourced 2.4% | the Frontier comp table's own Veteran row is a REQUIRED count `rosterPlan` (already-tested, reused unchanged) fills every year regardless of churn — matches the "rulebook allows 8%" ceiling Build 0.9's own entry names | same file |
+| a rollover keeps the world's total population size constant and every churned roster legal by construction | checked directly, including that the owned club still gets `OWNED_N` (40) not the plain `ROSTER_N` (32) after churn | same file |
 | the action bar detects an exhausted schedule and calling its new action produces a real, playable new season through the ACTUAL React app | fast-forwards a real state to `seasonOver`, clicks the real button, confirms the bar reverts to "Advance to" with a fresh 0-0 record | `apps/web/test/app.test.tsx` |
 | the new, longer "START THE [year] SEASON" button renders clean at 360px | zero horizontal overflow, zero console errors — checked specifically because the label is longer than the ordinary advance button ever gets | temporary Playwright spec, screenshotted and looked at, then deleted per D16 |
 | rollover carries cash and ledger history forward untouched, only records/ages/schedule reset | watched directly in the browser: $232.08M cash unchanged across the rollover click, every club 0-0, last-10 "No games played yet", a real regenerated schedule (real opponent, real date) | same manual verification |
@@ -244,13 +256,17 @@ old build's own dollar figures beyond what's cited above would be citing a build
   own stated target ("all 30 MLB clubs"), not a smaller slice of it, but not the indy-to-MLB climb
   either. `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question is still unresolved and still
   blocks designing this properly.
-- **No roster churn — a real, disclosed, MEASURED consequence, not a guess.** `rollover.test.ts` proves a
-  club's average age climbs every consecutive year with nobody entering or leaving the population — the
-  same "closed population under an age rule has exactly one destination" finding the original build's own
-  v0.9 pass made before it built real free agency/contract expiration/an amateur intake to fix it. None of
-  that is ported yet; D87's own ageing system is real and correct, but only solves half of §8.5's original
-  gap (players now age realistically; nobody yet leaves or arrives to keep the population from aging
-  uniformly toward the ceiling over many years).
+- **Roster churn is real but anonymous — free agency, contract expiration, and an amateur intake as their
+  OWN systems are still not built.** `churn.ts` (`DECISIONS.md` D89) closes D87's own disclosed
+  age-climbs-forever gap — `rollover.test.ts` now proves average age stabilizes rather than climbing — by
+  retiring an age-weighted share of each roster and filling every vacancy with a fresh, legally-composed
+  signee. It does NOT model any individual player's free agency (a named player choosing a club), AI GM
+  valuation/negotiation, or a market UI to watch it happen — departures and arrivals are anonymous,
+  population-level turnover, not the original build's own named-player winter cycle. Roster continuity
+  also runs somewhat above the sourced 24-41% band (~44% average, six-rollover test) — diagnosed as a
+  comp-row age-matching bottleneck, not an under-tuned exit hazard, and left disclosed rather than chased
+  further (see the measured-table rows above and `DECISIONS.md` D89 for the full reasoning, including why
+  "aged 30+" is structurally locked at the comp table's own 8.0% ceiling).
 - **No retirement.** No sourced retirement-hazard-by-age curve exists anywhere in this project's
   research (RESEARCH.md §8.5 asks for one; none found this pass either) — left unmodelled rather than
   inventing a hazard curve with nothing behind it.
@@ -299,20 +315,21 @@ See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
 **Done: the realism-research merge** (§18–24, `DECISIONS.md` D83), **the season-play driver** (D84),
 **state/save/Office/Books** (D85), **the money loop** (D86), **player development and ageing plus a
-minimal season rollover** (D87), and **a real UI caller for that rollover** (D88) — a real game you can
-start, play, save, reload, watch post real gate revenue and payroll, age a whole season's worth of
-players realistically, and actually click a real button to start a real second year. UI.md §13.3's own
-checkpoint ("Office + Books") is met AND populated.
+minimal season rollover** (D87), **a real UI caller for that rollover** (D88), and **real roster churn**
+(D89) — a real game you can start, play, save, reload, watch post real gate revenue and payroll, age a
+whole season's worth of players realistically, click a real button to start a real second year, and watch
+that new season's rosters actually turn over — a measurably stabilizing age structure, not one climbing
+toward the ceiling forever. UI.md §13.3's own checkpoint ("Office + Books") is met AND populated.
 
-1. **Real roster churn** — free agency, contract expiration, an amateur intake. D87's own rollover test
-   proves the population ages uniformly with nobody entering or leaving (verifiable in the app itself as
-   of D88, not just in a test); this is the actual fix, the same one the original build's own v0.9 pass
-   built, not a smaller version of it.
-2. **Scouting, the amateur draft, then the ladder itself** — club valuation and purchase, per
+1. **Scouting, the amateur draft, then the ladder itself** — club valuation and purchase, per
    ROADMAP.md's unchanged pre-rewrite reasoning. This is also where a real monthly scouting-cost dollar
    figure needs sourcing (account 5300 exists, unposted — D86's own disclosed gap), and where the
    ownership ladder (indy → MiLB → MLB, not just "pick one of 30 MLB clubs") needs to get designed —
    `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks it.
+2. **Free agency as its own named-player system** — `churn.ts` (D89) already replaces departing players
+   with fresh, anonymous, legally-composed signees every rollover; a real free-agent pool, AI GM
+   valuation/negotiation, and a market UI to watch it happen are the parts still deliberately deferred, per
+   D89's own disclosed scope boundary.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

@@ -1,42 +1,51 @@
 /**
- * Season rollover — the minimal mechanism that lets a save reach a second
- * year at all. Without it, `advanceDay` (`advance.ts`) simply stops once
- * `state.sched` runs out (`seasonOver: true`, tested in `newgame.test.ts`)
- * and nothing else ever happens — the exact dead end RESEARCH.md §8.5
- * describes: "players age and nothing else... it makes a long career
- * impossible."
+ * Season rollover — the mechanism that lets a save reach a second year at
+ * all, and (as of DECISIONS.md D89) actually SURVIVE many of them. Without
+ * it, `advanceDay` (`advance.ts`) simply stops once `state.sched` runs out
+ * (`seasonOver: true`, tested in `newgame.test.ts`) and nothing else ever
+ * happens — the exact dead end RESEARCH.md §8.5 describes: "players age
+ * and nothing else... it makes a long career impossible."
  *
- * Deliberately NOT a port of `bush-league-v0.10.html`'s own winter cycle
- * (Build 0.9, "THE WINTER" — CHANGELOG.md's own historical entry), and not
- * an attempt to reproduce it. That system is free agency, contract
- * expiration, an age-curve exit, a demand-sized amateur intake, an
- * exclusive re-sign window and a four-month open market — real, sourced,
- * substantial work belonging to its own future pass (ROADMAP.md's "the
- * market"/"the winter cycle"). What this file does instead: age and
- * develop the EXISTING population in place (`development.ts`), reset every
- * club's season record, and generate next year's schedule — the same
- * population, one year older, playing again. No player enters or leaves.
+ * NOT a port of `bush-league-v0.10.html`'s own winter cycle (Build 0.9,
+ * "THE WINTER" — CHANGELOG.md's own historical entry), and still a
+ * deliberately SMALLER slice of it — stated plainly, not left to be
+ * discovered later. Build 0.9 is a full annual cycle: weekly in-season
+ * contract purchases by affiliated organisations, an exclusive re-sign
+ * window, a four-month open market with AI GM valuation and negotiation,
+ * and a demand-sized amateur intake. Free agency — the owner (and every AI
+ * club) actively signing and releasing SPECIFIC players by name, mid-season
+ * — is real, substantial, UI-shaped work of its own (a market/free-agent
+ * screen with no home yet) and belongs to the scouting/draft/ownership-
+ * ladder pass ROADMAP.md already tracks separately, not folded in here.
  *
- * That is a real, disclosed simplification with a known consequence,
- * stated plainly rather than discovered the hard way a second time: run
- * this for enough consecutive years with no churn and the whole world
- * converges toward old, same as `bush-league-v0.10.html`'s own v0.9 build
- * found before it built real churn to fix it ("a closed population under
- * an age rule has exactly one destination" — CHANGELOG.md Build 0.9). This
- * file does not solve that; it only stops pretending the game can't reach
- * a second year at all. Retirement isn't modelled either — `development.ts`'s
- * own header explains why (no sourced hazard curve exists to build one
- * from).
+ * What this file DOES do, every rollover, for every club in the world: age
+ * and develop the existing population (`development.ts`), then churn it
+ * (`churn.ts` — an age-curve exit, an instant "exclusive re-sign window"
+ * retention, and fresh signings filling whatever's left, all exactly as
+ * legal-by-construction as a brand-new world's roster), reset every club's
+ * season record, and generate next year's schedule. D87's own original
+ * disclosure — "no player enters or leaves... run this for enough
+ * consecutive years and the whole world converges toward old" — is what
+ * `churn.ts` actually fixes; `rollover.test.ts`'s own age-trend test is
+ * updated this pass to prove the population no longer does that.
+ *
+ * Retirement still isn't modelled as its own concept — no sourced
+ * retirement-hazard-by-age curve exists in this project's research
+ * (§8.5 asks for one; none found). `churn.ts`'s exit hazard covers the
+ * same real-world outcome (a veteran's contract not renewed) without
+ * pretending to be a dedicated retirement system.
  */
 import type { Rng } from "./rng.js";
 import { fromSerial } from "./date.js";
 import { buildFullSeasonSchedule, seasonWindow } from "./schedule.js";
 import { developPopulation } from "./development.js";
+import { churnWorld } from "./churn.js";
 import type { GameState } from "./state.js";
 
 /**
  * Rolls `state` from the end of one season into the start of the next, in
- * place: every player ages and develops one year, every club's win/loss/
+ * place: every player ages and develops one year, the whole world's
+ * population churns (see this file's own header), every club's win/loss/
  * runs/form/games-played resets to a fresh season's zero (the same fields
  * `buildWorld()`'s own `makeClub` zeroes for a brand-new world), a new
  * schedule is generated for `year + 1`, and the game clock jumps to 14
@@ -51,6 +60,7 @@ import type { GameState } from "./state.js";
  */
 export function startNewSeason(state: GameState, r: Rng): void {
   developPopulation(state.players, r);
+  state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r);
 
   for (const c of state.world.clubs) {
     c.w = 0;

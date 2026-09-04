@@ -2,7 +2,7 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D88):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D89):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
@@ -34,9 +34,17 @@ What's next and what's genuinely open. Updated against reality — not against t
 > from state and offers to start the next year — `rollover.ts`'s primitive (v2.8.0) had no way to reach
 > it from the app until now, closing D87's own "not yet built" list item, verified with a real click
 > through a real browser at 360px (the new button's label is longer than the ordinary one ever gets).
-> What's still real logic sitting in the old build and not yet ported: the ownership ladder, the market,
-> the winter cycle (the actual fix for the closed-population consequence above — still the standing
-> next item), retirement, a sourced monthly scouting-cost figure, and everything below.
+> **As of v2.10.0: real roster churn.** `churn.ts`, wired into `startNewSeason` itself, retires an
+> age-weighted share of every club's roster each rollover and fills every vacancy with a fresh, legally
+> composed signee — re-solved against Build 0.9's own sourced Frontier League target (median age, aged-28+
+> share, roster continuity) the same empirical method D86 used for the independent-league economics. A
+> club's average age now measurably stabilizes across many consecutive rollovers instead of climbing
+> forever, closing half of D87's own disclosed gap — verified directly in `churn.test.ts`/
+> `rollover.test.ts`, not assumed. Deliberately NOT built this pass: free agency as its OWN system (a
+> named player choosing a club, AI GM valuation/negotiation, a market UI) — turnover is real but
+> anonymous, same scope boundary D89 states explicitly. What's still real logic sitting in the old build
+> and not yet ported: the ownership ladder, the market/free-agency-as-a-system, retirement, a sourced
+> monthly scouting-cost figure, and everything below.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -55,28 +63,29 @@ What's next and what's genuinely open. Updated against reality — not against t
 a full played game** (v2.4.0, D82), **the realism-research merge** (§18–24, v2.4.1, D83), **the
 season-play driver** (v2.5.0, D84), **state, save/load, and Office + Books lit for real** (v2.6.0,
 D85), **the money loop** (v2.7.0, D86), **player development and ageing, plus a minimal season
-rollover** (v2.8.0, D87), and — **a real UI caller for that rollover** (v2.9.0, DECISIONS.md D88). UI.md
-§13.3's own signed-off checkpoint ("Office + Books") is met AND populated: a real club picker, a real
-Office page (real standings/next-game/streak/this-month financials), a real five-pane Books page with
-real audited numbers, a real Advance button that becomes a real "start next season" button once the
-schedule is exhausted, IndexedDB save/load verified with a real round trip and a reload test. The RNG
-stream is now fully save-reproducible — a genuine improvement over the original, which never closed that
-gap.
+rollover** (v2.8.0, D87), **a real UI caller for that rollover** (v2.9.0, D88), and — **real roster
+churn** (v2.10.0, DECISIONS.md D89). UI.md §13.3's own signed-off checkpoint ("Office + Books") is met
+AND populated: a real club picker, a real Office page (real standings/next-game/streak/this-month
+financials), a real five-pane Books page with real audited numbers, a real Advance button that becomes a
+real "start next season" button once the schedule is exhausted, IndexedDB save/load verified with a real
+round trip and a reload test, and a rollover whose rosters actually turn over — a measurably stabilizing
+age structure, not one climbing toward the ceiling forever. The RNG stream is fully save-reproducible — a
+genuine improvement over the original, which never closed that gap.
 
-**1. Real roster churn** — free agency, contract expiration, an amateur intake, the actual fix for the
-consequence v2.8.0's own rollover test measured directly (and v2.9.0 made reachable from the app itself):
-with no churn, a club's average age climbs every consecutive year. The original build's own v0.9 pass
-built exactly this system after finding the same closed-population problem (next paragraph) — same fix,
-same reason, this rewrite just hasn't reached it yet.
+**1. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+from the pre-rewrite ordering, now the standing top item with roster churn done. The ladder's valuation
+model should use RESEARCH.md §14.3's team-specific ratio (+36%, one verified transaction), not §9.6's
+retracted "~1.5× high" framing (DECISIONS.md D77). This is also where a new game's club choice needs to
+grow past "one of the 30 MLB clubs" into the real indy → MiLB → MLB climb —
+`proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks designing it properly. Also where a
+real monthly scouting-cost dollar figure needs sourcing — the chart of accounts already has an account
+(5300) for one; v2.7.0's money loop left it unposted rather than inventing a number (DECISIONS.md D86).
 
-**2. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
-from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
-ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing (DECISIONS.md D77).
-This is also where a new game's club choice needs to grow past "one of the 30 MLB clubs" into the real
-indy → MiLB → MLB climb — `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks
-designing it properly. Also where a real monthly scouting-cost dollar figure needs sourcing — the chart
-of accounts already has an account (5300) for one; v2.7.0's money loop left it unposted rather than
-inventing a number (DECISIONS.md D86).
+**2. Free agency as its own named-player system** — `churn.ts` (v2.10.0, D89) already retires and
+replaces a real, age-weighted share of every roster each rollover; what's still missing is a specific
+player choosing a specific club, AI GM valuation/negotiation, and a market UI to watch any of it happen.
+Turnover is real; the market is not — the same distinction D89 draws explicitly in its own scope
+disclosure.
 
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
 plan.** Still directionally right once the game exists again; re-sequence it against passes 1-2 above
