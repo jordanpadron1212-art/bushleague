@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 78 of them are already recorded, several against
+proposing anything that feels like a new idea — 79 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D78. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D79. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. Seventeen sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -93,18 +93,22 @@ the ten worst defects in the old build were found by eye with every harness gree
 
 ## Where this stands
 
-**A chassis, and nothing else yet — matching this project's own Build 0.1 precedent on purpose.**
+**A chassis plus a verified player-generation engine — still not a game you can open and play.**
 
 Working and verified: the pnpm workspace and its CI/CD to GitHub Pages · the token layer (two shells,
 two themes, three density tiers, contrast computed against DECISIONS.md D18's own rule) · the page
 registry (`DECISIONS.md` D11's pattern, now 18 pages, 1 live) · the Office page, honestly empty ·
 `@bushleague/sim-kit`'s ledger, chart of accounts, RNG and formatters, all tested against real sourced
-examples · a PWA that installs and precaches for offline play after a first visit.
+examples · a PWA that installs and precaches for offline play after a first visit · **player generation
+and grading** (`LVL` environments, grade-to-real-units tables, `makePlayer`, `rateProfile`, the Law 10
+scouting model), calibrated against RESEARCH.md §7.1's published lines the same way `qa/calib.js`
+calibrated the old build (`DECISIONS.md` D79) — 50/50 checks pass, most within 1%.
 
-**Not built yet, and this is nearly everything that makes it a game:** world generation · the box-score
-engine · the market · the winter cycle · scouting, the draft, trades, contracts, injuries in depth,
-player development, the ownership ladder, play-by-play, staff, awards and history. All of it existed
-and worked in `bush-league-v0.10.html`; none of it is ported. See ROADMAP.md's "Next, in order."
+**Not built yet:** club/world generation (the 202-club roster), the schedule, the box-score game engine,
+the market, the winter cycle, scouting, the draft, trades, contracts, injuries in depth, player
+development, the ownership ladder, play-by-play, staff, awards and history. All of it existed and
+worked in `bush-league-v0.10.html`; player generation is the first of it ported. See ROADMAP.md's
+"Next, in order." **Nothing plays yet — there is still no club, no schedule, no game to advance.**
 
 ---
 
@@ -119,10 +123,13 @@ and worked in `bush-league-v0.10.html`; none of it is ported. See ROADMAP.md's "
 | Vite 8 + `vite-plugin-pwa` | build throws a Rolldown-incompatibility error | reproduced directly, not read about — pinned to Vite 7 instead |
 | font payload, all Unicode subsets vs. Latin-only | PWA precache 672.00 KiB → 412.80 KiB (−38.6%) | `vite build` output, before/after `@fontsource` subset imports |
 | Playwright visual check | 8/8 pass — both shells, both themes, 360px + 1440px, 0 console errors, 0 horizontal overflow | `apps/web/e2e/visual.spec.ts`, run against the pre-installed sandbox Chromium |
+| generated hitter/pitcher populations reproduce RESEARCH.md §7.1's published lines | 50/50 checks pass at MLB/AAA/AA/HIA/A (slash line ≤2%, HR ≤5.5%, per-nine ≤2%) — MLB BA .244 vs published .245, Triple-A OPS .768 vs .768 exactly | `packages/sim-kit/test/calibration.test.ts` |
+| Pecos environment stays hotter than the Single-A baseline it's derived from | `rg`/`hr9` both strictly greater, elevation (4,870ft) recorded on the env for the provenance sheet | same file |
 
-**Nothing about the old build's own numbers** (the +8.5 win materiality, the age-structure match, the
-per-league economics) was re-measured — none of that system is ported yet, so there is nothing yet to
-measure it against. Restating those old numbers here would be citing a build that no longer runs.
+**Nothing about the old build's own game-outcome numbers** (the +8.5 win materiality, the age-structure
+match, the per-league economics) was re-measured — none of that system is ported yet, so there is
+nothing yet to measure it against. Restating those old numbers here would be citing a build that no
+longer runs.
 
 ---
 
@@ -139,7 +146,13 @@ measure it against. Restating those old numbers here would be citing a build tha
 - **The 23 old `src/` fragments and 17 `qa/` harnesses are gone**, in the sense that they were never
   uploaded to any session in editable form — only the composed `bush-league-v0.10.html` was. World-gen
   and the engine have to be read out of that file and ported with fresh tests, not diffed from a
-  fragment set that doesn't exist here.
+  fragment set that doesn't exist here. (Player generation, this pass, is the proof that this approach
+  works — 50/50 calibration checks against real published lines, ported without the fragments.)
+- **Player generation has no ERA/WHIP calibration.** Those are opponent-dependent (log5 against a
+  batter) and need the box-score engine — see `packages/sim-kit/test/calibration.test.ts`'s own header
+  comment. Not an oversight; stated as the reason ERA/WHIP aren't in the 50 checks above.
+- **There is still no club, no roster, no schedule.** Player generation makes individual players; it
+  does not make a world. `buildWorld`'s 202-club data tables are not ported.
 - **No migration path from an old save.** `SCHEMA_VERSION` starts at 1. A real, stated consequence of
   the rewrite (LAWS.md's old Law 11, "saves are forever," doesn't survive a substrate change — noted,
   not silently dropped).
@@ -152,14 +165,22 @@ measure it against. Restating those old numbers here would be citing a build tha
 
 See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
-1. **Port world generation and the box-score engine** into `@bushleague/sim-kit`, from the logic in
-   `bush-league-v0.10.html`, with tests — not new design, transcription against a real source, the same
-   discipline this pass used for the ledger.
-2. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
-   pass left honestly empty actually showing something. This is the "winnable and losable, not a menu
+1. **Port club/world generation and the schedule** into `@bushleague/sim-kit` — `buildWorld`'s 202-club
+   data tables (30 MLB in their real divisions, the affiliated ladder, the five independent leagues),
+   from the logic in `bush-league-v0.10.html`. Player generation (this pass) is the substrate it needs;
+   nothing plays until clubs and a schedule exist to put the generated players on.
+2. **Port the box-score game engine** (`log5`/`resolvePA`/`draw`, the `ADV` calibration constants) —
+   this is what turns `rateProfile()`'s outputs into actual games, and what unlocks ERA/WHIP calibration
+   (this pass's one stated gap).
+3. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
+   project left honestly empty actually showing something. This is the "winnable and losable, not a menu
    mockup" bar the original project instructions always held V1 to.
-3. **Player development and ageing** — unchanged reasoning from the pre-rewrite roadmap: the pass that
-   makes scouting mean anything, now two passes further out than it used to be.
+
+A deep realism-research workflow (development curves by individual tool, Statcast-era pitch/batted-ball
+modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule effects, the
+NPB/KBO posting system) was launched this session and should be merged into `RESEARCH.md` — check
+whether it landed and reconcile it with the same rigor D77 used for the earlier §9.6/§14.3 conflict
+before treating any of it as sourced.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

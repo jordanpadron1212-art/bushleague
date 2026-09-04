@@ -13,6 +13,7 @@
  * ledger — that is what keeps Law 4 true in the port.
  */
 import { accountExists, accountType, type AccountType } from "./accounts.js";
+import { round2 } from "./util.js";
 
 export type AccountId = number;
 export type JournalLine = readonly [AccountId, number];
@@ -28,10 +29,6 @@ export interface JournalEntry {
 /** Mutable counter box so callers can thread `nextJe` the way `G.nextJe` did. */
 export interface JeCounter {
   value: number;
-}
-
-function round2(v: number): number {
-  return Number.isFinite(v) ? Math.round(v * 100) / 100 : 0;
 }
 
 function sumLines(lines: readonly JournalLine[]): number {

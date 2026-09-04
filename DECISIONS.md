@@ -462,3 +462,41 @@ unit tests, and a Playwright visual check (360px + 1440px, both shells, both the
 errors, zero horizontal overflow) before every deploy — the CI-only-Playwright call from this session's
 planning discussion, justified by D16's own evidence that a harness alone has historically missed most
 of this project's worst defects.
+
+---
+
+## 2026-09-04 — Player generation, ported
+
+**D79 · Player generation and grading is ported into `@bushleague/sim-kit`: `LVL` environments, the
+grade-to-real-units tables (with the Jensen's-inequality correction — `expectedOver`), `makePlayer`,
+`rateProfile`, and the Law 10 hidden-truth scouting model (`noiseAt`/`estOf`/`ovrOf`/`refineScout`),
+each ported from `bush-league-v0.10.html` and verified, not assumed.**
+
+**Measured, the same way `qa/calib.js` measured it:** 1,400 simulated hitters and 1,400 simulated
+pitchers generated at each of MLB/AAA/AA/HIA/A, aggregated, and checked against RESEARCH.md §7.1's
+published 2025 line. All 50 checks pass inside the old build's own tolerances (slash line 2%, home runs
+5.5%, per-nine pitching 2%) — most inside 1%: MLB batting average generated **.244** against a published
+**.245**; Triple-A OPS generated **.768** against a published **.768** exactly; every level's walk rate,
+strikeout rate, and BB9/SO9/HR9 landed within a few hundredths of a point of the source. `packages/
+sim-kit/test/calibration.test.ts` is the permanent regression check.
+
+**Scope, stated rather than silently narrowed:** this calibrates what `rateProfile()` alone can be
+checked against — a hitter's BA/OBP/SLG/OPS/HR-rate/BB%/K%, a pitcher's BB9/SO9/HR9. ERA and WHIP are
+opponent-dependent (log5 against a batter, RESEARCH.md's engine section) and need the box-score engine,
+which is not yet ported — asserting them here would test a formula this package doesn't contain yet.
+
+**One real bug found in the port, fixed rather than reproduced** (the same discipline D78 already
+applied to `post()`'s NaN guard): `abbrFor()`'s club-abbreviation generator indexes into a city's first
+word at fixed positions (`w0[2]`, `w0[3]`) without a length guard. On a one- or two-character first word
+— never hit by any real city name the old build ever generated, but a real latent defect — vanilla JS
+would have silently concatenated the literal string `"undefined"` into a club's three-letter
+abbreviation. Fixed with a safe `at()` helper that returns `""` past the end of the string instead.
+
+**Reuse note:** `nz`/`clamp`/`round2` were each duplicated between `ledger.ts` and `format.ts` after
+D78's pass; consolidated into `util.ts` and both call sites updated, so there is one implementation to
+keep correct rather than two that can quietly drift apart.
+
+**What still isn't ported, and is the next pass in order:** club/world generation (`buildWorld`'s 202-
+club data tables), the schedule, and the box-score game engine (`log5`/`resolvePA`/`draw`, the `ADV`
+calibration constants). Player generation is the substrate those need, not a replacement for them —
+nothing plays yet. See ROADMAP.md.

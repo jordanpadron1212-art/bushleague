@@ -9,10 +9,7 @@
  * OPS, W-L%, rOBA) drop the leading zero. Rates that can naturally exceed 1
  * (ERA, FIP, WHIP, WAR, per-nine, SO/BB) keep it.
  */
-
-function nz(v: number): number {
-  return typeof v === "number" && Number.isFinite(v) ? v : 0;
-}
+import { nz } from "./util.js";
 
 export function money(v: number): string {
   const n = nz(v);

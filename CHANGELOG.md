@@ -5,6 +5,19 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.1.0 · PLAYER GENERATION — 2026-09-04
+
+Player generation and grading ported into `@bushleague/sim-kit`: level environments, the grade-to-
+real-units tables (Jensen's-inequality-corrected), `makePlayer`, `rateProfile`, and the Law 10
+hidden-truth scouting model. Calibrated the same way the old build's `qa/calib.js` calibrated it:
+1,400 simulated hitters and 1,400 simulated pitchers generated at each of MLB/AAA/AA/HIA/A, checked
+against RESEARCH.md §7.1's published 2025 line. **50/50 checks pass**, most within 1% — Triple-A OPS
+generated .768 against a published .768 exactly. `packages/sim-kit/test/calibration.test.ts` is the
+permanent regression check. See `DECISIONS.md` D79 for the one real bug found and fixed during the
+port (a club-abbreviation generator that could silently emit the string "undefined").
+
+Not yet ported: club/world generation, the schedule, and the box-score game engine. Nothing plays yet.
+
 ## v2.0.0 · THE REBOOT — 2026-09-04
 
 The engineering substrate is rebuilt from scratch: React 19 + TypeScript + Vite + Tailwind v4 on a
