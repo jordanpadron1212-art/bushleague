@@ -34,12 +34,23 @@
  * (§8.5 asks for one; none found). `churn.ts`'s exit hazard covers the
  * same real-world outcome (a veteran's contract not renewed) without
  * pretending to be a dedicated retirement system.
+ *
+ * DECISIONS.md D93 adds the amateur draft (`draft.ts`) as the first real
+ * step of every rollover, BEFORE anything resets: `runDraft` needs the
+ * season the world just finished (standings for draft order, the current
+ * population for each org's own pitcher/batter need), not a record already
+ * zeroed for the year ahead. Its `byOrg` result is handed straight into
+ * `churnWorld`, so a drafted player can land on his own org's affiliate
+ * instead of an anonymous fresh signee — and `state.lastDraft` keeps the
+ * full pick-by-pick record for the UI, independent of whether every pick
+ * actually found a roster slot to land on.
  */
 import type { Rng } from "./rng.js";
 import { fromSerial } from "./date.js";
 import { buildFullSeasonSchedule, seasonWindow } from "./schedule.js";
 import { developPopulation } from "./development.js";
 import { churnWorld } from "./churn.js";
+import { runDraft } from "./draft.js";
 import type { GameState } from "./state.js";
 
 /**
@@ -59,8 +70,11 @@ import type { GameState } from "./state.js";
  * file has no reason to make).
  */
 export function startNewSeason(state: GameState, r: Rng): void {
+  const draft = runDraft(state.world.clubs, state.players, state.ownedClubId ?? undefined, state.draftPhilosophy, r);
+  state.lastDraft = draft.picks.slice();
+
   developPopulation(state.players, r);
-  state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r);
+  state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r, draft.byOrg);
 
   for (const c of state.world.clubs) {
     c.w = 0;

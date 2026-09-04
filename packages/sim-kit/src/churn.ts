@@ -43,6 +43,15 @@
  * League — MLB/MiLB have no equivalent published target in this project's
  * own research to solve against, a real, disclosed gap distinct from the
  * Frontier fit (`churn.test.ts`'s own header says so directly).
+ *
+ * DECISIONS.md D93 adds one more real source ahead of a random fresh
+ * signee: an optional `orgDraftPool` (this year's amateur draft class,
+ * `draft.ts`, keyed by MLB org id) — when a MiLB AFFILIATE (never the MLB
+ * roster itself; an 18-21 year old draftee does not debut in the majors)
+ * has a vacancy `churnClub`'s own fill loop would otherwise hand to
+ * `freshPlayer`, it checks that org's own remaining draftees first via
+ * `Club.parent` (RESEARCH.md §2.6/DECISIONS.md D91). A draftee never
+ * displaces a SURVIVOR — only ever fills a slot nothing else would have.
  */
 import type { Rng } from "./rng.js";
 import type { Club } from "./world.js";
@@ -96,7 +105,13 @@ function freshPlayer(club: Club, role: Role, age: number, svc: number | undefine
  * player's age GOING INTO the new year, matching the real "January 1"
  * timing CHANGELOG.md's own Build 0.9 entry describes.
  */
-function churnClub(club: Club, clubPlayers: readonly Player[], ownedClubId: string | undefined, r: Rng): Player[] {
+function churnClub(
+  club: Club,
+  clubPlayers: readonly Player[],
+  ownedClubId: string | undefined,
+  r: Rng,
+  orgDraftPool?: ReadonlyMap<string, Player[]>,
+): Player[] {
   const owned = club.id === ownedClubId;
   const survivors = clubPlayers.filter((p) => r() >= exitProbability(p.age));
 
@@ -145,16 +160,27 @@ function churnClub(club: Club, clubPlayers: readonly Player[], ownedClubId: stri
     // MLB/MiLB: no published composition rule to preserve — keep survivors
     // (capped at the real roster size) and fill any remaining spots with
     // fresh entry-level talent, the same age draw `buildRosters` already
-    // uses for these levels.
+    // uses for these levels. A MiLB AFFILIATE (never the MLB roster
+    // itself — D93) checks its own org's remaining draftees first.
     const kept = survivors.slice(0, targetN);
     for (const p of kept) claim(p);
     const nP = Math.round(targetN * 0.47);
     let pCount = kept.filter((p) => p.role === "P").length;
     let bCount = kept.length - pCount;
+    const draftees = club.lvl !== "MLB" && club.parent ? orgDraftPool?.get(club.parent) : undefined;
     while (roster.length < targetN) {
       const role: Role = pCount < nP && (pCount <= bCount || bCount >= targetN - nP) ? "P" : "B";
       if (role === "P") pCount++;
       else bCount++;
+      const fitIdx = draftees?.findIndex((p) => p.role === role) ?? -1;
+      if (draftees && fitIdx >= 0) {
+        const [drafted] = draftees.splice(fitIdx, 1);
+        drafted!.cid = club.id;
+        drafted!.lvl = club.lvl;
+        contractFor(drafted!, club, r);
+        claim(drafted!);
+        continue;
+      }
       claim(freshPlayer(club, role, entryAge(club, r), undefined, undefined, r));
     }
   }
@@ -194,8 +220,23 @@ function churnClub(club: Club, clubPlayers: readonly Player[], ownedClubId: stri
  * player array (`rollover.ts`'s own caller replaces `state.players` with
  * it); does not mutate `players` in place, because a departed player must
  * actually disappear from the array, not just get flagged.
+ *
+ * `orgDraftPool` (D93, `draft.ts`'s `DraftResult.byOrg`), if given, is
+ * passed straight through to every club — `churnClub` itself decides
+ * whether a given club may draw from it (its own org's affiliates only,
+ * never the MLB roster). The SAME map (and the SAME per-org array inside
+ * it) is handed to every club in the loop below, deliberately not copied —
+ * an org's draftees are shared, mutable, and consumed exactly once across
+ * however many of that org's own affiliates end up drawing from them this
+ * rollover, in whatever order `clubs` itself iterates them.
  */
-export function churnWorld(clubs: readonly Club[], players: readonly Player[], ownedClubId: string | undefined, r: Rng): Player[] {
+export function churnWorld(
+  clubs: readonly Club[],
+  players: readonly Player[],
+  ownedClubId: string | undefined,
+  r: Rng,
+  orgDraftPool?: ReadonlyMap<string, Player[]>,
+): Player[] {
   const byClub = new Map<string, Player[]>();
   for (const p of players) {
     if (!p.cid) continue;
@@ -205,7 +246,7 @@ export function churnWorld(clubs: readonly Club[], players: readonly Player[], o
   }
   const next: Player[] = [];
   for (const c of clubs) {
-    const roster = churnClub(c, byClub.get(c.id) ?? [], ownedClubId, r);
+    const roster = churnClub(c, byClub.get(c.id) ?? [], ownedClubId, r, orgDraftPool);
     next.push(...roster);
   }
   return next;

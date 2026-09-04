@@ -1415,3 +1415,116 @@ project's code, and the standalone-`undici` fix is the standard, minimal answer 
 well-understood ecosystem interaction); silently leaving CI red and just telling the user "it works on my
 machine" (would have been the actual answer prior to investigating — rejected the moment the real GitHub
 Actions run history was checked instead of assumed). See `CHANGELOG.md` v2.13.0.
+
+---
+
+## 2026-09-04 — The amateur draft: a real 20-round, worst-record-first draft with a sourced lottery, wired into rollover, drafted players landing on the drafting org's own affiliates
+
+**D93 · With scouting (D90) and parent affiliation (D91) both real, the standing blocker on the amateur
+draft was gone — this pass built the draft itself: a talent pool, a real draft order with the sourced
+top-6 lottery, 20 rounds, and a genuine integration into `startNewSeason` that places every drafted player
+on his own drafting organization's own affiliate.** Jordan's own direction going in was explicit and
+two-part: make the UI "crazy good looking... one of the best games out there," and — after a clarifying
+exchange, since the first answer arrived garbled — make every pick automatic ("Automatic via a staff
+personality"): the owner's own club follows a settable draft philosophy, every other club drafts
+best-player-available. No interactive, pick-by-pick UI exists or was asked for; the philosophy dial is
+the one lever this pass gives the owner over an otherwise fully-automatic draft.
+
+**Sourced (T1): 20 rounds, fixed by the 2022-26 CBA, and the top-6 lottery's headline number — the three
+worst records each get 16.5% odds at pick #1 (RESEARCH.md §1.5).** Nothing else about the rest of an
+18-team lottery pool's odds curve is published anywhere found this pass — the remaining 15 slots' odds
+are a disclosed T3 linear decay from that 16.5% anchor, not a second sourced number dressed up as one.
+"18 non-playoff clubs" is itself an approximation: no playoff-qualification system exists yet anywhere in
+this project, so the lottery pool is simply the worst 18 of 30 clubs by winning percentage — the closest
+honest stand-in until a real standings-to-playoff-bracket system exists to ask instead. Best-12 clubs pick
+19th through 30th in exact reverse-standings order, same as the real draft.
+
+**Deliberately out of scope, disclosed rather than silently absorbed: Competitive Balance Rounds A/B,
+the bonus-pool/slot-value/overage-tax financial system, and the revenue-sharing rule that restricts
+lottery eligibility for large-market clubs.** RESEARCH.md §1.5 has real, sourced numbers for the
+bonus-pool system specifically — it's a genuinely separate system (a second, parallel constraint on how
+teams draft, not on who drafts when) and belongs to a pass of its own, not bolted onto this one to make
+the lottery "more complete." Splitting it out follows the same "one system per pass, fully finished"
+discipline D86/D89/D91 already established, not scope-timidity.
+
+**Prospects are scored on `p.ovr` (scouted, noisy), never `p.tru` (hidden true grade) — draft uncertainty
+falls out of an existing mechanism, not a new one.** Every prospect this pass generates is a fresh,
+zero-sample amateur; `refineScout` (D24, D90) already produces exactly the wide, low-reliability estimate
+a real amateur scouting report would have, for anyone with no accumulated sample. Reusing it here means
+the draft's own "you don't really know what you're getting" honesty comes for free from a mechanism this
+project already built and already tested — not a second noise model invented to say the same thing twice.
+
+**Integration design: drafted players are routed through `churn.ts`'s EXISTING fill-vacancy loop, not a
+new "prospect pool" roster concept.** `churn.ts` (D89) already generates a `freshPlayer()` for any
+MLB/MiLB club with an unfilled roster slot and no published composition rule to fill it from — for a MiLB
+AFFILIATE club specifically (`club.lvl !== "MLB"`), that same loop now checks whether that club's owning
+org (`club.parent`, D91) still has an undrafted pick waiting before falling back to a random fresh player.
+A shared, mutable `ReadonlyMap<string, Player[]>` (built once by `runDraft`, passed through
+`churnWorld`→`churnClub`) is what lets one org's affiliates draw down the SAME pool of its own draftees in
+iteration order, rather than each affiliate getting its own disconnected slice. Two hard rules enforced by
+construction, not by a test asserting after the fact: a draftee never displaces a survivor (the loop only
+ever fills an already-open vacancy), and a draftee never lands directly on the MLB roster itself — realistic
+(18-21-year-olds don't debut in the majors) and mechanically guaranteed by only ever consulting
+`orgDraftPool` inside the `club.lvl !== "MLB"` branch.
+
+**`startNewSeason` runs the draft BEFORE churn, not after, on purpose.** The draft needs the pre-reset
+standings (worst-record-first order) and the current, not-yet-churned population (for `pitcherRatioByOrg`,
+the NEED philosophy's own signal) — running it after churn/record-reset would compute the lottery off a
+blank 0-0 slate and score organizational need off a roster churn had already reshuffled.
+
+**UI: a real Draft results page, not the placeholder `DarkPage` this route had shown since v1** —
+`apps/web/src/pages/DraftPage.tsx`, following the `front-office` skill's own doctrine (one token layer,
+phone-first, real component states) rather than reaching for anything outside this project's existing
+design system. A stat-tile summary (rounds, total picks, the owned club's own pick count and first-pick
+number, current philosophy), a three-way philosophy selector wired live to `state.draftPhilosophy`
+(`gameStore.setDraftPhilosophy`, a new store action), and a round-grouped, filterable (mine/all clubs, name
+search) pick list — the owned club's own picks are visually marked (an accent rule, accent name colour),
+never a separate list. No pick is interactive, per the scope note above; browsing what already happened is
+what this page does. Screenshotted and reviewed (not just structurally asserted) at 360px/1440px, both
+shells, both themes, across both the empty (no-draft-yet) and populated (post-rollover) states, including
+via a real click through the actual app rather than an injected fixture — this caught two real bugs no
+assertion did: a grammar slip ("1 picks") and two stat-tile context strings ("30 clubs · 1 pick each",
+"applies at your next draft") truncating mid-word specifically in the "desk" shell's uppercase
+letter-spaced labels at 360px (fixed by shortening the copy; the "ootp" shell's lowercase rendering never
+truncated, which is exactly the kind of shell-specific defect D16's "look at both shells" discipline
+exists to catch). `registry.tsx`'s `draft` entry is now `live: true`.
+
+**A genuine, PRE-EXISTING, out-of-scope defect surfaced incidentally and must be disclosed, not fixed
+here: `makePlayer`'s id scheme has a real collision risk.** `player.ts` draws every id from
+`Math.floor(r()*1e9).toString(36)` — about 1e9 distinct values. A temporary diagnostic measuring how
+cleanly a rollover's 600 new draft picks land on real roster slots found one sampled year absorbing
+"101.5%" of its draftees — impossible unless two distinct `Player` objects in `state.players` ended up
+sharing the same `id`, which is possible (not certain) at this project's current scale (several thousand
+players plus 600 new picks a year, birthday-paradox arithmetic on a ~1e9 space). This is `player.ts`'s own
+id-generation scheme, not a defect in `draft.ts`/`churn.ts`/`rollover.ts` — nothing in this pass touches
+how ids are minted — and fixing it is real, separate work (a larger keyspace, or a monotonic counter) for
+whoever picks it up. Recorded here, not silently absorbed into this pass's own fix, because the
+diagnostic that found it belongs to this pass even though the defect itself predates it.
+
+**Verified, not assumed.** `draft.test.ts` (10 new tests): exact pick/round counts (600 picks, 20 rounds
+× 30 clubs), no duplicate players across the whole draft, every pick belongs to a real MLB club with
+exactly 20 picks, `byOrg` groups correctly, the best 12 clubs pick 19th-30th in EXACT reverse-standings
+order, the empirical lottery odds for the three worst records land inside a wide but real bound around the
+sourced 16.5% target (4,000 trials), a club outside the 18-team lottery pool never draws pick #1 (200
+trials), BPA and UPSIDE philosophies provably diverge on the same board, and BPA's own definition (max
+remaining scouted OVR) holds pick-by-pick against the live remaining pool. `rollover.test.ts` (3 new
+tests): `state.lastDraft` is null before any rollover and a complete 600-pick record after one, drafted
+players never land on an MLB roster and some do land on real affiliates, a drafted player's landed club's
+`parent` exactly matches the pick record's drafting club, and setting `draftPhilosophy` to `"UPSIDE"`
+before rollover works with the world's total population size staying exactly constant. Full workspace
+suite (282 sim-kit + 8 apps/web tests) passes, typecheck clean, build succeeds, and the Playwright visual
+gate — now 32 tests, up from 24, with the Draft page's empty state added as a permanent regression check
+— passes in full.
+
+Rejected: an interactive, pause-and-resume-for-input draft UI (not what Jordan asked for once the
+clarifying exchange resolved to "automatic via a staff personality"; would also need a real state-machine
+pause/resume capability nothing in this engine has); inventing a new "prospect pool" roster concept
+instead of reusing `churn.ts`'s existing fill-vacancy loop (would duplicate a mechanism that already does
+exactly this job); scoring draft prospects on `p.tru` for "more realistic" team-building (would break Law
+10 — no view or system may read a hidden true grade — for the sake of AI opponents nobody watches make
+decisions); silently fixing the `makePlayer` id-collision finding inside this pass (a different, unrelated
+system; the honest move is disclosure, not an uncredited drive-by fix); building Competitive Balance
+rounds or the bonus-pool financial system in the same pass (real, sourced, substantial work of its own —
+see above). What's still not built: CB rounds, the bonus pool/slot values/overage tax, revenue-sharing
+lottery restrictions, interactive picking, a dedicated Scouting page, the ownership ladder, and the
+`makePlayer` id-collision fix now disclosed above. See `CHANGELOG.md` v2.14.0.

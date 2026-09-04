@@ -24,6 +24,7 @@ import {
   type GameState,
   type NewGameOptions,
   type AdvanceResult,
+  type DraftPhilosophy,
 } from "@bushleague/sim-kit";
 import { saveGame, loadGame } from "../save.js";
 
@@ -38,6 +39,8 @@ interface GameStore {
   advance: () => Promise<void>;
   /** Rolls the save into the next year — `rollover.ts`'s `startNewSeason`, real and tested in `sim-kit` since DECISIONS.md D87 but never callable from the app until now. Only meaningful once `state.sp >= state.sched.length` (the same condition `advanceDay`'s own `seasonOver` already reports) — `ActionBar.tsx` is what decides when to show it. */
   startNewSeason: () => Promise<void>;
+  /** The owner's own draft philosophy (DECISIONS.md D93) — takes effect at the NEXT rollover's draft, not retroactively; `runDraft` reads `state.draftPhilosophy` fresh every time it runs. */
+  setDraftPhilosophy: (philosophy: DraftPhilosophy) => Promise<void>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -89,6 +92,18 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const r = mulberry32((current.seed + current.season.year) >>> 0);
     rollIntoNewSeason(current, r);
     set({ state: { ...current }, lastResult: null });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}. Your progress this session is still here, but won't survive a reload.` });
+    }
+  },
+
+  setDraftPhilosophy: async (philosophy) => {
+    const current = get().state;
+    if (!current) return;
+    current.draftPhilosophy = philosophy;
+    set({ state: { ...current } });
     try {
       await saveGame(current);
     } catch (err) {

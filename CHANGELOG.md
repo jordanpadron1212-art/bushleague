@@ -5,6 +5,38 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.14.0 · THE AMATEUR DRAFT — 2026-09-04
+
+With scouting (v2.11.0) and parent affiliation (v2.12.0) both real, the standing blocker on the amateur
+draft was gone. This pass builds the draft itself: `draft.ts` generates a fresh amateur talent pool (600
+prospects, scored on scouted grades only, never hidden true ones), a real draft order with the sourced
+top-6 lottery (RESEARCH.md §1.5's 16.5%-odds anchor for the three worst records; the rest of the 18-team
+pool's curve is a disclosed T3 approximation), and 20 rounds of picks. Per Jordan's own direction, no pick
+is interactive — every club drafts automatically, best-player-available, except the owner's own club,
+which follows a settable philosophy (best-available / fill-needs / upside) via a new `DraftPhilosophy`
+control on the Draft page.
+
+Drafted players are routed through `churn.ts`'s existing fill-vacancy mechanism rather than a new
+"prospect pool" concept: a MiLB affiliate's own vacancies now check its parent org's undrafted picks
+(`Club.parent`, v2.12.0) before falling back to a random signee. A draftee never displaces a survivor and
+never lands directly on the MLB roster — only on the drafting organization's own MiLB affiliates.
+`startNewSeason` runs the draft before churn, so the lottery reads real pre-reset standings.
+
+The Draft page (`apps/web/src/pages/DraftPage.tsx`) is real for the first time — a stat-tile summary, the
+philosophy selector, and a round-grouped, filterable pick board with the owned club's picks visually
+marked. Screenshotted and reviewed at 360px/1440px across both shells/themes and both the empty and
+populated states, catching and fixing two real bugs (a grammar slip, and two stat-tile labels truncating
+mid-word in the "desk" shell's uppercase tracking at 360px).
+
+Disclosed rather than fixed here: a genuine, pre-existing `makePlayer` id-collision risk (a ~1e9-value
+id space, surfaced by a temporary draft-absorption diagnostic) — a different system's defect, left for
+whoever picks it up next. Also deliberately out of scope: Competitive Balance rounds, the bonus-pool/
+slot-value financial system, revenue-sharing lottery restrictions, and interactive picking.
+
+Verified: `draft.test.ts` (10 new tests) and 3 new `rollover.test.ts` integration tests; full workspace
+suite (282 sim-kit + 8 apps/web tests) passes, typecheck clean, build succeeds, 32/32 Playwright visual
+gate passes (up from 24, adding the Draft empty-state as a permanent check). See `DECISIONS.md` D93.
+
 ## v2.13.0 · FIX: EVERY CI RUN HAD BEEN FAILING SINCE THE REWRITE BEGAN — 2026-09-04
 
 Asked whether there was anything to test-play, the honest first step was checking whether the GitHub

@@ -90,5 +90,28 @@ for (const shell of SHELLS) {
 
       await page.screenshot({ path: testInfo.outputPath(`books-${shell}-${theme}.png`), fullPage: true });
     });
+
+    // The DRAFT page's populated-board state (real picks, a completed
+    // rollover) is verified manually per pass, not here — driving a full
+    // season to rollover on every CI run would multiply this file's own
+    // cost for no ongoing regression value the empty state doesn't already
+    // cover (DECISIONS.md D93). The empty state IS reachable for free
+    // (no rollover needed) and is exactly as regression-prone as any other
+    // screen, so it stays in the permanent gate like Office/Books do.
+    test(`Draft (empty state) renders clean — ${shell}/${theme}`, async ({ page }, testInfo) => {
+      const consoleErrors: string[] = [];
+      page.on("console", (msg) => msg.type() === "error" && consoleErrors.push(msg.text()));
+      page.on("pageerror", (err) => consoleErrors.push(err.message));
+
+      await startGame(page);
+      await page.goto("/#/p/draft");
+      await setShellTheme(page, shell, theme);
+      await expect(page.getByText("No draft yet.")).toBeVisible();
+
+      expect(await overflowPx(page)).toBeLessThanOrEqual(1);
+      assertClean(consoleErrors);
+
+      await page.screenshot({ path: testInfo.outputPath(`draft-empty-${shell}-${theme}.png`), fullPage: true });
+    });
   }
 }

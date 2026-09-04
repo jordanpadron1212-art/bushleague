@@ -24,6 +24,7 @@
 import type { ComponentType } from "react";
 import OfficePage from "./OfficePage.js";
 import BooksPage from "./BooksPage.js";
+import DraftPage from "./DraftPage.js";
 import DarkPage from "./DarkPage.js";
 
 export type PageGroup = "CLUB" | "LEAGUE" | "TALENT" | "MONEY" | "DESK";
@@ -52,8 +53,8 @@ export const PAGES: readonly PageDef[] = [
   { id: "leaders", label: "Leaders", group: "LEAGUE", icon: "leaders", element: DarkPage, live: false, lightsAt: "a leaderboard UI pass — real per-player stats already accumulate in Player.st" },
   { id: "wire", label: "Wire", group: "LEAGUE", icon: "wire", element: DarkPage, live: false, lightsAt: "the market + winter passes" },
   // TALENT
-  { id: "scouting", label: "Scouting", group: "TALENT", icon: "scouting", element: DarkPage, live: false, lightsAt: "the scouting + draft pass" },
-  { id: "draft", label: "Draft", group: "TALENT", icon: "draft", element: DarkPage, live: false, lightsAt: "the scouting + draft pass" },
+  { id: "scouting", label: "Scouting", group: "TALENT", icon: "scouting", element: DarkPage, live: false, lightsAt: "a dedicated scouting UI pass — the scouting budget/reliability mechanism itself is real (DECISIONS.md D90)" },
+  { id: "draft", label: "Draft", group: "TALENT", icon: "draft", element: DraftPage, live: true },
   { id: "trades", label: "Trades", group: "TALENT", icon: "trades", element: DarkPage, live: false, lightsAt: "the trades pass" },
   { id: "freeagents", label: "Free agents", group: "TALENT", icon: "fa", element: DarkPage, live: false, lightsAt: "the market pass" },
   // MONEY

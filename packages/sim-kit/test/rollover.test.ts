@@ -123,4 +123,58 @@ describe("rollover — mechanical guarantees", () => {
     // population reaches after just a handful of years (see D87's history).
     expect(ages[ages.length - 1]!).toBeLessThan(32);
   }, 40000);
+
+  it("runs a real amateur draft every rollover (DECISIONS.md D93): state.lastDraft is a complete, real record, and drafted players actually land on the drafting org's own MiLB affiliates — never the MLB roster itself", () => {
+    const state = newGame({ ownedClubId: "MLB_NYY", seed: 14, year: 2026 });
+    expect(state.lastDraft).toBeNull(); // nothing has rolled over yet
+    playToSeasonEnd(state);
+    startNewSeason(state, mulberry32(state.seed + 321));
+
+    expect(state.lastDraft).not.toBeNull();
+    const picks = state.lastDraft!;
+    expect(picks.length).toBe(20 * 30); // DRAFT_ROUNDS x 30 MLB clubs
+
+    const draftedIds = new Set(picks.map((p) => p.playerId));
+    const clubById = new Map(state.world.clubs.map((c) => [c.id, c] as const));
+
+    let landedOnAffiliate = 0;
+    let landedOnMlb = 0;
+    for (const p of state.players) {
+      if (!draftedIds.has(p.id) || !p.cid) continue;
+      const club = clubById.get(p.cid)!;
+      if (club.lvl === "MLB") landedOnMlb++;
+      else landedOnAffiliate++;
+    }
+    expect(landedOnMlb).toBe(0); // no draftee ever debuts directly onto an active MLB roster
+    expect(landedOnAffiliate).toBeGreaterThan(0); // and real ones did land somewhere real
+  }, 20000);
+
+  it("a drafted player who lands on a roster is placed at his OWN drafting org's affiliate, not a different org's", () => {
+    const state = newGame({ ownedClubId: "MLB_NYY", seed: 15, year: 2026 });
+    playToSeasonEnd(state);
+    startNewSeason(state, mulberry32(state.seed + 654));
+
+    const clubById = new Map(state.world.clubs.map((c) => [c.id, c] as const));
+    const pickByPlayerId = new Map(state.lastDraft!.map((p) => [p.playerId, p] as const));
+    let checked = 0;
+    for (const p of state.players) {
+      const pick = pickByPlayerId.get(p.id);
+      if (!pick || !p.cid) continue;
+      const landedClub = clubById.get(p.cid)!;
+      expect(landedClub.parent).toBe(pick.clubId);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(0);
+  }, 20000);
+
+  it("the owner's draft philosophy is read from state, and the whole world's population size stays exactly constant across a rollover that includes a real draft", () => {
+    const state = newGame({ ownedClubId: "MLB_NYY", seed: 16, year: 2026 });
+    state.draftPhilosophy = "UPSIDE";
+    const before = state.players.length;
+    playToSeasonEnd(state);
+    startNewSeason(state, mulberry32(state.seed + 987));
+    expect(state.players.length).toBe(before);
+    const myFirstPick = state.lastDraft!.find((p) => p.clubId === "MLB_NYY");
+    expect(myFirstPick).toBeDefined();
+  }, 20000);
 });

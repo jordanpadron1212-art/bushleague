@@ -21,6 +21,7 @@ export * from "./roster.js";
 export * from "./game.js";
 export * from "./season.js";
 export * from "./development.js";
+export * from "./draft.js";
 export * from "./churn.js";
 export * from "./rollover.js";
 export * from "./newgame.js";

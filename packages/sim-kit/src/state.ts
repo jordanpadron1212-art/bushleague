@@ -28,6 +28,7 @@ import type { CalendarDate } from "./date.js";
 import type { Club } from "./world.js";
 import type { Player } from "./player.js";
 import type { PlayedGame } from "./season.js";
+import type { DraftPhilosophy, DraftPickResult } from "./draft.js";
 
 export const SCHEMA_VERSION = 1;
 
@@ -92,6 +93,10 @@ export interface GameState {
   payrollBudget: number;
   /** Owner-set scouting budget (DECISIONS.md D90) — an annual dollar figure, same convention as `payrollBudget`. Defaulted from `econFor(ownedClub).scouting` in `newGame()`, and unlike `ticketPrice`/`payrollBudget` it is REAL, not inert: `advance.ts` posts it to the ledger every month crossing (account 5300) and feeds it into `scoutBoostFor` to narrow the owned roster's own scouting reliability. No owner-facing control to move it off that default exists yet (a disclosed gap, not an oversight) — see CHANGELOG.md v2.11.0. */
   scoutingBudget: number;
+  /** Owner-set draft philosophy (DECISIONS.md D93) — every OTHER MLB club drafts best-player-available (T3, disclosed); the owned club's own picks follow whichever of "BPA"/"NEED"/"UPSIDE" this is set to. Defaults to "BPA" in `newGame()`. No pick is interactive — this is the one lever the owner has over an otherwise fully-automatic draft. */
+  draftPhilosophy: DraftPhilosophy;
+  /** The most recently completed amateur draft's full pick-by-pick record (`draft.ts`'s `runDraft`), or `null` before any rollover has ever run one. A draft-day SNAPSHOT per pick, not a live reference — stays accurate after a drafted player ages, develops, or (per churn.ts) eventually leaves the population. Only the latest draft is kept; multi-year draft history is a disclosed future enhancement, not an oversight. */
+  lastDraft: DraftPickResult[] | null;
   world: WorldState;
   players: Player[];
   /** `[day, homeClubIndex, awayClubIndex][]`, sorted by day — `schedule.ts`'s `WorldSchedule.games`, indices into `world.clubs`. */
@@ -147,6 +152,8 @@ export function createInitialState(opts: CreateStateOptions = {}): GameState {
     ticketPrice: 0,
     payrollBudget: 0,
     scoutingBudget: 0,
+    draftPhilosophy: "BPA",
+    lastDraft: null,
     world: { clubs: [], renames: {}, grads: [], wage: {} },
     players: [],
     sched: [],
