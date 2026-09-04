@@ -2,17 +2,17 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78, D79):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D80):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
-> ledger, chart of accounts, RNG, formatters, and — as of v2.1.0 — player generation and grading
-> (`LVL` environments, `makePlayer`, `rateProfile`, the Law 10 scouting model), calibrated against
-> RESEARCH.md §7.1's published lines (50/50 checks pass). Club/world generation, the schedule, the
-> box-score engine, the market and the winter cycle are real logic sitting in the old build and are
-> still not ported — that is the actual next pass, ranked above everything the pre-rewrite roadmap had
-> planned next, because nothing in "Next, in order" below can be built on top of a world that doesn't
-> exist yet in the new stack.
+> ledger, chart of accounts, RNG, formatters, player generation and grading (v2.1.0, calibrated against
+> RESEARCH.md §7.1, 50/50 checks pass), and — as of v2.2.0 — club/world generation (all 218 real clubs)
+> and the full schedule (every club at its exact published game count). The box-score engine, the
+> market and the winter cycle are real logic sitting in the old build and are still not ported — that
+> is the actual next pass, ranked above everything the pre-rewrite roadmap had planned next, because
+> nothing in "Next, in order" below can be built on top of a game that doesn't exist yet in the new
+> stack.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -24,40 +24,38 @@ What's next and what's genuinely open. Updated against reality — not against t
 
 **The price of a win, measured** (`qa/econ.js`, annual net per 100 points of win%): Atlantic **$131,889** · American Association **$147,688** · Pioneer **$106,272** · Frontier **$44,920** · Pecos **$3,610**.
 
-## Next, in order — as of the 2026-09-04 rewrite (updated after v2.1.0)
+## Next, in order — as of the 2026-09-04 rewrite (updated after v2.2.0)
 
-**Done: player generation and grading** (`@bushleague/sim-kit` — `LVL`, `makePlayer`, `rateProfile`,
-the scouting model), calibrated against RESEARCH.md §7.1. See DECISIONS.md D79.
+**Done: player generation and grading** (v2.1.0, DECISIONS.md D79) and **club/world generation plus the
+full schedule** (v2.2.0, DECISIONS.md D80) — all 218 real clubs, every club at its exact published
+game count, home/away balanced, opponent distribution fair.
 
-**1. Port club/world generation and the schedule into `@bushleague/sim-kit`.** `buildWorld`'s 202-club
-data tables (30 MLB in their real divisions, the affiliated ladder, the five independent leagues) and
-the schedule generator — real, working JS in `bush-league-v0.10.html`, not yet in this repository in
-editable form. Player generation (done) is the substrate this needs; nothing plays until clubs and a
-schedule exist to put generated players on.
+**1. Port the box-score game engine** (`log5`/`resolvePA`/`draw`, the `ADV` calibration constants) into
+`@bushleague/sim-kit` — real, working JS in `bush-league-v0.10.html`, not yet in this repository in
+editable form. This is what turns a scheduled matchup and two `rateProfile()` outputs into an actual
+score, and what unlocks ERA/WHIP calibration — player generation's one stated gap (opponent-dependent
+stats need an opponent). Nothing plays until this exists: there is a world and a schedule now, but no
+game has ever been simulated.
 
-**2. Port the box-score game engine** (`log5`/`resolvePA`/`draw`, the `ADV` calibration constants).
-This is what turns individual `rateProfile()` outputs into actual games, and what unlocks ERA/WHIP
-calibration — player generation's one stated gap (opponent-dependent stats need an opponent).
-
-**3. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
-player/world generators and the box-score engine (passes 1-2 above) all need to meet in a Zustand store
+**2. Wire the Office/Books/Roster pages to real state.** The UI chassis, the ledger (tested), the
+player/world generators and the box-score engine (pass 1 above) all need to meet in a Zustand store
 and an IndexedDB save. This is the "V1 must be winnable and losable" bar the pre-rewrite project always
 held itself to — a chassis with dark pages is not that yet.
 
-**4. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
-pass that makes scouting mean anything — just now behind three more passes than it used to be. The
+**3. Player development and ageing.** Unchanged reasoning from the pre-rewrite plan below — still the
+pass that makes scouting mean anything — just now behind two more passes than it used to be. The
 realism-research workflow launched 2026-09-04 (development curves by individual tool, Statcast-era
 pitch/batted-ball modeling, defensive value in real units, platoon splits) feeds this pass directly —
 merge and reconcile its findings into RESEARCH.md before starting it.
 
-**5. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+**4. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
 from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
 ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing — see DECISIONS.md
 D77.
 
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
-plan.** Still directionally right once the world exists again; re-sequence it against pass 1 and 2
-above rather than following its numbers literally.
+plan.** Still directionally right once the game exists again; re-sequence it against passes 1-3 above
+rather than following its numbers literally.
 
 ## Done (pre-rewrite build — historical record, not current state)
 

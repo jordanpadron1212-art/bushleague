@@ -500,3 +500,44 @@ keep correct rather than two that can quietly drift apart.
 club data tables), the schedule, and the box-score game engine (`log5`/`resolvePA`/`draw`, the `ADV`
 calibration constants). Player generation is the substrate those need, not a replacement for them —
 nothing plays yet. See ROADMAP.md.
+
+---
+
+## 2026-09-04 — Club/world generation and the schedule, ported
+
+**D80 · Club/world generation (`buildWorld`) and the schedule generator (`pairCounts`/`placeSchedule`/
+`balanceVenues`) are ported into `@bushleague/sim-kit`, from the real `MLB`/`MILB`/`INDY`/`RIVALS`/
+`SEASONS` data and algorithms in `bush-league-v0.10.html`.**
+
+**Measured:** the real world is 30 MLB + 120 affiliated + 68 independent clubs = **218**, not the 202
+the old HANDOFF's "working and verified" line carried forward — that figure predates the Pecos League's
+addition in the original build's own history (D41, v0.6: 52 partner-league indy clubs + 16 Pecos = 68).
+Recorded here since it's a real discrepancy in inherited documentation, not invented either way.
+
+All 218 clubs generate with globally unique ids (D28's own regression, re-verified) and abbreviations
+unique within every league pool — including the exact case D-catalogued against this code: Sioux City
+and Sioux Falls, both in the American Association West, get distinct abbreviations. The full-world
+schedule (`buildFullSeasonSchedule`) places every pool independently and every one of the 218 clubs
+lands on its exact published game count: MLB 162, AAA 150, AA 138, HIA/A 132, and each independent
+league's own figure (Atlantic 126 down to Pecos 54) — `packages/sim-kit/test/schedule.test.ts`.
+
+**One real duplication caught and fixed before it could go stale, not a new bug:** last pass's `levels.ts`
+had to hardcode the Pecos League's elevation/games/attendance as standalone constants, because the real
+`INDY` league table didn't exist in this repository yet. Porting that table this pass exposed exactly the
+trap the original build's own comment on this line warned about ("a second copy of 4870 in this line is
+exactly the kind of field that goes stale silently when the other one is corrected") — `levels.ts` now
+reads Pecos's elevation/games/attendance from `world-data.ts`'s `INDY` table via `indyLeague()`, the same
+as the original, with no standalone copy left behind.
+
+**One genuine algorithmic nuance found during the port, verified rather than assumed away:** the
+schedule placer's series-length cap (`schedule.ts`'s own comment on `const cap = ...`) gates only its
+fast continuation path. The fallback full opponent-scan can still reselect yesterday's opponent when
+that pair's remaining game-need dominates every other candidate, and the run counter can't distinguish
+which path chose it — so a pair can occasionally run 5-6 calendar days unbroken against the intended
+"two to four game series" design, observed and left as-ported (no old test harness exists to confirm
+whether the original build's own gate ever caught or excluded this). Confirmed harmless to the
+properties that actually matter — exact game totals, D34's home/away balance, D46's opponent-
+distribution fairness — all still hold exactly.
+
+**What's still not ported:** the box-score game engine (`log5`/`resolvePA`/`draw`, the `ADV` calibration
+constants) — the next pass, and what turns a scheduled matchup into an actual played game.

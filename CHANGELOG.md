@@ -5,6 +5,22 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.2.0 · WORLD GENERATION AND THE SCHEDULE — 2026-09-04
+
+Club/world generation (`buildWorld`) and the schedule generator (`pairCounts`/`placeSchedule`/
+`balanceVenues`) ported into `@bushleague/sim-kit`, from the real MLB/MiLB/independent-league data and
+scheduling algorithms in `bush-league-v0.10.html`. All **218** real clubs generate (30 MLB + 120
+affiliated + 68 independent — corrects a stale "202" figure carried in the old docs since before the
+Pecos League was added). Every club lands on its exact published game count via
+`buildFullSeasonSchedule`; D28's id-uniqueness and the Sioux City/Sioux Falls abbreviation-collision
+regressions are both re-verified. See `DECISIONS.md` D80 for a real duplication fixed (Pecos's
+elevation/games/attendance now reads from the real league table instead of last pass's standalone
+placeholder constants) and a genuine algorithmic nuance found and documented, not silently patched
+over (the series-length cap's fallback-scan interaction).
+
+Not yet ported: the box-score game engine. Nothing plays yet — there's a world and a schedule, but no
+game has been simulated.
+
 ## v2.1.0 · PLAYER GENERATION — 2026-09-04
 
 Player generation and grading ported into `@bushleague/sim-kit`: level environments, the grade-to-

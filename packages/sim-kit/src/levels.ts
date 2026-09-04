@@ -23,6 +23,7 @@
  * knob, not published). `s` = the spread (also Tier 3). Everything under
  * `env` is Tier 1.
  */
+import { indyLeague } from "./world-data.js";
 
 export type LevelKey = "MLB" | "AAA" | "AA" | "HIA" | "A" | "INDY" | "PECOS";
 
@@ -164,13 +165,13 @@ export const ILVL: Record<string, { c: number; s: number }> = {
  * would imply roughly +60% at 5,000ft, far outside anything ever measured).
  * Single-A is treated as the sea-level baseline, which is a T3 assumption
  * sitting on a T1 coefficient (real Single-A parks average somewhat above
- * sea level). Elevation 4,870ft and games 54 are the league's own published
- * figures (RESEARCH.md §9.7), T1.
+ * sea level). Elevation, games and attendance are read from `world-data.ts`'s
+ * `INDY` table (the league's own published figures, RESEARCH.md §9.7, T1),
+ * not duplicated as standalone constants here — the original build's own
+ * comment on this exact line: "a second copy of 4870 in this line is
+ * exactly the kind of field that goes stale silently when the other one is
+ * corrected."
  */
-export const PECOS_ELEVATION_FT = 4870;
-export const PECOS_GAMES = 54;
-export const PECOS_ATTENDANCE_T3 = 400;
-
 const ALT = {
   rPerFt: 5.61e-4,
   hrPerFt: 1.2e-4,
@@ -247,12 +248,13 @@ export function deriveAltEnv(base: LevelEnv, feet: number): LevelEnv {
   };
 }
 
+const PECOS_LEAGUE = indyLeague("Pecos League");
 LVL.PECOS = {
   c: 30,
   s: 6,
-  att: PECOS_ATTENDANCE_T3,
-  g: PECOS_GAMES,
-  env: deriveAltEnv(LVL.A.env!, PECOS_ELEVATION_FT),
+  att: PECOS_LEAGUE?.att ?? 400,
+  g: PECOS_LEAGUE?.games ?? 54,
+  env: deriveAltEnv(LVL.A.env!, PECOS_LEAGUE?.elev ?? 4870),
 };
 
 export function envFor(lvl: string, lg?: string): LevelEnv {

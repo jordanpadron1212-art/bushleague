@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 79 of them are already recorded, several against
+proposing anything that feels like a new idea — 80 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D79. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D80. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. Seventeen sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -93,22 +93,23 @@ the ten worst defects in the old build were found by eye with every harness gree
 
 ## Where this stands
 
-**A chassis plus a verified player-generation engine — still not a game you can open and play.**
+**A chassis, a verified player-generation engine, a real 218-club world, and a real schedule — still
+not a game you can open and play.**
 
 Working and verified: the pnpm workspace and its CI/CD to GitHub Pages · the token layer (two shells,
 two themes, three density tiers, contrast computed against DECISIONS.md D18's own rule) · the page
 registry (`DECISIONS.md` D11's pattern, now 18 pages, 1 live) · the Office page, honestly empty ·
 `@bushleague/sim-kit`'s ledger, chart of accounts, RNG and formatters, all tested against real sourced
-examples · a PWA that installs and precaches for offline play after a first visit · **player generation
-and grading** (`LVL` environments, grade-to-real-units tables, `makePlayer`, `rateProfile`, the Law 10
-scouting model), calibrated against RESEARCH.md §7.1's published lines the same way `qa/calib.js`
-calibrated the old build (`DECISIONS.md` D79) — 50/50 checks pass, most within 1%.
+examples · a PWA that installs and precaches for offline play after a first visit · player generation
+and grading, calibrated against RESEARCH.md §7.1 (`DECISIONS.md` D79) · **club/world generation** — all
+218 real clubs (30 MLB + 120 affiliated + 68 independent) with correct divisions, leagues and unique
+ids/abbreviations · **the schedule** — every club lands on its exact published game count, home/away
+balanced (D34), opponent distribution fair (D46) — `DECISIONS.md` D80.
 
-**Not built yet:** club/world generation (the 202-club roster), the schedule, the box-score game engine,
-the market, the winter cycle, scouting, the draft, trades, contracts, injuries in depth, player
-development, the ownership ladder, play-by-play, staff, awards and history. All of it existed and
-worked in `bush-league-v0.10.html`; player generation is the first of it ported. See ROADMAP.md's
-"Next, in order." **Nothing plays yet — there is still no club, no schedule, no game to advance.**
+**Not built yet:** the box-score game engine, the market, the winter cycle, scouting, the draft, trades,
+contracts, injuries in depth, player development, the ownership ladder, play-by-play, staff, awards and
+history. All of it existed and worked in `bush-league-v0.10.html`. See ROADMAP.md's "Next, in order."
+**Nothing plays yet — there is a world and a schedule, but no game has ever been simulated.**
 
 ---
 
@@ -125,6 +126,10 @@ worked in `bush-league-v0.10.html`; player generation is the first of it ported.
 | Playwright visual check | 8/8 pass — both shells, both themes, 360px + 1440px, 0 console errors, 0 horizontal overflow | `apps/web/e2e/visual.spec.ts`, run against the pre-installed sandbox Chromium |
 | generated hitter/pitcher populations reproduce RESEARCH.md §7.1's published lines | 50/50 checks pass at MLB/AAA/AA/HIA/A (slash line ≤2%, HR ≤5.5%, per-nine ≤2%) — MLB BA .244 vs published .245, Triple-A OPS .768 vs .768 exactly | `packages/sim-kit/test/calibration.test.ts` |
 | Pecos environment stays hotter than the Single-A baseline it's derived from | `rg`/`hr9` both strictly greater, elevation (4,870ft) recorded on the env for the provenance sheet | same file |
+| the real world is 218 clubs, not the old docs' "202" | 30 MLB + 120 affiliated + 68 independent, counted from the actual data tables, not asserted | `packages/sim-kit/test/world.test.ts` |
+| every club id is globally unique; Sioux City/Sioux Falls get distinct abbreviations | both regressions re-verified against the exact cases DECISIONS.md D28 and its Law 14 catalogue entry record | same file |
+| every one of 218 clubs lands on its exact published game count | MLB 162, AAA 150, AA 138, HIA/A 132, Atlantic 126 … Pecos 54 — all exact, via `buildFullSeasonSchedule` | `packages/sim-kit/test/schedule.test.ts` |
+| MLB home/away balance and Pecos's parity-limited balance | within 2.5 games (D34) and within 4 (D45's stated arithmetic floor for a 54-game/15-opponent pool) | same file |
 
 **Nothing about the old build's own game-outcome numbers** (the +8.5 win materiality, the age-structure
 match, the per-league economics) was re-measured — none of that system is ported yet, so there is
@@ -151,8 +156,14 @@ longer runs.
 - **Player generation has no ERA/WHIP calibration.** Those are opponent-dependent (log5 against a
   batter) and need the box-score engine — see `packages/sim-kit/test/calibration.test.ts`'s own header
   comment. Not an oversight; stated as the reason ERA/WHIP aren't in the 50 checks above.
-- **There is still no club, no roster, no schedule.** Player generation makes individual players; it
-  does not make a world. `buildWorld`'s 202-club data tables are not ported.
+- **A world and a schedule exist; no game has ever been played on it.** `buildWorld()` and
+  `buildFullSeasonSchedule()` produce real clubs and a real calendar of matchups — nothing resolves one
+  into a score yet.
+- **The schedule placer's series-length cap has a verified fallback-scan interaction** (`DECISIONS.md`
+  D80): a pair can occasionally play 5-6 unbroken calendar days instead of the intended 2-4-game series,
+  when that pair's remaining need dominates every other candidate. Confirmed harmless to game totals and
+  home/away balance; left as-ported rather than silently tightened, documented in `schedule.ts`'s own
+  comment on the cap.
 - **No migration path from an old save.** `SCHEMA_VERSION` starts at 1. A real, stated consequence of
   the rewrite (LAWS.md's old Law 11, "saves are forever," doesn't survive a substrate change — noted,
   not silently dropped).
@@ -165,16 +176,14 @@ longer runs.
 
 See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
-1. **Port club/world generation and the schedule** into `@bushleague/sim-kit` — `buildWorld`'s 202-club
-   data tables (30 MLB in their real divisions, the affiliated ladder, the five independent leagues),
-   from the logic in `bush-league-v0.10.html`. Player generation (this pass) is the substrate it needs;
-   nothing plays until clubs and a schedule exist to put the generated players on.
-2. **Port the box-score game engine** (`log5`/`resolvePA`/`draw`, the `ADV` calibration constants) —
-   this is what turns `rateProfile()`'s outputs into actual games, and what unlocks ERA/WHIP calibration
-   (this pass's one stated gap).
-3. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
+1. **Port the box-score game engine** (`log5`/`resolvePA`/`draw`, the `ADV` calibration constants) —
+   this is what turns a scheduled matchup and two `rateProfile()` outputs into an actual score, and what
+   unlocks ERA/WHIP calibration (the one stated gap in player generation).
+2. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
    project left honestly empty actually showing something. This is the "winnable and losable, not a menu
    mockup" bar the original project instructions always held V1 to.
+3. **Player development and ageing** — the pass that makes scouting mean anything, still queued behind
+   the two above.
 
 A deep realism-research workflow (development curves by individual tool, Statcast-era pitch/batted-ball
 modeling, defensive value in real units, platoon splits, the post-2023 baserunning rule effects, the
