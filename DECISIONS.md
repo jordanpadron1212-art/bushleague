@@ -742,3 +742,76 @@ function (a fresh `buildWorld()` already zeroes every record, but nothing yet re
 world's records for year two), the injury/market/winter systems, and — still the standing gap this
 session keeps naming — any of this wired to the UI or a real save. A season can be simulated end to
 end for the first time in this rewrite; nobody has watched one happen yet.
+
+---
+
+## 2026-09-04 — State wiring: a game can be started, played, saved and reloaded
+
+**D85 · `GameState` carries real types, `newGame()`/`advanceDay()` assemble and drive a save,
+IndexedDB persistence exists (`idb`), and Office + Books are wired to real state — UI.md §13.3's own
+signed-off checkpoint scope, "Office + Books," not a smaller or larger slice of it.**
+
+**Scope discipline, restated because this pass is the first to touch `apps/web` since the original
+chassis pass.** UI.md §13.3 explicitly requires the ledger pane to prove the grid engine this pass, and
+explicitly defers Roster ("the propagation pass"). Both honored: the ledger pane is a real, working,
+sortable, filterable grid; Roster/Standings/Schedule/Leaders stay dark, with their `lightsAt` text
+corrected (§ below) to say what's actually still missing — a UI pass, not the underlying data, which
+now exists for all of them.
+
+**Adaptation, noted rather than silent: `GameState.club` (a duplicated `ClubRef` snapshot in the
+original schema) is retired in favor of `ownedClubId: string | null`, a reference into `world.clubs`.**
+`Club` now carries everything `ClubRef` did and more; a second copy that could drift from the record it
+was copied from is exactly the kind of hidden state this package's other modules have been built to
+avoid (world.ts's, schedule.ts's own notes). Look the owned club up by id — `selectors.ts`'s
+`ownedClub()` does this once so pages don't each reinvent it.
+
+**A genuine, deliberate improvement over the original, not just a port — the RNG stream is now fully
+save-reproducible, closing a gap the original never closed.** The original's own `SIMR` reseeds from
+`G.seed` on a NEW game but not on a LOAD, so a reloaded save drifts onto a different future than an
+unbroken session would have played (HANDOFF.md's own "Known gaps" carried this forward as debt). This
+port's `advanceDay()` (`advance.ts`) draws each day's games from a fresh RNG seeded by
+`state.seed + that day's serial number` — mulberry32's own intended use for decorrelated per-item
+streams from one base seed — so replaying the same day from a save always reproduces the same outcome,
+with nothing about an RNG's internal counter needing to be part of the save at all. Verified directly:
+`newgame.test.ts`'s "reproduces identically on a fresh 'reload'" test builds two independent states from
+the same seed, advances both one day, and asserts byte-identical results.
+
+**One real bug found and fixed before it shipped, not after — an IndexedDB connection leak that hung
+`deleteDatabase` forever.** `save.ts`'s first draft cached one long-lived `idb` connection at module
+scope. A real IndexedDB `deleteDatabase()` call against a database with an open connection blocks
+(fires `onblocked`, waits) rather than erroring — so every test after the first hung for the full hook
+timeout. Caught by the test suite itself timing out, not by inspection. Fixed by opening and explicitly
+closing a connection per call (`withDb()`) — cheap enough at this call frequency (once per day-advance)
+that the earlier caching bought a perf win nothing here will ever notice, at the cost of a correctness
+bug real browsers would have hit too (a user closing and reopening a save-management screen, e.g.).
+
+**A version mismatch caught before it cost a day, not after: `@tanstack/react-table`'s installed
+version (9.x) turned out to be a genuine API rewrite from the well-established v8 shape** (`useTable`/
+`createCoreRowModel`, not `useReactTable`/`getCoreRowModel`) **this project's own stack docs were
+written against.** The Books ledger grid does not need it yet — the ledger has few or no rows without
+the gate-revenue/payroll posting system (next pass), and UI.md §13.3 itself calls this pass's grid proof
+"narrower" than the Roster pass's, where the column customizer, saved views and `@tanstack/react-virtual`
+row virtualization get their real justification against a 26-column, many-row grid. Sort/filter are
+plain React state instead — same user-facing result, no bet placed on an unfamiliar major-version API to
+sort five columns of nothing. Revisit both libraries together when Roster actually needs them.
+
+**Verified end to end, not just per-unit:** `packages/sim-kit/test/newgame.test.ts` (9 tests — an unknown
+club id throws, a fresh world is real and complete, the owned club sizes to `OWNED_N` not `ROSTER_N`,
+same-seed reproducibility, `scanNonFinite` clean, `advanceDay` mutates real records, `state.box` caps at
+400, season-end handling) and `apps/web/test/save.test.ts` (4 tests — a real IndexedDB round trip, not a
+mock of `idb`'s API, via `fake-indexeddb`). Then manually, in a real browser, screenshotted at every
+step (not just asserted): the club picker showing all 30 real MLB clubs by real division: choosing NYY
+generating a real world and a real opening-day schedule (`vs BAL · MAR 26`, the real 2026 slate); the
+Office page showing real 0-0 standings; clicking Advance and watching NYY go 1-0, the standings and
+streak update correctly, and the next scheduled game change; **reloading the page and getting a
+byte-identical Office page back** — the save round trip, working, watched. Books verified the same way
+across all five panes, all real and honestly near-empty. The full Playwright visual gate (UI.md §12) —
+club picker, Office, Books — passes 24/24: 2 shells x 2 themes x 2 widths, zero console errors, zero
+horizontal overflow.
+
+**What's still not built:** the ownership ladder itself (an owner picks only among the 30 MLB clubs
+today — the checkpoint's own stated target, not a smaller slice of it, but not the indy-to-MLB climb
+either), a season-reset/year-rollover function, the decision queue ("Needs you"), the wire (news), and —
+named explicitly as the very next pass, ranked first because Office/Books can't show anything real
+without it — the `ECON`/gate-revenue/payroll posting system. The ledger engine has been real and tested
+since the original chassis pass; nothing has ever posted to it. See `CHANGELOG.md` v2.6.0.

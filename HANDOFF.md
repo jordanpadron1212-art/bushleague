@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 84 of them are already recorded, several against
+proposing anything that feels like a new idea — 85 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D84. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D85. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -66,10 +66,15 @@ pnpm run build
 pnpm --filter web run test:visual
 ```
 
-That is the whole gate right now — five commands, under two minutes, verified end-to-end while building
-this pass. It is much thinner than the old 17-harness gate because most of what that gate defended
-(closed-league identity, roster legality, the save round trip, schedule fairness) doesn't exist yet to
-defend — **the gate will need to regrow as each system is ported, not stay this short forever.**
+That is the whole gate right now — five commands, under two minutes. It is thinner than the old
+17-harness gate, but has been regrowing pass by pass, per the note above: roster legality
+(`roster.test.ts`) and schedule fairness (`schedule.test.ts`, D34/D46) were both real by the roster and
+schedule passes; this pass adds closed-league identity at full-season-driver scale (`season.test.ts`'s
+exact wins==losses, runs==runs checks across all 218 clubs) and the save round trip
+(`save.test.ts`, `newgame.test.ts`'s reload-reproducibility test) for the first time. **The gate will
+keep regrowing as each remaining system is ported — it is not yet the equivalent of `qa/doctor.js`'s
+"every diagnostic in one command," just several of that command's individual diagnostics, each in its
+own real test file.**
 
 Then — not optional, `DECISIONS.md` D16's lesson survives the rewrite — **look at the Playwright
 screenshots** (`apps/web/test-results/`, or the `visual-qa-screenshots` artifact on a CI run). Eight of
@@ -88,42 +93,47 @@ the ten worst defects in the old build were found by eye with every harness gree
    catch-up note this repo's docs were assembled from says "you've played v0.9," but what specifically
    stood out never made it into a doc). Worth raising directly — it may change what the world-generation
    port should prioritize.
+3. **The "choose your club" screen isn't speced in UI.md.** UI.md jumps straight from "no save" to the
+   Office/Books mockups without ever drawing a new-game flow. Shipped anyway (`apps/web/src/pages/
+   NewGamePage.tsx`) rather than leaving the checkpoint's own "all 30 MLB clubs" target unreachable —
+   kept deliberately minimal (a plain grouped list, no styling pass) and flagged here rather than
+   presented as if it were signed off. Worth a real design pass once Jordan's seen it.
 
 ---
 
 ## Where this stands
 
-**A chassis, a verified player-generation engine, a real 218-club world, a real schedule, and — for the
-first time in this rewrite — a full season that can actually be played end to end.**
+**For the first time in this rewrite: a real game you can actually open, play, close, and come back
+to.** Choose a club, watch a real world and schedule generate, advance days, watch real standings move,
+reload the page and get your save back exactly as you left it.
 
 Working and verified: the pnpm workspace and its CI/CD to GitHub Pages · the token layer (two shells,
 two themes, three density tiers, contrast computed against DECISIONS.md D18's own rule) · the page
-registry (`DECISIONS.md` D11's pattern, now 18 pages, 1 live) · the Office page, honestly empty ·
-`@bushleague/sim-kit`'s ledger, chart of accounts, RNG and formatters, all tested against real sourced
-examples · a PWA that installs and precaches for offline play after a first visit · player generation
-and grading, calibrated against RESEARCH.md §7.1 (`DECISIONS.md` D79) · **club/world generation** — all
-218 real clubs (30 MLB + 120 affiliated + 68 independent) with correct divisions, leagues and unique
-ids/abbreviations · **the schedule** — every club lands on its exact published game count, home/away
-balanced (D34), opponent distribution fair (D46) — `DECISIONS.md` D80 · **plate-appearance resolution**
-— `log5`, `resolvePA` and `draw` ported and calibrated: the `log5(l,l,l) === l` identity proven exact
-— `DECISIONS.md` D81 · **roster construction, depth charts, and a full played game** — every club's
-roster generated legal-by-construction to its league's own published rule (age/service-year ranges,
-independent-league payroll capped exactly to the real published figure), a lineup/rotation/bullpen
-charted from it, and `simGame` playing a real nine-plus-inning game between two rosters through
-`resolvePA` — `DECISIONS.md` D82 · **the season-play driver** — `playDay`/`playSeason` walk a built
-schedule and call `simGame` for every game on it, updating every club's record; the full real 218-club
-world's full real schedule (all its games, not a sample) plays end to end in under 3 seconds, every
-closed-system identity (wins==losses==games played, runs scored==runs allowed) holds EXACTLY, and the
-full real 2,430-game MLB season reproduces RESEARCH.md §7.1 within 4% at every stat, HR/9 within 0.06%
-— `DECISIONS.md` D84.
+registry (`DECISIONS.md` D11's pattern, now 18 pages, **2 live**) · `@bushleague/sim-kit`'s ledger,
+chart of accounts, RNG and formatters, all tested against real sourced examples · a PWA that installs
+and precaches for offline play after a first visit · player generation and grading, calibrated against
+RESEARCH.md §7.1 (`DECISIONS.md` D79) · **club/world generation** — all 218 real clubs with correct
+divisions, leagues and unique ids/abbreviations · **the schedule** — every club lands on its exact
+published game count, home/away balanced, opponent distribution fair — `DECISIONS.md` D80 ·
+**plate-appearance resolution** — `log5`, `resolvePA` and `draw`, the `log5(l,l,l) === l` identity
+proven exact — `DECISIONS.md` D81 · **roster construction, depth charts, and a full played game** —
+every club's roster legal-by-construction to its league's own published rule, `simGame` playing a real
+nine-plus-inning game — `DECISIONS.md` D82 · **the season-play driver** — the full real 218-club
+world's full real schedule plays end to end in under 3 seconds, every closed-system identity holds
+EXACTLY, the full real MLB season reproduces RESEARCH.md §7.1 within 4% at every stat — `DECISIONS.md`
+D84 · **state, save/load, and two real screens** — `newGame()`/`advanceDay()` assemble and drive a
+`GameState`, IndexedDB persists it (`idb`), and **Office and Books are lit for real** (UI.md §13.3's own
+checkpoint scope): a real club picker (all 30 MLB clubs), real standings/next-game/streak on Office, a
+real five-pane ledger (income/balance/cash/ledger/audit) on Books, a real Advance button, verified with
+actual browser screenshots at every step including a page reload — `DECISIONS.md` D85. The RNG stream
+is now fully save-reproducible, closing a gap the original build never closed.
 
 **Not built yet:** the market, the winter cycle, scouting, the draft, trades, contracts in depth,
-injuries in depth, player development, the ownership ladder, play-by-play, staff, awards and history —
-and, closer at hand, an owner's own club, a season-reset/year-rollover function, and wiring any of the
-engine above to the UI or a real save. All of the game-logic list existed and worked in
-`bush-league-v0.10.html`. See ROADMAP.md's "Next, in order." **A full season can be simulated for the
-first time — nothing yet calls it from anywhere a player would see, and nothing persists what happens
-when it's played.**
+injuries in depth, player development, the ownership ladder (an owner picks only among the 30 MLB clubs
+today), play-by-play, staff, awards and history — and, ranked first because Office/Books can't show
+anything real without it, **the gate-revenue/payroll posting system**: the ledger has been real and
+tested since the original chassis pass; nothing has ever posted to it, so Books is real but honestly
+near-empty. See ROADMAP.md's "Next, in order."
 
 ---
 
@@ -156,6 +166,11 @@ when it's played.**
 | the full real 218-club world's full real schedule plays end to end | under 3 seconds; total wins == total losses == total games played and total runs scored == total runs allowed, EXACTLY, across all 218 clubs | `packages/sim-kit/test/season.test.ts` |
 | every club's games-played lands exactly on its league's published schedule length after a full season is played | all 218 clubs checked directly, not sampled | same file |
 | the full real 2,430-game MLB season reproduces RESEARCH.md §7.1 | ERA 3.74%, WHIP 0.48%, K/9 0.86%, BB/9 2.06%, BA 2.54%, OBP 1.75%, SLG 1.97%, HR/9 0.06% — tighter than the prior pass's 500-game sample at every stat | same file, see `DECISIONS.md` D84 |
+| a fresh save is real and complete | 218 clubs, the owned club sized to `OWNED_N` not `ROSTER_N`, a real full-season schedule, zero non-finite values anywhere in the state | `packages/sim-kit/test/newgame.test.ts` |
+| the RNG stream is fully save-reproducible | two independently-built states from the same seed, each advanced one day, produce byte-identical results — the original build never closed this gap | same file |
+| a real IndexedDB save round-trips exactly | against `fake-indexeddb`, not a mock of `idb`'s own API | `apps/web/test/save.test.ts` |
+| the whole app mounts and moves through its real states | no save → club picker → real game → Office, and a save from a prior session loads straight to Office | `apps/web/test/app.test.tsx` |
+| Office, Books and the club picker render clean | 24/24 — 2 shells × 2 themes × 2 widths, 0 console errors, 0 horizontal overflow; screenshots looked at, not just captured (choose a club → real standings → advance → reload → byte-identical) | `apps/web/e2e/visual.spec.ts`, manual verification this pass |
 
 **Nothing about the old build's own game-outcome numbers** (the +8.5 win materiality, the age-structure
 match, the per-league economics) was re-measured — none of that system is ported yet, so there is
@@ -166,14 +181,21 @@ longer runs.
 
 ## Known gaps — say these out loud, do not let them look solved
 
-- **Nothing plays.** This is a shell around an empty world. Say so before a screenshot makes it look
-  otherwise.
+- **Books is real but honestly near-empty.** Every pane (income/balance/cash/ledger/audit) reads the
+  real ledger — there's just almost nothing posted to it yet. No gate-revenue or payroll posting system
+  exists (`ECON`/`econFor`/`gateFor`/`gateDay`, all unported). Ranked first in "next passes" because
+  Office and Books can't show anything real without it.
+- **The ownership ladder doesn't exist — a new game picks only among the 30 MLB clubs.** The checkpoint's
+  own stated target ("all 30 MLB clubs"), not a smaller slice of it, but not the indy-to-MLB climb
+  either. `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question is still unresolved and still
+  blocks designing this properly.
+- **No season-reset/year-rollover function.** A fresh `buildWorld()` zeroes every record, so year one
+  works — nothing re-zeroes an EXISTING world's records for year two yet.
+- **The "choose your club" screen isn't UI.md-speced** — flagged in "Waiting for you" above, not
+  presented as if it were signed off.
 - **No gate depth yet.** The five-command gate above is what exists, not what's enough — it will need
-  the equivalent of `qa/doctor.js`'s "every diagnostic in one command" property once there's a world and
-  a save to diagnose.
-- **No save/load.** `packages/sim-kit`'s `GameState` type and `createInitialState()` exist; nothing
-  persists it to IndexedDB yet, and nothing reads it back. The action bar says so rather than pretending
-  a "Start a new game" button works.
+  the equivalent of `qa/doctor.js`'s "every diagnostic in one command" property once there's more to
+  diagnose (injuries, the market, contracts).
 - **The 23 old `src/` fragments and 17 `qa/` harnesses are gone**, in the sense that they were never
   uploaded to any session in editable form — only the composed `bush-league-v0.10.html` was. World-gen
   and the engine have to be read out of that file and ported with fresh tests, not diffed from a
@@ -182,15 +204,6 @@ longer runs.
 - **Player generation has no ERA/WHIP calibration.** Those are opponent-dependent (log5 against a
   batter) and need the box-score engine — see `packages/sim-kit/test/calibration.test.ts`'s own header
   comment. Not an oversight; stated as the reason ERA/WHIP aren't in the 50 checks above.
-- **A full season can be simulated end to end, but nothing calls it from anywhere a player would see,
-  and nothing persists what happens.** `playSeason` plays every game a real schedule contains — but
-  there is no owner's own club (every club in a run advances identically; nothing distinguishes "mine"),
-  no save, and no UI wired to any of it.
-- **No season-reset/year-rollover function exists yet.** A freshly built world (`buildWorld()`) already
-  zeroes every club's record, so year one works out of the box — but nothing yet re-zeroes an EXISTING
-  world's w/l/rs/ra/gp/l10/strk for year two. The original's own equivalent (`c.w=0;c.l=0;...` inside a
-  season-reset function this port hasn't ported) is a small, known gap for whichever pass adds
-  multi-year continuation.
 - **The `hrCal`/`bbCal` calibration constants (0.92/1.06) are ported as-is — D81's open question is now
   answered, not still open.** With real lineup context (this pass), HR/9 lands within ~10% of published
   at every level, confirming the constants were tuned against real lineup/rotation play and need no
@@ -221,18 +234,20 @@ longer runs.
 
 See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
-**Done: the realism-research workflow's findings are merged into `RESEARCH.md`** (§18–24, `DECISIONS.md`
-D83), and **the season-play driver** (`playDay`/`playSeason`, `DECISIONS.md` D84) — a full real season
-now plays end to end, verified against RESEARCH.md §7.1 at full scale, not a sample.
+**Done: the realism-research merge** (§18–24, `DECISIONS.md` D83), **the season-play driver** (D84),
+and **state/save/Office/Books** (D85) — a real game you can start, play, save and reload exists for the
+first time in this rewrite. UI.md §13.3's own checkpoint ("Office + Books") is met.
 
-1. **Wire Office/Books/Roster to real state** — a Zustand store, an IndexedDB save, and the pages this
-   project left honestly empty actually showing something. This is the "winnable and losable, not a menu
-   mockup" bar the original project instructions always held V1 to. This is also where an "owner's own
-   club" concept finally needs to exist — `season.ts`'s own gap, noted above.
+1. **The gate-revenue/payroll posting system** (`ECON`/`econFor`/`gateFor`/`gateDay`, all real logic
+   sitting in `bush-league-v0.10.html`, none of it ported). This is what turns Books from real-but-empty
+   into real-and-populated, and it's ranked first because nothing about the Office/Books screens this
+   pass just lit can show anything meaningful without it.
 2. **Player development and ageing** — the pass that makes scouting mean anything, and the first
    consumer of §18's newly-sourced component-aging curves rather than something waiting on them.
 3. **Scouting, the amateur draft, then the ladder itself** — club valuation and purchase, per
-   ROADMAP.md's unchanged pre-rewrite reasoning.
+   ROADMAP.md's unchanged pre-rewrite reasoning. This is also where the ownership ladder (indy → MiLB →
+   MLB, not just "pick one of 30 MLB clubs") needs to get designed — `proposals/
+   FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks it.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

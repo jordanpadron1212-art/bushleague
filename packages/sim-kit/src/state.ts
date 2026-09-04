@@ -8,14 +8,26 @@
  * deliberately no migration path from an old `bush-league-v0.10.html` save —
  * that is a real, stated consequence of the rewrite, not an oversight.
  *
- * Fields below mirror `freshState()` in bush-league-v0.10.html one-for-one
- * so the still-to-be-ported systems (world generation, the box-score engine,
- * the market, the winter) have a schema to land in. `world.clubs`,
- * `players`, `sched` and `box` are typed now and populated by a later pass —
- * see ROADMAP.md.
+ * `world.clubs`, `players` and `sched` now carry the real types the world-
+ * gen, roster and schedule passes produced (`newgame.ts` assembles them into
+ * a fresh state). Still placeholder, waiting on the systems that produce
+ * them: `history`, `events`, `wire`, `needs`, `lastAdv`, `log` (the winter,
+ * the market, the decision queue, the wire).
+ *
+ * Adaptation, noted rather than silent: the original's `G.club` is a
+ * snapshot object (`ClubRef` below, kept for reference) duplicating fields
+ * — city, name, abbr, lvl, lg, div, park — that now live on the real `Club`
+ * record inside `world.clubs`. A snapshot that can drift from the record it
+ * was copied from is exactly the kind of hidden state this package's other
+ * modules (world.ts's, schedule.ts's own notes) have been built to avoid.
+ * `GameState.ownedClubId` is a reference instead — look the club up in
+ * `world.clubs` by id for anything the record itself already knows.
  */
 import type { JournalEntry } from "./ledger.js";
 import type { CalendarDate } from "./date.js";
+import type { Club } from "./world.js";
+import type { Player } from "./player.js";
+import type { PlayedGame } from "./season.js";
 
 export const SCHEMA_VERSION = 1;
 
@@ -52,22 +64,8 @@ export interface SeasonState {
   dates: number;
 }
 
-export interface ClubRef {
-  id: string;
-  city: string;
-  name: string;
-  abbr: string;
-  lvl: string;
-  lg: string;
-  div: string;
-  park: string;
-  cap: number;
-  ticket: number;
-  payrollBudget: number;
-}
-
 export interface WorldState {
-  clubs: unknown[]; // populated by world generation — ROADMAP.md next pass
+  clubs: Club[];
   renames: Record<string, string>;
   grads: unknown[];
   wage: Record<string, number>;
@@ -83,12 +81,15 @@ export interface GameState {
   ui: UiState;
   date: CalendarDate;
   season: SeasonState;
-  club: ClubRef;
+  /** The owner's own club — a reference into `world.clubs`, not a duplicated snapshot. `null` before a club is chosen. */
+  ownedClubId: string | null;
   world: WorldState;
-  players: unknown[];
-  sched: unknown[];
-  sp: number; // cursor into sched
-  box: unknown[];
+  players: Player[];
+  /** `[day, homeClubIndex, awayClubIndex][]`, sorted by day — `schedule.ts`'s `WorldSchedule.games`, indices into `world.clubs`. */
+  sched: [number, number, number][];
+  sp: number; // cursor into sched — see season.ts's playDay
+  /** The owner's own games, most recent last — `season.ts`'s `PlayedGame`, capped the same way the original capped `G.box`. */
+  box: PlayedGame[];
   events: unknown[];
   history: unknown[];
   lastAdv: unknown | null;
@@ -133,19 +134,7 @@ export function createInitialState(opts: CreateStateOptions = {}): GameState {
     },
     date: { y: 2026, m: 6, d: 14 },
     season: { year: 2026, gp: 0, sched: 162, phase: "offseason", open: 0, close: 0, dates: 0 },
-    club: {
-      id: "",
-      city: "",
-      name: "",
-      abbr: "",
-      lvl: "",
-      lg: "",
-      div: "",
-      park: "",
-      cap: 0,
-      ticket: 0,
-      payrollBudget: 0,
-    },
+    ownedClubId: null,
     world: { clubs: [], renames: {}, grads: [], wage: {} },
     players: [],
     sched: [],

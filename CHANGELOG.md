@@ -5,6 +5,36 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.6.0 · A GAME CAN BE STARTED, PLAYED, SAVED AND RELOADED — 2026-09-04
+
+`GameState` carries real types, `newGame()`/`advanceDay()` assemble and drive a save, IndexedDB
+persistence exists (via `idb`), and Office + Books are wired to real state — UI.md §13.3's own
+signed-off checkpoint scope. The first pass to touch `apps/web` since the original chassis: a real club
+picker (all 30 MLB clubs), a real Office page (real standings, real next-game, real streak), and a real
+Books page (income/balance/cash/ledger/audit, all five panes real). See `DECISIONS.md` D85.
+
+A genuine improvement over the original, not just a port: the RNG stream is now fully save-reproducible
+— each day's games draw from a fresh RNG seeded by `state.seed + that day's serial number`, closing a
+gap the original never closed (a reloaded save there drifted onto a different future than an unbroken
+session). Verified directly: two independent states built from the same seed and advanced one day
+produce byte-identical results.
+
+One real bug caught before shipping: an IndexedDB connection leak that hung `deleteDatabase()` forever
+(a real browser API behavior, not a test-only quirk) — caught by the test suite itself timing out.
+Fixed by closing each connection after use. A second thing caught before costing a day: the installed
+`@tanstack/react-table` (9.x) turned out to be a genuine API rewrite from the v8 shape this project's
+docs were written against — the Books ledger grid uses plain React state for sort/filter instead,
+deferring both TanStack libraries to the Roster pass where their 26-column, many-row scale actually
+justifies them.
+
+Verified with real browser screenshots at every step, not just assertions: choose a club → real
+generated world and schedule → advance a day → real standings update → reload the page → byte-identical
+state back. The full Playwright visual gate passes 24/24 across the club picker, Office and Books.
+
+Not yet built: the ownership ladder itself (MLB-only club selection for now), a season-reset/year-
+rollover function, the decision queue, the wire, and — the next pass, ranked first — the gate-revenue/
+payroll posting system that turns Books from real-but-empty into real-and-populated.
+
 ## v2.5.0 · A SEASON CAN BE PLAYED — 2026-09-04
 
 `playDay`/`pushForm` ported into `@bushleague/sim-kit` (`season.ts`), from

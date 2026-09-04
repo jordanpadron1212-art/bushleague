@@ -1,17 +1,46 @@
 /**
  * The action bar — UI.md §5: "docked directly above the tab bar, on every
- * page, always the single next thing." Until the save/start-game pass
- * exists, the single next thing really is starting a game — stated
- * honestly rather than wired to a control that does nothing (the rule
- * DECISIONS.md D36 sets for the old start screen's difficulty toggle).
+ * page, always the single next thing." Once a save exists, that single
+ * next thing is always "advance to the next date" (UI.md's own mockup:
+ * `▸ ADVANCE TO JUN 15 · @BOS 7:05`) — wired to the real season-play
+ * driver (`advanceDay`, via the game store), not a control that does
+ * nothing (the rule DECISIONS.md D36 sets for the old start screen's
+ * difficulty toggle, applied here to the inverse case: build it real once
+ * there's something real to wire it to).
  */
+import { formatShort } from "@bushleague/sim-kit";
+import { useGameStore } from "../store/gameStore.js";
+import { nextGameFor, ownedClub } from "../store/selectors.js";
+
 export default function ActionBar() {
+  const state = useGameStore((s) => s.state);
+  const advance = useGameStore((s) => s.advance);
+
+  if (!state) {
+    return (
+      <div
+        className="flex h-[52px] shrink-0 items-center justify-center border-t text-[var(--fs-md)] font-semibold"
+        style={{ borderColor: "var(--c-border)", color: "var(--c-dim)" }}
+      >
+        Start a new game — not built yet
+      </div>
+    );
+  }
+
+  const club = ownedClub(state);
+  const next = club ? nextGameFor(state, club.id) : null;
+  const label = next
+    ? `Advance to ${formatShort(state.date)} · ${next.home ? "vs" : "@"} ${next.opponent.abbr}`
+    : `Advance to ${formatShort(state.date)}`;
+
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => void advance()}
       className="flex h-[52px] shrink-0 items-center justify-center border-t text-[var(--fs-md)] font-semibold"
-      style={{ borderColor: "var(--c-border)", color: "var(--c-dim)" }}
+      style={{ borderColor: "var(--c-border)", color: "var(--c-accent)" }}
     >
-      Start a new game — not built yet
-    </div>
+      ▸ {label.toUpperCase()}
+    </button>
   );
 }
