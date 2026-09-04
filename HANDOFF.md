@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 87 of them are already recorded, several against
+proposing anything that feels like a new idea — 88 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D87. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D88. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -145,16 +145,19 @@ ageing** — every player's hidden true grades now move with age, eleven tools e
 RESEARCH.md §18 (speed peaks earliest and falls hardest, power next, contact/plate discipline latest and
 most stable, pitcher control genuinely role-aware — starters improve then hold, relievers erode from the
 start), plus `rollover.ts`, the minimal mechanism that lets a save reach a second year at all (ages and
-develops the existing population, resets club records, regenerates the schedule) — `DECISIONS.md` D87.
-The RNG stream is fully save-reproducible, closing a gap the original build never closed.
+develops the existing population, resets club records, regenerates the schedule) — `DECISIONS.md` D87 ·
+**and the action bar can actually reach it** — once a save's schedule is exhausted, it detects that
+directly from state and offers "START THE [next year] SEASON," wired to a real `gameStore.startNewSeason`
+action — `DECISIONS.md` D88. The RNG stream is fully save-reproducible, closing a gap the original build
+never closed.
 
 **Not built yet:** the market, the winter cycle (free agency, contract expiration, an amateur intake —
 the actual fix for D87's own disclosed "no churn means the population only ages" consequence),
 retirement (no sourced hazard curve exists), scouting (including a monthly scouting cost — chart-of-
 accounts entry 5300 exists, no sourced dollar figure survived the economics pass's reconstruction), the
 draft, trades, contracts in depth, injuries in depth, the ownership ladder (an owner picks only among the
-30 MLB clubs today), play-by-play, staff, awards and history, and a UI affordance to actually reach
-`startNewSeason` from the app — it's a real, tested `sim-kit` primitive with no caller in `apps/web` yet.
+30 MLB clubs today), play-by-play, staff, awards and history. The one item D87 itself listed as "not yet
+built" that WAS closed this pass — a UI caller for `startNewSeason` — is resolved, not carried forward.
 See ROADMAP.md's "Next, in order."
 
 ---
@@ -206,6 +209,9 @@ See ROADMAP.md's "Next, in order."
 | `startNewSeason` produces a real, complete, playable next season | every club's record resets to zero, the regenerated schedule gives the owned club its exact published game count (162 for MLB), `advanceDay` plays real games again immediately after rollover, three consecutive rollovers all succeed | `packages/sim-kit/test/rollover.test.ts` |
 | rollover leaves no non-finite value anywhere in state, and ages every player by exactly one year | checked directly against each player's pre-rollover age | same file |
 | DISCLOSED: with no roster churn, a club's average age climbs monotonically across consecutive rollovers | measured directly across 4 consecutive rollovers, not assumed — the same closed-population effect the original build's own v0.9 pass found | same file, see `DECISIONS.md` D87 |
+| the action bar detects an exhausted schedule and calling its new action produces a real, playable new season through the ACTUAL React app | fast-forwards a real state to `seasonOver`, clicks the real button, confirms the bar reverts to "Advance to" with a fresh 0-0 record | `apps/web/test/app.test.tsx` |
+| the new, longer "START THE [year] SEASON" button renders clean at 360px | zero horizontal overflow, zero console errors — checked specifically because the label is longer than the ordinary advance button ever gets | temporary Playwright spec, screenshotted and looked at, then deleted per D16 |
+| rollover carries cash and ledger history forward untouched, only records/ages/schedule reset | watched directly in the browser: $232.08M cash unchanged across the rollover click, every club 0-0, last-10 "No games played yet", a real regenerated schedule (real opponent, real date) | same manual verification |
 
 **Nothing about the old build's own game-outcome numbers not yet re-verified here** (the +8.5 win
 materiality) was re-measured this pass. The age-structure match (the original's own "median age 34.8
@@ -238,10 +244,6 @@ old build's own dollar figures beyond what's cited above would be citing a build
   own stated target ("all 30 MLB clubs"), not a smaller slice of it, but not the indy-to-MLB climb
   either. `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question is still unresolved and still
   blocks designing this properly.
-- **`startNewSeason` (D87) has no UI affordance to reach it.** A real, tested `sim-kit` primitive — ages
-  and develops the population, resets club records, regenerates the schedule — with nothing in `apps/web`
-  calling it yet. A save that reaches `seasonOver` today just stops; nothing in the app offers to roll it
-  into a new year.
 - **No roster churn — a real, disclosed, MEASURED consequence, not a guess.** `rollover.test.ts` proves a
   club's average age climbs every consecutive year with nobody entering or leaving the population — the
   same "closed population under an age rule has exactly one destination" finding the original build's own
@@ -291,27 +293,26 @@ old build's own dollar figures beyond what's cited above would be citing a build
 
 ---
 
-## The next three passes, in order
+## The next passes, in order
 
 See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 
 **Done: the realism-research merge** (§18–24, `DECISIONS.md` D83), **the season-play driver** (D84),
-**state/save/Office/Books** (D85), **the money loop** (D86), and **player development and ageing plus a
-minimal season rollover** (D87) — a real game you can start, play, save, reload, watch post real gate
-revenue and payroll, and (via the `sim-kit` primitive, not yet wired into the UI) age a whole season's
-worth of players realistically into a second year. UI.md §13.3's own checkpoint ("Office + Books") is met
-AND populated.
+**state/save/Office/Books** (D85), **the money loop** (D86), **player development and ageing plus a
+minimal season rollover** (D87), and **a real UI caller for that rollover** (D88) — a real game you can
+start, play, save, reload, watch post real gate revenue and payroll, age a whole season's worth of
+players realistically, and actually click a real button to start a real second year. UI.md §13.3's own
+checkpoint ("Office + Books") is met AND populated.
 
-1. **Scouting, the amateur draft, then the ladder itself** — club valuation and purchase, per
+1. **Real roster churn** — free agency, contract expiration, an amateur intake. D87's own rollover test
+   proves the population ages uniformly with nobody entering or leaving (verifiable in the app itself as
+   of D88, not just in a test); this is the actual fix, the same one the original build's own v0.9 pass
+   built, not a smaller version of it.
+2. **Scouting, the amateur draft, then the ladder itself** — club valuation and purchase, per
    ROADMAP.md's unchanged pre-rewrite reasoning. This is also where a real monthly scouting-cost dollar
    figure needs sourcing (account 5300 exists, unposted — D86's own disclosed gap), and where the
    ownership ladder (indy → MiLB → MLB, not just "pick one of 30 MLB clubs") needs to get designed —
    `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks it.
-2. **Real roster churn** — free agency, contract expiration, an amateur intake. D87's own rollover test
-   proves the population ages uniformly with nobody entering or leaving; this is the actual fix, the same
-   one the original build's own v0.9 pass built, not a smaller version of it.
-3. **A UI affordance for `startNewSeason`.** The `sim-kit` primitive (D87) is real and tested; nothing in
-   `apps/web` calls it yet — a save that reaches `seasonOver` today just stops.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

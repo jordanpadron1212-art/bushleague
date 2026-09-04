@@ -1031,3 +1031,56 @@ consequence behind a test that only checks the mechanism works once rather than 
 several consecutive years. What's still not built: retirement, free agency/contract expiration/an
 amateur intake (the actual fix for the disclosed closed-population consequence), and the UI affordance to
 reach `startNewSeason` from the app at all. See `CHANGELOG.md` v2.8.0.
+
+---
+
+## 2026-09-04 — A save can actually reach its second year, from the app
+
+**D88 · `startNewSeason` (D87) gets a real caller: the action bar detects an exhausted schedule and offers
+to roll into the next year, wired through a new `gameStore.startNewSeason` action.** D87 shipped a real,
+tested `sim-kit` primitive with nothing in `apps/web` calling it — the immediate next item on its own
+"what's still not built" list. This closes it: the smallest, most self-contained item left over from the
+money-loop/development passes, finished before starting the larger real-roster-churn/scouting work
+`ROADMAP.md` ranks next, matching this project's own "one system per pass, fully finished" discipline
+applied to a loose end rather than a brand-new system.
+
+**Detection is a direct state check, not threaded through the last advance result.** `ActionBar.tsx`
+computes `state.sp >= state.sched.length` itself — the identical condition `advanceDay`'s own
+`AdvanceResult.seasonOver` already reports — rather than reading `lastResult.seasonOver`, which is `null`
+on a fresh page load (a reloaded save has no `lastResult` yet, only ever set by calling `advance()` in the
+current session) and would have left the bar stuck showing "Advance to..." for a save that reloads
+already at season's end, silently unreachable until the owner clicked Advance once first. Recomputing
+directly from `state` avoids that whole class of staleness.
+
+**The rollover RNG is seeded from `state.seed + state.season.year`, matching the pattern `advance.ts`'s
+own day-scoped RNG already established** (`state.seed + that day's serial number`) for exactly the same
+reason: a reload before this year's rollover reproduces the identical next season on replay, the save
+staying fully reproducible the same way the season-play RNG already is (D85).
+
+**A design decision worth stating rather than assuming: `apps/web`'s own `startNewSeason` action is
+distinct from `sim-kit`'s `startNewSeason` (imported under an alias, `rollIntoNewSeason`), matching this
+file's own existing `newGame` -> `startNewGame` / `advanceDay` -> `advance` naming convention** — every
+store action already wraps its sim-kit primitive under a different name; this one keeping the SAME name
+as its primitive would have been the one exception, not a deliberate one.
+
+**Verified at every layer this pass's own discipline requires**: a new `apps/web/test/app.test.tsx` case
+fast-forwards a REAL `sim-kit` state to `seasonOver` directly (not by clicking Advance ~200-400 times
+through a simulated DOM, which `rollover.test.ts`'s own timing already shows costs several seconds even
+running pure JS with no rendering at all), renders the real `<App/>`, clicks the real button, and asserts
+the bar reverts to a real "Advance to" control with a fresh 0-0 record — exercising the actual React
+component tree and zustand store this time, not `sim-kit`'s primitive in isolation (already covered by
+`rollover.test.ts`). Then manually, in a real browser (temporary Playwright spec, screenshotted and
+looked at, then deleted per D16): clicked "Advance" up to 400 times against a real preview server until
+the button read "START THE 2027 SEASON", screenshotted it at 360px specifically because its label is
+longer than the ordinary "ADVANCE TO ..." button ever gets — zero horizontal overflow, zero console
+errors — then clicked it and watched cash carry over ($232.08M, unchanged — rollover never touches the
+ledger), every club's record and last-10 reset to a genuine 0-0/"No games played yet", the date jump to
+March 12, 2027 (14 days before the new season's own opener, the identical convention `newGame()` already
+established), and the button revert to a real "ADVANCE TO MAR 12 · VS ATH" — a real opponent, from a real
+regenerated schedule, not a stub.
+
+Rejected: reading `lastResult.seasonOver` instead of recomputing from `state` (the reload-staleness bug
+above); giving the new store action and its sim-kit primitive the same name (would have broken this
+file's own established convention silently). What's still not built: everything D87 already disclosed
+(retirement, free agency/contract expiration, an amateur intake) — this pass closes only the UI-reachability
+gap, not the underlying closed-population consequence. See `CHANGELOG.md` v2.9.0.

@@ -5,6 +5,20 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.9.0 · A SAVE CAN REACH ITS SECOND YEAR, FROM THE APP — 2026-09-04
+
+`rollover.ts`'s `startNewSeason` (v2.8.0) gets a real caller: the action bar detects an exhausted
+schedule (`state.sp >= state.sched.length`, computed directly from state rather than a stale last-advance
+result that a reloaded save never has) and offers to roll into the next year, wired through a new
+`gameStore.startNewSeason` action seeded the same reproducible way `advance.ts`'s own day-scoped RNG
+already is. See `DECISIONS.md` D88.
+
+Verified: a new `app.test.tsx` case fast-forwards a real state to `seasonOver`, renders the real app,
+clicks the real button, and confirms a fresh 0-0 season starts. Manually, in a real browser: clicked
+through an entire season to "START THE 2027 SEASON," screenshotted it at 360px specifically because the
+label is longer than the ordinary advance button ever gets — no overflow, no console errors — then
+clicked it and watched cash carry over, every record reset, and a real new schedule take over.
+
 ## v2.8.0 · PLAYER DEVELOPMENT AND AGEING — 2026-09-04
 
 `development.ts` gives every player real, component-specific ageing for the first time in this rewrite —

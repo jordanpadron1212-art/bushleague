@@ -16,7 +16,15 @@
  * store hands out.
  */
 import { create } from "zustand";
-import { newGame, advanceDay, type GameState, type NewGameOptions, type AdvanceResult } from "@bushleague/sim-kit";
+import {
+  newGame,
+  advanceDay,
+  startNewSeason as rollIntoNewSeason,
+  mulberry32,
+  type GameState,
+  type NewGameOptions,
+  type AdvanceResult,
+} from "@bushleague/sim-kit";
 import { saveGame, loadGame } from "../save.js";
 
 interface GameStore {
@@ -28,6 +36,8 @@ interface GameStore {
   loadFromDisk: () => Promise<void>;
   startNewGame: (opts: NewGameOptions) => Promise<void>;
   advance: () => Promise<void>;
+  /** Rolls the save into the next year — `rollover.ts`'s `startNewSeason`, real and tested in `sim-kit` since DECISIONS.md D87 but never callable from the app until now. Only meaningful once `state.sp >= state.sched.length` (the same condition `advanceDay`'s own `seasonOver` already reports) — `ActionBar.tsx` is what decides when to show it. */
+  startNewSeason: () => Promise<void>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -62,6 +72,23 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!current) return;
     const result = advanceDay(current);
     set({ state: { ...current }, lastResult: result });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}. Your progress this session is still here, but won't survive a reload.` });
+    }
+  },
+
+  startNewSeason: async () => {
+    const current = get().state;
+    if (!current) return;
+    // Same decorrelated-per-item-from-one-base-seed pattern advance.ts's own
+    // day-scoped RNG already established (state.seed + day) — here scoped by
+    // the year rollover actually advances FROM, so a reload before this
+    // year's rollover reproduces the identical next season on replay.
+    const r = mulberry32((current.seed + current.season.year) >>> 0);
+    rollIntoNewSeason(current, r);
+    set({ state: { ...current }, lastResult: null });
     try {
       await saveGame(current);
     } catch (err) {

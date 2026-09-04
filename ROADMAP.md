@@ -2,7 +2,7 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D87):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D88):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
@@ -30,9 +30,13 @@ What's next and what's genuinely open. Updated against reality — not against t
 > roster churn yet, the population ages uniformly across consecutive rollovers — the same "closed
 > population has exactly one destiny" finding the ORIGINAL build's own v0.9 pass made (next paragraph)
 > before building real churn to fix it, verified directly (not assumed) in this pass's own test suite.
+> **As of v2.9.0: that rollover has a real caller.** The action bar detects an exhausted schedule directly
+> from state and offers to start the next year — `rollover.ts`'s primitive (v2.8.0) had no way to reach
+> it from the app until now, closing D87's own "not yet built" list item, verified with a real click
+> through a real browser at 360px (the new button's label is longer than the ordinary one ever gets).
 > What's still real logic sitting in the old build and not yet ported: the ownership ladder, the market,
-> the winter cycle (the actual fix for the closed-population consequence just above), retirement, a
-> sourced monthly scouting-cost figure, and everything below.
+> the winter cycle (the actual fix for the closed-population consequence above — still the standing
+> next item), retirement, a sourced monthly scouting-cost figure, and everything below.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -50,14 +54,22 @@ What's next and what's genuinely open. Updated against reality — not against t
 (v2.2.0, D80), **plate-appearance resolution** (v2.3.0, D81), **roster construction, depth charts, and
 a full played game** (v2.4.0, D82), **the realism-research merge** (§18–24, v2.4.1, D83), **the
 season-play driver** (v2.5.0, D84), **state, save/load, and Office + Books lit for real** (v2.6.0,
-D85), **the money loop** (v2.7.0, D86), and — **player development and ageing, plus a minimal season
-rollover** (v2.8.0, DECISIONS.md D87). UI.md §13.3's own signed-off checkpoint ("Office + Books") is met
-AND populated: a real club picker, a real Office page (real standings/next-game/streak/this-month
-financials), a real five-pane Books page with real audited numbers, a real Advance button, IndexedDB
-save/load verified with a real round trip and a reload test. The RNG stream is now fully
-save-reproducible — a genuine improvement over the original, which never closed that gap.
+D85), **the money loop** (v2.7.0, D86), **player development and ageing, plus a minimal season
+rollover** (v2.8.0, D87), and — **a real UI caller for that rollover** (v2.9.0, DECISIONS.md D88). UI.md
+§13.3's own signed-off checkpoint ("Office + Books") is met AND populated: a real club picker, a real
+Office page (real standings/next-game/streak/this-month financials), a real five-pane Books page with
+real audited numbers, a real Advance button that becomes a real "start next season" button once the
+schedule is exhausted, IndexedDB save/load verified with a real round trip and a reload test. The RNG
+stream is now fully save-reproducible — a genuine improvement over the original, which never closed that
+gap.
 
-**1. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
+**1. Real roster churn** — free agency, contract expiration, an amateur intake, the actual fix for the
+consequence v2.8.0's own rollover test measured directly (and v2.9.0 made reachable from the app itself):
+with no churn, a club's average age climbs every consecutive year. The original build's own v0.9 pass
+built exactly this system after finding the same closed-population problem (next paragraph) — same fix,
+same reason, this rewrite just hasn't reached it yet.
+
+**2. Scouting, the amateur draft, then the ladder itself** (club valuation and purchase) — unchanged
 from the pre-rewrite ordering. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
 ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing (DECISIONS.md D77).
 This is also where a new game's club choice needs to grow past "one of the 30 MLB clubs" into the real
@@ -66,18 +78,8 @@ designing it properly. Also where a real monthly scouting-cost dollar figure nee
 of accounts already has an account (5300) for one; v2.7.0's money loop left it unposted rather than
 inventing a number (DECISIONS.md D86).
 
-**2. Real roster churn** — free agency, contract expiration, an amateur intake, the actual fix for the
-consequence v2.8.0's own rollover test measured directly: with no churn, a club's average age climbs
-every consecutive year. The original build's own v0.9 pass built exactly this system after finding the
-same closed-population problem (next paragraph) — same fix, same reason, this rewrite just hasn't reached
-it yet.
-
-**3. A UI affordance for `startNewSeason`.** The `sim-kit` primitive (v2.8.0, D87) is real and tested —
-ages the population, resets club records, regenerates the schedule; nothing in `apps/web` calls it yet, so
-a save that reaches `seasonOver` today just stops rather than offering to roll into a new year.
-
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
-plan.** Still directionally right once the game exists again; re-sequence it against passes 1-3 above
+plan.** Still directionally right once the game exists again; re-sequence it against passes 1-2 above
 rather than following its numbers literally.
 
 ## Done (pre-rewrite build — historical record, not current state)
