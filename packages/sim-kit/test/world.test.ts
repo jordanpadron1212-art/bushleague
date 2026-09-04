@@ -91,3 +91,50 @@ describe("buildWorld()", () => {
     expect(worldA.map((c) => c.id)).toEqual(worldB.map((c) => c.id));
   });
 });
+
+describe("buildWorld() — real MLB parent-club affiliation (RESEARCH.md §2.6, DECISIONS.md D91)", () => {
+  const clubs = buildWorld();
+  const mlbIds = new Set(clubs.filter((c) => c.lvl === "MLB").map((c) => c.id));
+
+  it("MLB and independent-league clubs have no parent of their own", () => {
+    for (const c of clubs) {
+      if (c.lvl === "MLB" || c.lvl === "INDY") expect(c.parent).toBeUndefined();
+    }
+  });
+
+  it("119 of 120 affiliated clubs get a real, valid MLB parent id — every one pointing at an actual MLB club generated in this SAME world, not a dangling reference", () => {
+    const affiliated = clubs.filter((c) => c.lvl !== "MLB" && c.lvl !== "INDY");
+    expect(affiliated).toHaveLength(120);
+    const withParent = affiliated.filter((c) => c.parent != null);
+    expect(withParent).toHaveLength(119);
+    for (const c of withParent) {
+      expect(mlbIds.has(c.parent!), `${c.city} (${c.lvl}) points at unknown parent ${c.parent}`).toBe(true);
+    }
+  });
+
+  it("the one disclosed exception is exactly 'Hill City' at Single-A, not a silent, unexplained gap elsewhere", () => {
+    const unparented = clubs.filter((c) => c.lvl !== "MLB" && c.lvl !== "INDY" && c.parent == null);
+    expect(unparented).toHaveLength(1);
+    expect(unparented[0]!.city).toBe("Hill City");
+    expect(unparented[0]!.lvl).toBe("A");
+  });
+
+  it("every one of the 30 MLB clubs owns EXACTLY one affiliate at each of AAA/AA/High-A/Single-A — RESEARCH.md §2.1's own published structural rule, not just a plausible spread", () => {
+    for (const mlb of clubs.filter((c) => c.lvl === "MLB")) {
+      for (const lvl of ["AAA", "AA", "HIA"] as const) {
+        // Single-A is the one level with a real, disclosed exception
+        // (Hill City has no parent at all), so it can't be asserted at
+        // exactly 1 for every org — checked separately below instead.
+        const owned = clubs.filter((c) => c.lvl === lvl && c.parent === mlb.id);
+        expect(owned, `${mlb.city} ${mlb.name} should own exactly one ${lvl} affiliate`).toHaveLength(1);
+      }
+    }
+    const aOwners = clubs.filter((c) => c.lvl === "A" && c.parent != null).map((c) => c.parent);
+    // 29 of 30 MLB orgs get exactly one Single-A affiliate; the 30th (whichever
+    // org would have owned "Hill City") legitimately gets zero here, not two.
+    const counts = new Map<string, number>();
+    for (const p of aOwners) counts.set(p!, (counts.get(p!) ?? 0) + 1);
+    expect(counts.size).toBe(29);
+    for (const n of counts.values()) expect(n).toBe(1);
+  });
+});

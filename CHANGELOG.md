@@ -5,6 +5,39 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.12.0 · REAL MINOR-LEAGUE PARENT AFFILIATION, RESEARCHED AND SOURCED — 2026-09-04
+
+Before starting the amateur draft, a real blocker surfaced: this project never recorded which MLB
+organization owns which of the 120 affiliated MiLB clubs `buildWorld` already generates — a real pick
+needs somewhere real to go. Rather than guess past it, this pass researched and sourced the mapping as
+its own deliverable: RESEARCH.md §2.6, cross-checked two independent ways for all 120 pairings (per-league
+membership tables AND agreement with this project's own already-sourced city inventory). A new `parent`
+field on `Club` (`world.ts`), fed by a `${level}:${city}` lookup (`world-data.ts`'s `MILB_PARENT`), set
+once in `buildWorld()`. See `DECISIONS.md` D91.
+
+One real, dated wrinkle handled deliberately: 2025 and "current" (2026) affiliations differ in 5 of 120
+slots (real relocations — an Orioles High-A swap, a Brewers Single-A move, a 3-way California League
+domino). This project uses the current mapping, since it's the one that actually keys against the 120
+city slots already generated — the literal 2025 mapping would leave three real clubs parentless while
+pointing at three that don't exist here. One city of 120 ("Hill City," Single-A Carolina League) couldn't
+be matched against any real source and is left unassigned rather than guessed — a genuine, narrow,
+disclosed gap, likely a pre-existing data question in this project's own city inventory, not fixed here
+since it's outside this pass's scope.
+
+The test suite caught a real defect exactly the way it's supposed to: the first hand-transcribed version
+of the mapping silently dropped the Chicago Cubs' affiliate in all four levels, caught immediately by a
+new assertion ("every MLB club owns exactly one affiliate per level"), diagnosed and fixed before this
+pass closed.
+
+Pays off twice: it's the correct foundation for the amateur draft (next pass) AND separately closes
+ROADMAP.md's own long-standing "the Organization page stays dark until [parent affiliation] is
+researched" blocker.
+
+Verified: `world.test.ts`'s new tests (119/120 affiliated clubs resolve to a real MLB parent in the same
+world, no dangling references; the one exception is exactly Hill City; every MLB club owns exactly one
+AAA/AA/High-A affiliate and 29 of 30 own exactly one Single-A affiliate). Full workspace suite (269
+sim-kit + 8 apps/web tests), typecheck, build, and the 24-test Playwright visual gate all pass.
+
 ## v2.11.0 · SCOUTING: A REAL MONTHLY COST, AND THE DEAD HALF OF D24 FINALLY READS — 2026-09-04
 
 A club-level scouting budget closes two disclosed gaps: `economics.ts`'s long-standing "no monthly

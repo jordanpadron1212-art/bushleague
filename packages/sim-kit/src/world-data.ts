@@ -58,9 +58,9 @@ export interface MilbLevel {
 
 /**
  * Affiliated ladder — Tier 1 club names and league placement, RESEARCH.md
- * §2.1. Parent-club affiliation (which MLB org owns which affiliate) is an
- * open gap, not researched, therefore not asserted — clubs exist here; who
- * owns them waits for a later pass (RESEARCH.md §5.14, ROADMAP.md).
+ * §2.1. Parent-club affiliation (which MLB org owns which affiliate) is now
+ * real, sourced data too — RESEARCH.md §2.6, `MILB_PARENT` below — closing
+ * the gap this comment used to flag as open (DECISIONS.md D91).
  */
 export const MILB: Record<MilbLevelKey, MilbLevel> = {
   AAA: {
@@ -98,6 +98,62 @@ export const MILB: Record<MilbLevelKey, MilbLevel> = {
       ["Florida State", ["Daytona", "Jupiter", "Palm Beach", "St. Lucie", "Bradenton", "Clearwater", "Dunedin", "Fort Myers", "Lakeland", "Tampa"]],
     ],
   },
+};
+
+/**
+ * Which MLB club owns which affiliate — RESEARCH.md §2.6. Keyed
+ * `${level}:${city}` rather than bare city, the same disambiguation
+ * `buildWorld`'s own abbreviation pools already use, since "Columbus"
+ * (Cleveland's AAA International affiliate) and "Columbus" (Atlanta's AA
+ * Southern affiliate) are two different real cities that only collide
+ * because this table doesn't otherwise carry a league name. Values are
+ * `MLB` row abbreviations (`world.ts`'s `buildWorld` turns them into the
+ * real `MLB_<abbr>` club id). One of 120 real cities has no entry —
+ * `A:Hill City` — a genuine, disclosed research gap (RESEARCH.md §2.6's own
+ * note), not an oversight: every other real 2025/2026 Carolina League
+ * member matched cleanly, and no source found explains "Hill City" as a
+ * real market. Left unassigned rather than guessed.
+ */
+export const MILB_PARENT: Readonly<Record<string, string>> = {
+  "AAA:Reno": "ARI", "AAA:Gwinnett": "ATL", "AAA:Norfolk": "BAL", "AAA:Worcester": "BOS",
+  "AAA:Charlotte": "CWS", "AAA:Louisville": "CIN", "AAA:Columbus": "CLE", "AAA:Albuquerque": "COL",
+  "AAA:Toledo": "DET", "AAA:Sugar Land": "HOU", "AAA:Omaha": "KCR", "AAA:Salt Lake": "LAA",
+  "AAA:Iowa": "CHC",
+  "AAA:Oklahoma City": "LAD", "AAA:Jacksonville": "MIA", "AAA:Nashville": "MIL", "AAA:St. Paul": "MIN",
+  "AAA:Syracuse": "NYM", "AAA:Scranton/W-B": "NYY", "AAA:Las Vegas": "ATH", "AAA:Lehigh Valley": "PHI",
+  "AAA:Indianapolis": "PIT", "AAA:El Paso": "SDP", "AAA:Sacramento": "SFG", "AAA:Tacoma": "SEA",
+  "AAA:Memphis": "STL", "AAA:Durham": "TBR", "AAA:Round Rock": "TEX", "AAA:Buffalo": "TOR",
+  "AAA:Rochester": "WSN",
+
+  "AA:Amarillo": "ARI", "AA:Columbus": "ATL", "AA:Chesapeake": "BAL", "AA:Portland": "BOS",
+  "AA:Birmingham": "CWS", "AA:Chattanooga": "CIN", "AA:Akron": "CLE", "AA:Hartford": "COL",
+  "AA:Knoxville": "CHC",
+  "AA:Erie": "DET", "AA:Corpus Christi": "HOU", "AA:Northwest Arkansas": "KCR", "AA:Rocket City": "LAA",
+  "AA:Tulsa": "LAD", "AA:Pensacola": "MIA", "AA:Biloxi": "MIL", "AA:Wichita": "MIN",
+  "AA:Binghamton": "NYM", "AA:Somerset": "NYY", "AA:Midland": "ATH", "AA:Reading": "PHI",
+  "AA:Altoona": "PIT", "AA:San Antonio": "SDP", "AA:Richmond": "SFG", "AA:Arkansas": "SEA",
+  "AA:Springfield": "STL", "AA:Montgomery": "TBR", "AA:Frisco": "TEX", "AA:New Hampshire": "TOR",
+  "AA:Harrisburg": "WSN",
+
+  "HIA:Hillsboro": "ARI", "HIA:Rome": "ATL", "HIA:Frederick": "BAL", "HIA:Greenville": "BOS",
+  "HIA:Winston-Salem": "CWS", "HIA:Dayton": "CIN", "HIA:Lake County": "CLE", "HIA:Spokane": "COL",
+  "HIA:South Bend": "CHC",
+  "HIA:West Michigan": "DET", "HIA:Asheville": "HOU", "HIA:Quad Cities": "KCR", "HIA:Tri-City": "LAA",
+  "HIA:Great Lakes": "LAD", "HIA:Beloit": "MIA", "HIA:Wisconsin": "MIL", "HIA:Cedar Rapids": "MIN",
+  "HIA:Brooklyn": "NYM", "HIA:Hudson Valley": "NYY", "HIA:Lansing": "ATH", "HIA:Jersey Shore": "PHI",
+  "HIA:Greensboro": "PIT", "HIA:Fort Wayne": "SDP", "HIA:Eugene": "SFG", "HIA:Everett": "SEA",
+  "HIA:Peoria": "STL", "HIA:Bowling Green": "TBR", "HIA:Hub City": "TEX", "HIA:Vancouver": "TOR",
+  "HIA:Wilmington": "WSN",
+
+  "A:Visalia": "ARI", "A:Augusta": "ATL", "A:Delmarva": "BAL", "A:Salem": "BOS",
+  "A:Kannapolis": "CWS", "A:Daytona": "CIN", "A:Lynchburg": "CLE", "A:Fresno": "COL",
+  "A:Myrtle Beach": "CHC",
+  "A:Lakeland": "DET", "A:Fayetteville": "HOU", "A:Columbia": "KCR", "A:Rancho Cucamonga": "LAA",
+  "A:Ontario": "LAD", "A:Jupiter": "MIA", "A:Wilson": "MIL", "A:Fort Myers": "MIN",
+  "A:St. Lucie": "NYM", "A:Tampa": "NYY", "A:Stockton": "ATH", "A:Clearwater": "PHI",
+  "A:Bradenton": "PIT", "A:Lake Elsinore": "SDP", "A:San Jose": "SFG", "A:Inland Empire": "SEA",
+  "A:Palm Beach": "STL", "A:Charleston": "TBR", "A:Hickory": "TEX", "A:Dunedin": "TOR",
+  "A:Fredericksburg": "WSN",
 };
 
 export interface RosterCompRow {

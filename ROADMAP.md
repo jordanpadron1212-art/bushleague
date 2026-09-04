@@ -2,7 +2,7 @@
 
 What's next and what's genuinely open. Updated against reality — not against the plan — at every session close.
 
-> **Status update, 2026-09-04 (DECISIONS.md D78-D90):** the engineering substrate was rebuilt from
+> **Status update, 2026-09-04 (DECISIONS.md D78-D91):** the engineering substrate was rebuilt from
 > scratch (React/TypeScript/Vite, hosted on GitHub Pages — see CHANGELOG.md v2.0.0). **Everything below
 > "Done" describes the retired `bush-league-v0.10.html` build and is kept as a historical record of
 > what was proven, not a description of what runs today.** Ported so far (`packages/sim-kit`): the
@@ -54,9 +54,19 @@ What's next and what's genuinely open. Updated against reality — not against t
 > than assumed safe. Deliberately NOT built this pass, same discipline as v2.10.0's own disclosed scope
 > boundary: the amateur draft, a scouting-director/area-scout staff system, and any owner-facing control
 > to move the budget off its default — `FRONT-OFFICE-DESIGN-PROPOSAL.md` stays unsigned and still gates
-> the ladder/staff work specifically. What's still real logic sitting in the old build and not yet ported:
-> the ownership ladder, the market/free-agency-as-a-system, retirement, the amateur draft, and everything
-> below.
+> the ladder/staff work specifically.
+> **As of v2.12.0: real minor-league parent affiliation.** Before starting the amateur draft, a real
+> blocker surfaced: nobody had recorded which MLB org owns which of the 120 affiliated MiLB clubs
+> `buildWorld` generates — a real pick needs somewhere real to go. Researched and sourced instead of
+> guessed past (RESEARCH.md §2.6, cross-checked two independent ways for all 120 pairings): a new `parent`
+> field on every MiLB `Club`, 119 of 120 resolved to a real MLB club in the same world, one ("Hill City")
+> genuinely unmatched against any real source and left disclosed rather than guessed. Pays off twice — the
+> correct foundation for the draft, and separately closes this file's own long-standing "the Organization
+> page stays dark until [parent affiliation] is researched" note below. A real hand-transcription defect
+> (the Cubs' affiliate dropped at all four levels) was caught by a new test assertion and fixed before this
+> pass closed — the discipline working as intended, not a mistake glossed over. What's still real logic
+> sitting in the old build and not yet ported: the ownership ladder, the market/free-agency-as-a-system,
+> retirement, the amateur draft itself (now unblocked), and everything below.
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -76,26 +86,29 @@ a full played game** (v2.4.0, D82), **the realism-research merge** (§18–24, v
 season-play driver** (v2.5.0, D84), **state, save/load, and Office + Books lit for real** (v2.6.0,
 D85), **the money loop** (v2.7.0, D86), **player development and ageing, plus a minimal season
 rollover** (v2.8.0, D87), **a real UI caller for that rollover** (v2.9.0, D88), **real roster
-churn** (v2.10.0, D89), and — **a real scouting budget** (v2.11.0, DECISIONS.md D90). UI.md §13.3's own
-signed-off checkpoint ("Office + Books") is met AND populated: a real club picker, a real Office page
-(real standings/next-game/streak/this-month financials), a real five-pane Books page with real audited
-numbers, a real Advance button that becomes a real "start next season" button once the schedule is
-exhausted, IndexedDB save/load verified with a real round trip and a reload test, a rollover whose
-rosters actually turn over — a measurably stabilizing age structure, not one climbing toward the ceiling
-forever — and a real scouting cost whose reliability effect the owned roster actually shows over a
-season, not frozen from day one. The RNG stream is fully save-reproducible — a genuine improvement over
-the original, which never closed that gap.
+churn** (v2.10.0, D89), **a real scouting budget** (v2.11.0, D90), and — **real minor-league parent
+affiliation** (v2.12.0, DECISIONS.md D91). UI.md §13.3's own signed-off checkpoint ("Office + Books") is
+met AND populated: a real club picker, a real Office page (real standings/next-game/streak/this-month
+financials), a real five-pane Books page with real audited numbers, a real Advance button that becomes a
+real "start next season" button once the schedule is exhausted, IndexedDB save/load verified with a real
+round trip and a reload test, a rollover whose rosters actually turn over — a measurably stabilizing age
+structure, not one climbing toward the ceiling forever — a real scouting cost whose reliability effect
+the owned roster actually shows over a season, not frozen from day one, and (real and tested, not yet
+surfaced in any UI) a real, sourced parent org for 119 of the 120 affiliated clubs. The RNG stream is
+fully save-reproducible — a genuine improvement over the original, which never closed that gap.
 
 **1. The amateur draft, then the ladder itself** (club valuation and purchase) — unchanged from the
-pre-rewrite ordering, now the standing top item with scouting done. The draft needs an amateur-talent-pool
-generator that doesn't exist yet as its own system — scouting (v2.11.0, D90) now exists to point it at,
-but generating and drafting amateur prospects is separate, unbuilt work. The ladder's valuation model
-should use RESEARCH.md §14.3's team-specific ratio (+36%, one verified transaction), not §9.6's retracted
-"~1.5× high" framing (DECISIONS.md D77). This is also where a new game's club choice needs to grow past
-"one of the 30 MLB clubs" into the real indy → MiLB → MLB climb —
-`proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks designing it properly — and where a
-scouting-director/area-scout staff system and an owner-facing control for the scouting budget itself
-(v2.11.0's own disclosed gaps) would naturally live.
+pre-rewrite ordering, now the standing top item with scouting AND parent affiliation done. The draft needs
+an amateur-talent-pool generator, a draft order with the sourced top-6 lottery (RESEARCH.md §1.5), and the
+20-round mechanics themselves — scouting (v2.11.0, D90) exists to point the draft at and parent affiliation
+(v2.12.0, D91) exists so a pick has somewhere real to go, but generating and running the draft itself is
+still separate, unbuilt work. The ladder's valuation model should use RESEARCH.md §14.3's team-specific
+ratio (+36%, one verified transaction), not §9.6's retracted "~1.5× high" framing (DECISIONS.md D77). This
+is also where a new game's club choice needs to grow past "one of the 30 MLB clubs" into the real indy →
+MiLB → MLB climb — `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks designing it
+properly — and where a scouting-director/area-scout staff system, an owner-facing control for the
+scouting budget (v2.11.0's own disclosed gaps), and an Organization page to finally show v2.12.0's own
+parent data would naturally live.
 
 **2. Free agency as its own named-player system** — `churn.ts` (v2.10.0, D89) already retires and
 replaces a real, age-weighted share of every roster each rollover; what's still missing is a specific
@@ -154,7 +167,7 @@ Then, roughly:
 - **The wire holds forty items and the winter generates hundreds.** It needs a real surface before it needs a bigger buffer.
 ## Genuinely open (needs research or Jordan's call — do not assume)
 
-- **Minor-league parent affiliation** — which MLB club owns which of the 120 affiliates. Not researched, therefore not asserted. The Organization page stays dark until it is.
+- ~~**Minor-league parent affiliation** — which MLB club owns which of the 120 affiliates. Not researched, therefore not asserted. The Organization page stays dark until it is.~~ **RESOLVED (v2.12.0, DECISIONS.md D91)** — RESEARCH.md §2.6, real `Club.parent` data for 119 of 120 affiliates (one, "Hill City," genuinely unmatched against any real source and disclosed rather than guessed). The Organization page itself still doesn't exist — this closed the DATA gap blocking it, not the page. Kept struck through rather than deleted, same convention this file's own debt list already uses.
 - **Park factors** — Baseball America publishes 2025 MiLB factors running 66 to 206. For a sim these are a **bigger lever than level**, and nothing in the build reflects a ballpark yet.
 - **Ticket pricing by level and market, and the MLB salary scale** — both still Tier 3, both labelled as design knobs in the game. (Per-level run environment is closed — RESEARCH §7.)
 - **Independent-league rate stats** — borrowed from affiliated levels (D23). **The Pioneer League is the worst fit**: a high-altitude offensive extreme modelled on Single-A. Closing this needs a browser session against Pointstreak or ~20–40 fetches per league against Baseball-Reference register team pages.

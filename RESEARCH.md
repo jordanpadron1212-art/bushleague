@@ -189,6 +189,88 @@ Source: MLB Stats API `/api/v1/attendance` aggregated by level; validated agains
 
 **Trend, T2** (Baseball America): MiLB **32.148M (2023) → 31.345M (2024) → 30.365M (2025)**, with 2026 tracking lower again — 3,696/game through 2026-08-11, 84 of 120 clubs down year-over-year, 42 down 200+/game. A steady decline worth modelling rather than a flat attendance constant.
 
+## 2.6 Minor-league parent affiliation — T1/T2, closes a long-standing open gap
+Source: per-league Wikipedia membership tables (International, Pacific Coast, Eastern, Southern,
+Texas, Midwest, South Atlantic, Northwest, California, Carolina, Florida State Leagues — fetched
+individually, one per league), cross-checked against MiLB.com/MLB.com press releases for every
+2024→2025 and 2025→2026 rename or relocation found, and cross-checked a second, independent way
+against `world-data.ts`'s own pre-existing (and separately-sourced, §2.1) 120-city inventory.
+Collected 2026-09-04, closing the gap `world-data.ts`'s own header flagged ("Parent-club affiliation
+... not researched, therefore not asserted" — that comment's own `§5.14` cross-reference was stale;
+this is the section it should have pointed to).
+
+**Every MLB club has exactly one affiliate at each of AAA/AA/High-A/Single-A — 120 pairings, not
+120 independent facts.** City/level/league placement (which is what matters for this project's own
+`Club.parent` field — MiLB club NAMES are not separately modelled, `world.ts`'s `Club.name` is empty
+for every MiLB club) is **T1**: every one of the 120 pairings below was corroborated two independent
+ways (an outside per-league source AND agreement with this project's own already-separately-sourced
+§2.1 city list). The exact franchise NICKNAMES quoted for colour (e.g. "Rocket City Trash Pandas")
+came through a summarized fetch and were spot-checked, not each individually re-verified — label
+those **T2**, they carry no weight in the sim (nothing here reads `Club.name` for a MiLB club).
+
+**A real, dated boundary matters: the 2025 season and the "current" (2026, matching `world-data.ts`'s
+own already-committed city list) mapping differ in exactly 5 of 120 slots**, all real relocations
+independently dated to 2025-2026:
+
+| Org / level | 2025 | Current (2026) | Source |
+|---|---|---|---|
+| Orioles High-A | Aberdeen | **Frederick** | MiLB.com 2025-08, WTOP 2025-08 — swap effective 2026, Aberdeen moves to the MLB Draft League |
+| Brewers Single-A | Zebulon (Mudcats) | **Wilson** | MiLB.com — Wilson Warbirds debut April 2026 |
+| Dodgers Single-A | Rancho Cucamonga | **Ontario** | MLB.com — new-build expansion club, 2026 debut |
+| Angels Single-A | Inland Empire | **Rancho Cucamonga** | same 3-way California League 2026 realignment |
+| Mariners Single-A | Modesto | **Inland Empire** (San Bernardino) | same realignment; Modesto's CA League franchise (since 1946) goes dark after 2025 |
+
+**This project uses the CURRENT (2026) column** — the one that actually keys against `world-data.ts`'s
+already-existing 120 city slots (Aberdeen/Zebulon/Modesto appear in none of them; Frederick/Wilson/
+Ontario do). A strict-2025 map would leave those three real, already-generated clubs parentless while
+producing three assignments pointing at clubs that don't exist in this world.
+
+**The 30×4 mapping** (MLB abbr → AAA / AA / High-A / Single-A city, matching `world-data.ts`'s own
+city strings exactly):
+
+| MLB | AAA | AA | High-A | A |
+|---|---|---|---|---|
+| ARI | Reno | Amarillo | Hillsboro | Visalia |
+| ATL | Gwinnett | Columbus (GA) | Rome | Augusta |
+| BAL | Norfolk | Chesapeake | Frederick | Delmarva |
+| BOS | Worcester | Portland | Greenville | Salem |
+| CWS | Charlotte | Birmingham | Winston-Salem | Kannapolis |
+| CIN | Louisville | Chattanooga | Dayton | Daytona |
+| CLE | Columbus (OH) | Akron | Lake County | Lynchburg |
+| COL | Albuquerque | Hartford | Spokane | Fresno |
+| DET | Toledo | Erie | West Michigan | Lakeland |
+| HOU | Sugar Land | Corpus Christi | Asheville | Fayetteville |
+| KCR | Omaha | Northwest Arkansas | Quad Cities | Columbia |
+| LAA | Salt Lake | Rocket City | Tri-City | Rancho Cucamonga |
+| LAD | Oklahoma City | Tulsa | Great Lakes | Ontario |
+| MIA | Jacksonville | Pensacola | Beloit | Jupiter |
+| MIL | Nashville | Biloxi | Wisconsin | Wilson |
+| MIN | St. Paul | Wichita | Cedar Rapids | Fort Myers |
+| NYM | Syracuse | Binghamton | Brooklyn | St. Lucie |
+| NYY | Scranton/W-B | Somerset | Hudson Valley | Tampa |
+| ATH | Las Vegas | Midland | Lansing | Stockton |
+| PHI | Lehigh Valley | Reading | Jersey Shore | Clearwater |
+| PIT | Indianapolis | Altoona | Greensboro | Bradenton |
+| SDP | El Paso | San Antonio | Fort Wayne | Lake Elsinore |
+| SFG | Sacramento | Richmond | Eugene | San Jose |
+| SEA | Tacoma | Arkansas | Everett | Inland Empire |
+| STL | Memphis | Springfield | Peoria | Palm Beach |
+| TBR | Durham | Montgomery | Bowling Green | Charleston |
+| TEX | Round Rock | Frisco | Hub City | Hickory |
+| TOR | Buffalo | New Hampshire | Vancouver | Dunedin |
+| WSN | Rochester | Harrisburg | Wilmington | Fredericksburg |
+
+**One city of 120 could NOT be matched and is left unassigned rather than guessed: "Hill City"**
+(`world-data.ts`'s Single-A Carolina League list, one of its 12 entries). Real 2025/2026 Carolina
+League membership is 12 clubs; 11 of them (Delmarva, Fayetteville, Fredericksburg, Salem, Wilson,
+Augusta, Charleston, Columbia, Hickory, Kannapolis, Myrtle Beach) matched `world-data.ts`'s list
+cleanly. The real 12th member is the Down East Wood Ducks (Kinston, NC) — "Down East" does not appear
+anywhere in `world-data.ts`'s city list, and no source consulted this pass explains "Hill City" as a
+real market anywhere in professional baseball. The most likely explanation is a pre-existing data
+question in `world-data.ts`'s own Carolina League entry (possibly "Down East" miscopied), predating
+this pass and outside its scope to fix — flagged here for whoever picks it up, not silently corrected
+or silently assigned a guessed parent.
+
 ---
 
 # 3 · THE DOCUMENTS THE GRIDS CLONE

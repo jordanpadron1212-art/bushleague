@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 90 of them are already recorded, several against
+proposing anything that feels like a new idea — 91 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -26,7 +26,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D90. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D91. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -160,18 +160,28 @@ deliberately out of this pass's scope (see "Not built yet"). **And a real scouti
 cost finally posts to the chart of accounts' long-empty entry 5300, and `refineScout`'s reliability
 mechanism (D24) — dead all season since it was previously only ever called once, at roster construction —
 now actually re-reads the owned roster's real accumulated stats every month, narrowed further by real
-spend within the same [0.15, 0.93] ceiling D24 already set — `DECISIONS.md` D90.
+spend within the same [0.15, 0.93] ceiling D24 already set — `DECISIONS.md` D90. **And real minor-league
+parent affiliation** — every one of the 120 affiliated MiLB clubs `buildWorld` generates now carries a
+real, sourced `parent` field naming the MLB org that actually owns it (119 of 120; one city, "Hill City,"
+couldn't be matched against any real source and stays disclosed rather than guessed) — closing a gap this
+project had flagged as open since an earlier pass, unblocking both the amateur draft (a pick needs
+somewhere real to go) and the Organization page (dark until this exact data existed) — `DECISIONS.md` D91.
 
 **Not built yet:** the market and free agency AS THEIR OWN SYSTEM (a named player signing with a specific
 club, AI GM valuation/negotiation, a free-agent pool UI) — `churn.ts` (D89) replaces retiring/departing
 players anonymously, it does not model any individual player's free agency, retirement as its own modelled
 concept (no sourced hazard curve exists), a scouting-DIRECTOR/area-scout staff system and any owner-facing
 control to move the scouting budget off its default (D90's own disclosed gap — the cost and its reliability
-effect are both real and wired in; the dial to change them from the app isn't), the amateur draft, trades,
-contracts in depth, injuries in depth, the ownership ladder (an owner picks only among the 30 MLB clubs
-today), play-by-play, staff, awards and history. The three items D87 itself listed as "not yet built" that
-WERE closed since — a UI caller for `startNewSeason` (D88), real roster turnover (D89), and a posted
-scouting cost (D90) — are resolved, not carried forward. See ROADMAP.md's "Next, in order."
+effect are both real and wired in; the dial to change them from the app isn't), the amateur draft itself
+(D91 supplies the parent-affiliate data it needs; the talent pool, draft order/lottery, and round
+mechanics are still unbuilt), the Organization page (no UI exists yet to show the parent data D91 now
+provides), trades, contracts in depth, injuries in depth, the ownership ladder (an owner picks only among
+the 30 MLB clubs today), play-by-play, staff, awards and history. The three items D87 itself listed as
+"not yet built" that WERE closed since — a UI caller for `startNewSeason` (D88), real roster turnover
+(D89), and a posted scouting cost (D90) — are resolved, not carried forward. Real parent-affiliate data
+(D91) is a new finding from this pass, not one of D87's own original list items — a real blocker
+discovered while scoping the draft, resolved before it could block anything. See ROADMAP.md's "Next, in
+order."
 
 ---
 
@@ -237,6 +247,10 @@ scouting cost (D90) — are resolved, not carried forward. See ROADMAP.md's "Nex
 | a scouted state's AVERAGE roster reliability is measurably higher than an otherwise-identical unscouted one — not asserted per-player, a real discovered reason why (see D90) | checked directly, same seed, 90 real simulated days each | same file |
 | adding a real scouting cost keeps every economics sourced-target margin inside its already-established tolerance | MLB avg -21.1%→-23.8% (bound ±30%), five independent leagues' averages +5.3/+6.3/+2.3/0.0/+4.1% (bound ±12%) — all comfortably inside | temporary diagnostic run, `economics.test.ts`'s own comments updated to the new numbers, see `DECISIONS.md` D90 |
 | "Scouting" appears as a real line in Books' income statement automatically, with zero new UI code | screenshotted after a real month crossing: "Scouting $75K" printed plainly alongside every other real expense line | temporary Playwright spec, screenshot looked at, then deleted per D16 |
+| 119 of 120 affiliated MiLB clubs resolve to a real MLB parent generated in the SAME world — no dangling references | checked directly against every club's own id, not sampled | `packages/sim-kit/test/world.test.ts` |
+| the one disclosed exception ("Hill City") is exactly one club, not a silent gap elsewhere | checked directly, city and level both asserted | same file |
+| every one of the 30 MLB clubs owns EXACTLY one AAA, one AA, and one High-A affiliate; 29 of 30 own exactly one Single-A affiliate | checked directly for every org, not sampled | same file |
+| a real, hand-transcription defect (the Chicago Cubs' affiliate silently dropped at all four levels) was caught by the new assertions, not by inspection | diagnosed to the exact four missing rows and fixed before this pass closed | `DECISIONS.md` D91 |
 
 **Nothing about the old build's own game-outcome numbers not yet re-verified here** (the +8.5 win
 materiality) was re-measured this pass. The age-structure match (the original's own "median age 34.8
@@ -275,6 +289,14 @@ old build's own dollar figures beyond what's cited above would be citing a build
   own stated target ("all 30 MLB clubs"), not a smaller slice of it, but not the indy-to-MLB climb
   either. `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question is still unresolved and still
   blocks designing this properly.
+- **Real minor-league parent affiliation now exists (`DECISIONS.md` D91) — but one city of 120 is
+  genuinely unresolved, and no Organization page exists yet to show any of it.** "Hill City"
+  (`world-data.ts`'s Single-A Carolina League list) couldn't be matched against any real 2025/2026 league
+  membership source — likely a pre-existing data question in that city list, predating this pass, flagged
+  rather than fixed since re-auditing §2.1's own inventory is a different job than adding parent data. And
+  `world.ts`'s new `Club.parent` field has nowhere to be seen yet: no Roster/Organization page exists
+  anywhere in `apps/web` (confirmed by direct search this pass) — the data is real and tested, the UI to
+  read it is a separate, unbuilt pass.
 - **Roster churn is real but anonymous — free agency, contract expiration, and an amateur intake as their
   OWN systems are still not built.** `churn.ts` (`DECISIONS.md` D89) closes D87's own disclosed
   age-climbs-forever gap — `rollover.test.ts` now proves average age stabilizes rather than climbing — by
@@ -335,19 +357,23 @@ See `ROADMAP.md`'s "Next, in order" for the full reasoning. Short version:
 **Done: the realism-research merge** (§18–24, `DECISIONS.md` D83), **the season-play driver** (D84),
 **state/save/Office/Books** (D85), **the money loop** (D86), **player development and ageing plus a
 minimal season rollover** (D87), **a real UI caller for that rollover** (D88), **real roster churn**
-(D89), and **a real scouting budget** (D90) — a real game you can start, play, save, reload, watch post
-real gate revenue and payroll and now a real scouting cost, age a whole season's worth of players
-realistically, click a real button to start a real second year, watch that new season's rosters actually
-turn over, and watch the owned roster's own scouting reliability actually improve over a season instead of
-sitting frozen since day one. UI.md §13.3's own checkpoint ("Office + Books") is met AND populated.
+(D89), **a real scouting budget** (D90), and **real minor-league parent affiliation** (D91) — a real game
+you can start, play, save, reload, watch post real gate revenue and payroll and now a real scouting cost,
+age a whole season's worth of players realistically, click a real button to start a real second year,
+watch that new season's rosters actually turn over, watch the owned roster's own scouting reliability
+actually improve over a season instead of sitting frozen since day one, and (not yet visible in any UI,
+but real and tested underneath) know exactly which MLB org owns which of the 120 affiliated clubs. UI.md
+§13.3's own checkpoint ("Office + Books") is met AND populated.
 
 1. **The amateur draft, then the ladder itself** — club valuation and purchase, per ROADMAP.md's
-   unchanged pre-rewrite reasoning. The draft needs an amateur-talent-pool generator that doesn't exist
-   yet as its own system — scouting (D90) now exists to point it at, but generating and drafting amateur
-   prospects is separate, unbuilt work. This is also where the ownership ladder (indy → MiLB → MLB, not
-   just "pick one of 30 MLB clubs") needs to get designed — `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s
-   open §1 question blocks it, and where a scouting-director/area-scout staff system and an owner-facing
-   control for the scouting budget itself (D90's own disclosed gaps) would naturally live.
+   unchanged pre-rewrite reasoning. D91 supplies the parent-affiliate data a real pick needs to land
+   somewhere real; still unbuilt: an amateur-talent-pool generator, the draft order and its sourced top-6
+   lottery (RESEARCH.md §1.5), and the 20-round mechanics themselves — scouting (D90) exists to point the
+   draft at, but generating and running it is separate, unbuilt work. This is also where the ownership
+   ladder (indy → MiLB → MLB, not just "pick one of 30 MLB clubs") needs to get designed —
+   `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question blocks it — and where a
+   scouting-director/area-scout staff system, an owner-facing control for the scouting budget (D90's own
+   disclosed gaps), and an Organization page to finally show D91's own parent data would naturally live.
 2. **Free agency as its own named-player system** — `churn.ts` (D89) already replaces departing players
    with fresh, anonymous, legally-composed signees every rollover; a real free-agent pool, AI GM
    valuation/negotiation, and a market UI to watch it happen are the parts still deliberately deferred, per

@@ -39,7 +39,7 @@
  * for every club, via `attFor(lvl, lg) * 1.55` (RESEARCH.md's own
  * capacity-to-average-attendance ratio), so a club is never capacity-less.
  */
-import { MLB, MILB, INDY, type MilbLevelKey } from "./world-data.js";
+import { MLB, MILB, MILB_PARENT, INDY, type MilbLevelKey } from "./world-data.js";
 import { abbrFor } from "./names.js";
 import { attFor } from "./economics.js";
 
@@ -64,6 +64,8 @@ export interface Club {
   z: number;
   /** Stadium capacity — `gateFor`'s ceiling. Overridden for the owned club in `newgame.ts`. */
   cap: number;
+  /** The owning MLB club's id (`MLB_<abbr>`) — real, sourced data (RESEARCH.md §2.6, DECISIONS.md D91), set for MiLB clubs only. `undefined` for MLB/INDY clubs (no parent of their own) AND for the one disclosed MiLB city (`world-data.ts`'s `MILB_PARENT`, "Hill City") this pass could not source a real parent for. */
+  parent?: string;
 }
 
 export function makeClub(
@@ -75,9 +77,10 @@ export function makeClub(
   lg: string,
   div: string,
   park = "",
+  parent?: string,
 ): Club {
   const cap = Math.round(attFor(lvl, lg) * 1.55);
-  return { id, city, name, abbr, lvl, lg, div, park, w: 0, l: 0, rs: 0, ra: 0, gp: 0, l10: [], strk: 0, z: 0, cap };
+  return { id, city, name, abbr, lvl, lg, div, park, w: 0, l: 0, rs: 0, ra: 0, gp: 0, l10: [], strk: 0, z: 0, cap, ...(parent ? { parent } : {}) };
 }
 
 export function buildWorld(): Club[] {
@@ -113,7 +116,9 @@ export function buildWorld(): Club[] {
     for (const [leagueName, cities] of MILB[lvlKey].leagues) {
       const taken = pool(`${lvlKey}|${leagueName}`);
       for (const city of cities) {
-        clubs.push(makeClub(nid(lvlKey), city, "", abbrFor(city, taken), lvlKey, leagueName, leagueName));
+        const parentAbbr = MILB_PARENT[`${lvlKey}:${city}`];
+        const parent = parentAbbr ? `MLB_${parentAbbr}` : undefined;
+        clubs.push(makeClub(nid(lvlKey), city, "", abbrFor(city, taken), lvlKey, leagueName, leagueName, "", parent));
       }
     }
   }

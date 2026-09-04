@@ -1278,3 +1278,82 @@ per-player reliability ordering between a scouted and unscouted state (a real em
 effect makes that claim false, not the weaker population-level one this pass actually checks). What's
 still not built: the amateur draft, the ownership ladder, staff hiring of any kind, and an owner-facing
 control to actually move the scouting dial. See `CHANGELOG.md` v2.11.0.
+
+---
+
+## 2026-09-04 — Real minor-league parent affiliation, researched and sourced, closing a standing gap
+
+**D91 · Before starting the amateur draft (the standing next ROADMAP item), a real blocker surfaced and
+was resolved rather than guessed past: this project never recorded which MLB organization owns which of
+the 120 affiliated MiLB clubs `buildWorld` already generates.** `world-data.ts`'s own header had flagged
+this explicitly since an earlier pass: "Parent-club affiliation... is an open gap, not researched,
+therefore not asserted" — and a real draft needs to place picks into a specific affiliate level, which
+needs exactly this mapping. Rather than invent one, guess past it, or build a draft with nowhere real for
+picks to go, this pass did the research and shipped the mapping as its own real, sourced, disclosed
+deliverable — the draft itself stays a following pass's work (see "Rejected" below on why splitting these
+two was the right call, not scope-timidity).
+
+**Sourced, not invented — RESEARCH.md §2.6.** Per-league Wikipedia membership tables (International,
+Pacific Coast, Eastern, Southern, Texas, Midwest, South Atlantic, Northwest, California, Carolina, Florida
+State — fetched one league at a time), cross-checked against MiLB.com/MLB.com press releases for every
+2024→2025 and 2025→2026 rename or relocation found, AND cross-checked a second, independent way against
+`world-data.ts`'s own pre-existing (separately-sourced, §2.1) 120-city inventory. City/level/league
+placement — the only part that's load-bearing for this port, since `Club.name` is empty for every MiLB
+club — is T1, corroborated two independent ways for all 120 pairings. Exact franchise nicknames (colour
+only, read by nothing in the sim) are T2, spot-checked rather than each individually re-verified.
+
+**A real, dated boundary was found and resolved deliberately, not by accident: 2025 and "current" (2026)
+differ in 5 of 120 slots**, all real relocations (Orioles High-A Aberdeen→Frederick, Brewers Single-A
+Zebulon→Wilson, and a 3-way California League domino — Dodgers/Angels/Mariners Single-A). This project
+uses the CURRENT column: it's the one that actually keys against `world-data.ts`'s already-existing 120
+city slots (Aberdeen/Zebulon/Modesto appear in none of them; Frederick/Wilson/Ontario do). Using the
+literal 2025 mapping instead would have left three of this project's own already-generated clubs
+parentless while producing three assignments pointing at clubs that don't exist in this world at all —
+diagnosed and avoided, not discovered as a bug after shipping.
+
+**One city of 120 could not be matched and is left unassigned rather than guessed: "Hill City"**
+(`world-data.ts`'s Single-A Carolina League list). Every other real 2025/2026 Carolina League member
+matched cleanly; the real 12th member (Down East Wood Ducks, Kinston NC) doesn't appear anywhere in
+`world-data.ts`'s own city list, and nothing found this pass explains "Hill City" as a real market. Most
+likely a pre-existing data question in `world-data.ts`'s own Carolina League entry, predating this pass —
+flagged for whoever picks it up, not silently corrected (out of THIS pass's scope, which is adding parent
+data, not re-auditing §2.1's own city inventory) and not silently assigned a guessed parent either.
+
+**Implementation: `MILB_PARENT` (`world-data.ts`), a `${level}:${city}` → MLB-abbr lookup, feeding a new
+optional `Club.parent` field (`world.ts`) set once in `buildWorld()`.** Keyed by level, not bare city,
+for the same reason `buildWorld`'s own abbreviation pools already are: "Columbus" is Cleveland's real AAA
+affiliate AND (a different real city) Atlanta's real AA affiliate — colliding only if the key drops the
+level. `Club.parent` is `undefined` for MLB/INDY clubs (no parent of their own) and for the one disclosed
+Hill City exception, never an empty string or a placeholder value standing in for "unknown."
+
+**A real defect, caught by the test suite exactly the way this project's own discipline is supposed to
+work, not by inspection.** The first version of `MILB_PARENT` silently dropped the Chicago Cubs' entry in
+all four levels while being hand-transcribed from the research findings — `world.test.ts`'s own new
+"every MLB club owns exactly one affiliate per level" assertion failed immediately (5 unparented clubs
+found, not the expected 1), diagnosed to the exact four missing rows, and fixed before this pass closed.
+Recorded here as the discipline working, not as a mistake to gloss over — this is precisely why "hand-
+transcribe a large sourced table, then let a real assertion check every row" beats "hand-transcribe and
+trust it."
+
+**Verified, not assumed**: `world.test.ts`'s new tests — 119 of 120 affiliated clubs get a parent id that
+resolves to a REAL MLB club generated in the SAME world (no dangling references); the one exception is
+exactly "Hill City" at Single-A, not a silent gap anywhere else; every one of the 30 MLB clubs owns
+exactly one AAA, one AA, and one High-A affiliate, and exactly 29 of 30 own exactly one Single-A affiliate
+(the 30th being whichever org would have owned Hill City). Full workspace suite (269 sim-kit + 8 apps/web
+tests) passes, typecheck clean, build succeeds, 24/24 Playwright visual gate passes.
+
+**This pays off twice, not once.** It's the correct foundation for the amateur draft (a pick needs
+somewhere real to go) AND separately closes ROADMAP.md's own long-standing "the Organization page stays
+dark until [parent affiliation] is [researched]" blocker — no Organization page exists yet to light up
+with it, but the data dependency that was blocking it is gone.
+
+Rejected: building the amateur draft in the SAME pass as this research (the draft is real, substantial
+work of its own — an amateur-talent-pool generator, draft order and the sourced top-6 lottery, 20 rounds —
+and bolting it onto a research pass would either rush the research or bloat the pass; the "one system per
+pass, fully finished" discipline this project has kept since D86 applies here too, even though "the
+research" doesn't look like a traditional "system"); using the literal 2025 mapping over the current one
+(would misalign three real clubs already in this world against clubs that don't exist in it, explained
+above); silently correcting "Hill City" to a guessed real city (would be exactly the kind of invented fact
+this project's whole discipline exists to prevent — flagged instead). What's still not built: the amateur
+draft itself (now unblocked), the Organization page (no page exists, separate UI work), the ownership
+ladder, and everything else `DECISIONS.md` D90 already listed as outstanding. See `CHANGELOG.md` v2.12.0.
