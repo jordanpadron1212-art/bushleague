@@ -14,6 +14,17 @@ import { buildWorld } from "../src/world.js";
 import { buildRosters } from "../src/roster.js";
 import { runDraft, buildDraftOrder, DRAFT_ROUNDS, type DraftPhilosophy } from "../src/draft.js";
 
+/**
+ * A fixed draft year. Prospect ids are `pd:<year>:<i>` (D97), so within one
+ * draft the index alone makes them unique — the year only separates one
+ * SEASON's pool from the next, and no test here runs two drafts whose
+ * prospects coexist. Tests that compare picks across runs rely on this
+ * being identical between them: same seed + same year means the two pools
+ * are the same players under the same ids, so a differing `playerId` proves
+ * a differing CHOICE rather than a differing pool.
+ */
+const DRAFT_YEAR = 2025;
+
 function freshWorld(seed: number) {
   const clubs = buildWorld();
   const r = mulberry32(seed);
@@ -24,7 +35,7 @@ function freshWorld(seed: number) {
 describe("runDraft — shape", () => {
   it("produces exactly DRAFT_ROUNDS x 30 picks, every one a real, once-only player", () => {
     const { clubs, players, r } = freshWorld(1);
-    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r);
+    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r, DRAFT_YEAR);
     expect(draft.picks.length).toBe(DRAFT_ROUNDS * 30);
     expect(draft.picks[0]!.overall).toBe(1);
     expect(draft.picks[draft.picks.length - 1]!.overall).toBe(DRAFT_ROUNDS * 30);
@@ -36,7 +47,7 @@ describe("runDraft — shape", () => {
   it("every pick belongs to a real MLB club, and every MLB club gets exactly DRAFT_ROUNDS picks", () => {
     const { clubs, players, r } = freshWorld(2);
     const mlbIds = new Set(clubs.filter((c) => c.lvl === "MLB").map((c) => c.id));
-    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r);
+    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r, DRAFT_YEAR);
     const counts = new Map<string, number>();
     for (const pick of draft.picks) {
       expect(mlbIds.has(pick.clubId)).toBe(true);
@@ -48,7 +59,7 @@ describe("runDraft — shape", () => {
 
   it("byOrg's players are exactly the drafted players, grouped correctly, and untouched (no cid yet)", () => {
     const { clubs, players, r } = freshWorld(3);
-    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r);
+    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r, DRAFT_YEAR);
     let total = 0;
     for (const [clubId, list] of draft.byOrg) {
       total += list.length;
@@ -112,8 +123,8 @@ describe("runDraft — draft philosophy actually changes picks", () => {
   it("BPA and UPSIDE can diverge on the very first pick from an identical pool (same seed up to the philosophy)", () => {
     const { clubs, players } = freshWorld(9);
     // Use a fixed order (seed the RNG identically for order + pool generation, philosophy is the only difference).
-    const bpa = runDraft(clubs, players, "MLB_NYY", "BPA", mulberry32(777));
-    const upside = runDraft(clubs, players, "MLB_NYY", "UPSIDE", mulberry32(777));
+    const bpa = runDraft(clubs, players, "MLB_NYY", "BPA", mulberry32(777), DRAFT_YEAR);
+    const upside = runDraft(clubs, players, "MLB_NYY", "UPSIDE", mulberry32(777), DRAFT_YEAR);
     // Same order (same seed), so both drafts' FIRST pick is the same club —
     // what matters is whether that club's specific player choice differs.
     expect(bpa.picks[0]!.clubId).toBe(upside.picks[0]!.clubId);
@@ -123,8 +134,8 @@ describe("runDraft — draft philosophy actually changes picks", () => {
     // the philosophy is live, not a no-op.
     let sawDifference = false;
     for (let s = 0; s < 25; s++) {
-      const a = runDraft(clubs, players, "MLB_NYY", "BPA", mulberry32(s));
-      const b = runDraft(clubs, players, "MLB_NYY", "UPSIDE", mulberry32(s));
+      const a = runDraft(clubs, players, "MLB_NYY", "BPA", mulberry32(s), DRAFT_YEAR);
+      const b = runDraft(clubs, players, "MLB_NYY", "UPSIDE", mulberry32(s), DRAFT_YEAR);
       if (a.picks[0]!.playerId !== b.picks[0]!.playerId) {
         sawDifference = true;
         break;
@@ -142,7 +153,7 @@ describe("runDraft — draft philosophy actually changes picks", () => {
     // since nothing about its philosophy has been consulted yet.
     const { clubs, players } = freshWorld(11);
     const philosophies: DraftPhilosophy[] = ["BPA", "NEED", "UPSIDE"];
-    const draftsByPhilosophy = philosophies.map((ph) => runDraft(clubs, players, "MLB_NYY", ph, mulberry32(555)));
+    const draftsByPhilosophy = philosophies.map((ph) => runDraft(clubs, players, "MLB_NYY", ph, mulberry32(555), DRAFT_YEAR));
     const firstOwnedIdx = draftsByPhilosophy[0]!.picks.findIndex((p) => p.clubId === "MLB_NYY");
     expect(firstOwnedIdx).toBeGreaterThanOrEqual(0);
     for (let i = 1; i < draftsByPhilosophy.length; i++) {
@@ -162,7 +173,7 @@ describe("runDraft — draft philosophy actually changes picks", () => {
     const { clubs, players, r } = freshWorld(21);
     const mlbClubs = clubs.filter((c) => c.lvl === "MLB");
     const order = buildDraftOrder(mlbClubs, mulberry32(999));
-    const draft = runDraft(clubs, players, order[0], "BPA", r);
+    const draft = runDraft(clubs, players, order[0], "BPA", r, DRAFT_YEAR);
     const remaining = draft.picks.map((p) => p.ovr);
     for (let i = 0; i < remaining.length; i++) {
       const maxOvr = Math.max(...remaining.slice(i));
@@ -175,7 +186,7 @@ describe("runDraft — the prospect pool itself", () => {
   it("every prospect is scouted (not omniscient) and age-eligible, and no drafted player is already on a roster", () => {
     const { clubs, players, r } = freshWorld(13);
     const existingIds = new Set(players.map((p) => p.id));
-    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r);
+    const draft = runDraft(clubs, players, "MLB_NYY", "BPA", r, DRAFT_YEAR);
     for (const pick of draft.picks) {
       expect(pick.age).toBeGreaterThanOrEqual(18);
       expect(pick.age).toBeLessThanOrEqual(21);

@@ -79,6 +79,22 @@ export interface MakePlayerOptions {
   ident?: [string, string];
   /** Override the level's own centre/spread — used by independent-league talent centres (levels.ts's ILVL). */
   spec?: Pick<Level, "c" | "s">;
+  /**
+   * An explicit, caller-guaranteed-unique id. Every real creation site in
+   * the game passes one; the random fallback below exists only for tests
+   * and one-off generation where the id is never read.
+   *
+   * DECISIONS.md D97: the fallback scheme (`Math.floor(r()*1e9)`) draws from
+   * ~1e9 values, which is NOT enough. Measured directly, not theorised:
+   * 50,000 generated players collide once, 100,000 collide four times,
+   * matching the birthday-paradox prediction (~1.25 and ~5.00). A real
+   * sandbox save mints roughly 1,600 players a year — 600 draft picks plus
+   * churn across 218 clubs — so a century-long save passes 160,000 and
+   * collides a dozen-plus times. A collision is silent corruption, not a
+   * crash: `advance.ts` keys players by id into a Map, so one player simply
+   * overwrites another, and lineups and draft records point at the survivor.
+   */
+  id?: string;
 }
 
 /**
@@ -105,8 +121,15 @@ export function makePlayer(
   const throwsHand: Throws = role === "P" ? (r() < 0.72 ? "R" : "L") : r() < 0.88 ? "R" : "L";
   const pos: Position | "SP" | "RP" = role === "P" ? (r() < 0.55 ? "SP" : "RP") : pick(POS, r);
 
+  // Drawn unconditionally, and BEFORE the return, so the RNG stream is
+  // consumed identically whether or not the caller supplied an id. Letting
+  // `??` short-circuit the draw would silently shift every subsequent value
+  // and regenerate a different world from the same seed — which would break
+  // save-reproducibility (D85), the property this engine is proudest of.
+  const fallbackId = `p${Math.floor(r() * 1e9).toString(36)}`;
+
   return {
-    id: `p${Math.floor(r() * 1e9).toString(36)}`,
+    id: opts.id ?? fallbackId,
     fn,
     ln,
     nm: `${fn.charAt(0)}. ${ln}`,

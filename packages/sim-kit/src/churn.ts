@@ -83,9 +83,9 @@ function entryAge(club: Pick<Club, "lvl">, r: Rng): number {
   return Math.round(clamp(club.lvl === "MLB" ? 23 + r() * 13 : 19 + r() * 9, 18, 42));
 }
 
-function freshPlayer(club: Club, role: Role, age: number, svc: number | undefined, spec: { c: number; s: number } | undefined, r: Rng): Player {
+function freshPlayer(club: Club, role: Role, age: number, svc: number | undefined, spec: { c: number; s: number } | undefined, r: Rng, id: string): Player {
   const level = LVL[club.lvl];
-  const p = makePlayer(r, level, role, age, spec ? { spec } : {});
+  const p = makePlayer(r, level, role, age, { ...(spec ? { spec } : {}), id });
   p.cid = club.id;
   p.lvl = club.lvl;
   if (svc != null) p.svc = svc;
@@ -110,8 +110,14 @@ function churnClub(
   clubPlayers: readonly Player[],
   ownedClubId: string | undefined,
   r: Rng,
+  /** The season this intake belongs to — part of every fresh player's id (D97). */
+  year: number,
   orgDraftPool?: ReadonlyMap<string, Player[]>,
 ): Player[] {
+  // D97: (year, club, n) is unique by construction — churn runs once per
+  // club per rollover, and `n` only ever increments within this call.
+  let n = 0;
+  const mint = (): string => `pc:${year}:${club.id}:${n++}`;
   const owned = club.id === ownedClubId;
   const survivors = clubPlayers.filter((p) => r() >= exitProbability(p.age));
 
@@ -154,7 +160,7 @@ function churnClub(
       const age = intIn(r, row.age[0], row.age[1]);
       const svc = intIn(r, row.svc[0], row.svc[1]);
       const spec = { c: lvlBase.c + Math.min(SVC_EDGE_CAP, svc * SVC_EDGE), s: lvlBase.s };
-      claim(freshPlayer(club, role, age, svc, spec, r));
+      claim(freshPlayer(club, role, age, svc, spec, r, mint()));
     }
   } else {
     // MLB/MiLB: no published composition rule to preserve — keep survivors
@@ -181,7 +187,7 @@ function churnClub(
         claim(drafted!);
         continue;
       }
-      claim(freshPlayer(club, role, entryAge(club, r), undefined, undefined, r));
+      claim(freshPlayer(club, role, entryAge(club, r), undefined, undefined, r, mint()));
     }
   }
 
@@ -235,6 +241,8 @@ export function churnWorld(
   players: readonly Player[],
   ownedClubId: string | undefined,
   r: Rng,
+  /** The season this intake belongs to — part of every fresh player's id (D97). */
+  year: number,
   orgDraftPool?: ReadonlyMap<string, Player[]>,
 ): Player[] {
   const byClub = new Map<string, Player[]>();
@@ -246,7 +254,7 @@ export function churnWorld(
   }
   const next: Player[] = [];
   for (const c of clubs) {
-    const roster = churnClub(c, byClub.get(c.id) ?? [], ownedClubId, r, orgDraftPool);
+    const roster = churnClub(c, byClub.get(c.id) ?? [], ownedClubId, r, year, orgDraftPool);
     next.push(...roster);
   }
   return next;

@@ -1744,3 +1744,67 @@ and the one two of this project's own planned screens had quietly inherited); a 
 "realism/difficulty" slider instead of per-area delegation (it would collapse the most interesting
 choice in the game into one number); building staff before the dial (the dial is provable in
 isolation and tells us whether the model works at all). See `proposals/OWNER-AND-STAFF.md`.
+
+## 2026-09-05 — Player ids were a birthday-paradox time bomb; uniqueness is now structural, not statistical
+
+**D97 · D93 disclosed a suspected id-collision risk in `makePlayer` rather than fixing it. This
+pass measured it, found it real and worse than the disclosure implied, and replaced the scheme.**
+
+The original ids were `p${Math.floor(r() * 1e9).toString(36)}` — a random draw from roughly a
+billion values. That sounds like plenty, and the intuition is wrong for the same reason it is wrong
+about shared birthdays: collisions scale with n²/2N, not n/N. **Measured directly rather than
+argued:** 10,000 generated players collide zero times, 50,000 collide once, 100,000 collide four
+times — tracking the prediction (~1.25 and ~5.00) closely enough to trust the model for
+extrapolation.
+
+**The scale that matters is this game's own.** A sandbox save mints roughly 1,600 players a year —
+600 draft picks plus churn across 218 clubs — so a save reaches 160,000 players around season 100
+and has collided a dozen-plus times by then. The world-configuration work (`proposals/WORLD-CONFIGURATION.md`)
+adds ~180 complex/rookie clubs and a college layer on top of that, which roughly doubles the intake
+and quadruples the collision count, since it grows with the square.
+
+**A collision is silent corruption, not a crash.** `advance.ts` builds `new Map(state.players.map(p => [p.id, p]))`.
+Two players with one id means one silently overwrites the other, and every lineup slot, contract and
+draft record pointing at that id now points at whichever won. Nothing throws. Nothing looks wrong.
+The save just quietly stops being the world it claims to be — which is the worst possible failure
+mode for an engine whose proudest property (D85) is that a seed reproduces its world exactly.
+
+**The fix is structural: every real creation site now passes an id that cannot collide by
+construction**, so uniqueness is a property of the scheme rather than a probability.
+
+| site | id | why it cannot repeat |
+|---|---|---|
+| `roster.ts` | `pr:<club>:<k>` | `buildRosters` runs exactly once per world |
+| `draft.ts` | `pd:<year>:<i>` | one draft per year; `i` indexes that year's pool |
+| `churn.ts` | `pc:<year>:<club>:<n>` | churn runs once per club per rollover; `n` increments within the call |
+
+`startNewSeason` passes `state.season.year` — the season just finished — and increments the year
+afterward, so no two rollovers ever share a year. That is what makes the `year` segment load-bearing
+rather than decorative.
+
+**One subtle trap, caught while writing it, worth recording because it would have been invisible.**
+The obvious implementation is `id: opts.id ?? \`p${Math.floor(r() * 1e9).toString(36)}\``. That is
+wrong. `??` short-circuits, so supplying an id skips the `r()` call, consumes one fewer value from
+the stream, and shifts every subsequent draw — meaning the same seed generates a *different world*
+depending on whether callers pass ids. It would have broken save-reproducibility while every
+existing test still passed. The fallback is therefore computed unconditionally, before the return,
+and a test asserts the two streams stay in lockstep.
+
+**`test/identity.test.ts` is the guard, and it was verified to actually fail.** Temporarily removing
+the id from one creation site makes it fail immediately and by name. The load-bearing assertion is
+the prefix check: a future creation site that forgets to pass an id falls back to the random scheme,
+and its `p<base36>` ids are rejected in the same commit that introduces them. There is also a
+fifty-season soak asserting no id is ever reused for a *different person* — survivors keeping their
+id across a rollover is continuity, not collision, so identity is compared on the player's immutable
+noise seed and name rather than on the id itself.
+
+**Impact: negligible at runtime, decisive on correctness.** The new ids are template strings built
+from values already in scope — no allocation the old scheme did not also make, no measurable change
+to world-generation time (the 286-test suite runs in the same ~97s). What changes is that a
+century-long save is now correct instead of quietly corrupt.
+
+Rejected: a UUID (32+ bytes per player × 160,000 players is real save-size weight for a property
+structure already gives for free); a global monotonic counter (it would have to live in `GameState`
+and be threaded through every creation site, and a desynced counter reintroduces the bug); leaving
+the disclosure standing and fixing it "when it bites" (it bites silently, so it would never
+visibly bite).

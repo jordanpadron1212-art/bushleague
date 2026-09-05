@@ -88,7 +88,8 @@ What's next and what's genuinely open. Updated against reality — not against t
 > bonus-pool/slot-value financial system, revenue-sharing lottery restrictions, and interactive picking —
 > RESEARCH.md §1.5 has real sourced numbers for the first two, waiting for a pass of their own. A genuine,
 > pre-existing `player.ts` id-collision risk (~1e9-value id space) surfaced incidentally via a draft-
-> absorption diagnostic and is disclosed, not fixed, in DECISIONS.md D93.
+> absorption diagnostic and was disclosed rather than fixed in DECISIONS.md D93 — **since measured,
+> confirmed real, and fixed in v2.15.1 (D97).**
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
@@ -171,10 +172,12 @@ drafting would need real pause/resume state-machine capability this engine doesn
 priority than items 1-2 — the draft as shipped is already a real, complete, playable system; these are
 depth, not a gap in what's there.
 
-**4. The `makePlayer` id-collision fix** — a real, pre-existing defect disclosed in DECISIONS.md D93 (an
-~1e9-value id keyspace in `player.ts`), surfaced incidentally by a draft-absorption diagnostic. A larger
-keyspace or a monotonic counter closes it; unrelated to any system built so far but worth fixing before it
-causes a harder-to-diagnose bug once the world's population grows further.
+**4. ~~The `makePlayer` id-collision fix~~ — DONE, v2.15.1 (DECISIONS.md D97).** Kept listed so it doesn't
+read as silently dropped. It was measured before being fixed (50,000 players collide once, 100,000 collide
+four times, matching the birthday-paradox prediction) and closed structurally rather than by widening the
+keyspace: every real creation site now mints an id unique by construction. This mattered more than its
+position here suggested — the world-configuration work below roughly doubles annual player intake, and
+collisions grow with the square of the population.
 
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
 plan.** Still directionally right once the game exists again; re-sequence it against passes 1-2 above

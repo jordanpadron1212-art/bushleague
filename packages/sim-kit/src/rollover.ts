@@ -70,11 +70,11 @@ import type { GameState } from "./state.js";
  * file has no reason to make).
  */
 export function startNewSeason(state: GameState, r: Rng): void {
-  const draft = runDraft(state.world.clubs, state.players, state.ownedClubId ?? undefined, state.draftPhilosophy, r);
+  const draft = runDraft(state.world.clubs, state.players, state.ownedClubId ?? undefined, state.draftPhilosophy, r, state.season.year);
   state.lastDraft = draft.picks.slice();
 
   developPopulation(state.players, r);
-  state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r, draft.byOrg);
+  state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r, state.season.year, draft.byOrg);
 
   for (const c of state.world.clubs) {
     c.w = 0;

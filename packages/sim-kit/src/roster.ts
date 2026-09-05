@@ -174,7 +174,9 @@ export function buildRosters(clubs: readonly Club[], r: Rng, ownedClubId?: strin
       const svc = cl ? intIn(r, cl.svc[0], cl.svc[1]) : 0;
       const spec = cl ? { c: lvlBase.c + Math.min(SVC_EDGE_CAP, svc * SVC_EDGE), s: lvlBase.s } : undefined;
 
-      const p = makePlayer(r, level, role, age, spec ? { spec } : {});
+      // D97: an explicit id, unique by construction — this club, this slot.
+      // buildRosters runs exactly once per world, so (club, k) can't repeat.
+      const p = makePlayer(r, level, role, age, { ...(spec ? { spec } : {}), id: `pr:${c.id}:${k}` });
       p.cid = c.id;
       p.lvl = c.lvl;
       if (cl) p.svc = svc;

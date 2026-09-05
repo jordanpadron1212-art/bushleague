@@ -98,8 +98,8 @@ function draftEligibleAge(r: Rng): number {
  */
 const PROSPECT_SPEC = { c: 28, s: 9 };
 
-function makeProspect(r: Rng, role: Role): Player {
-  const p = makePlayer(r, LVL.A, role, draftEligibleAge(r), { spec: PROSPECT_SPEC });
+function makeProspect(r: Rng, role: Role, id: string): Player {
+  const p = makePlayer(r, LVL.A, role, draftEligibleAge(r), { spec: PROSPECT_SPEC, id });
   refineScout(p);
   return p;
 }
@@ -223,6 +223,8 @@ export function runDraft(
   ownedClubId: string | undefined,
   ownedPhilosophy: DraftPhilosophy,
   r: Rng,
+  /** The draft year — part of every prospect's id (D97). One draft per year, so (year, i) is unique. */
+  year: number,
 ): DraftResult {
   const mlbClubs = clubs.filter((c) => c.lvl === "MLB");
   const order = buildDraftOrder(mlbClubs, r);
@@ -231,7 +233,7 @@ export function runDraft(
   const poolSize = DRAFT_ROUNDS * order.length * PICKS_PER_ROUND_PER_CLUB;
   const nP = Math.round(poolSize * 0.47);
   const prospects: Player[] = [];
-  for (let i = 0; i < poolSize; i++) prospects.push(makeProspect(r, i < nP ? "P" : "B"));
+  for (let i = 0; i < poolSize; i++) prospects.push(makeProspect(r, i < nP ? "P" : "B", `pd:${year}:${i}`));
 
   const picks: DraftPickResult[] = [];
   const byOrg = new Map<string, Player[]>();

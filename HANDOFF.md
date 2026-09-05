@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 96 of them are already recorded, several against
+proposing anything that feels like a new idea — 97 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -56,7 +56,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D96. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D97. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -217,10 +217,9 @@ UI exists yet to show the parent data D91 provides), Competitive Balance draft r
 slot-value/overage-tax financial system, revenue-sharing lottery-eligibility restrictions, and interactive
 (pick-by-pick) drafting (D93's own disclosed scope boundary — the philosophy dial is the one lever the
 owner gets today), trades, contracts in depth, injuries in depth, the ownership ladder (an owner picks only
-among the 30 MLB clubs today), play-by-play, staff, awards and history. Also newly disclosed this pass, a
-different system's defect surfaced incidentally: `makePlayer`'s id-generation scheme (`player.ts`) draws
-from only ~1e9 distinct values, a real (not merely theoretical) collision risk at this project's current
-scale — flagged, not fixed, since it belongs to player generation, not the draft. The items D87 itself
+among the 30 MLB clubs today), play-by-play, staff, awards and history. The `makePlayer` id-collision risk
+this pass originally disclosed and left open is **now fixed** — measured, found real, and replaced with
+ids that are unique by construction (`DECISIONS.md` D97, v2.15.1). The items D87 itself
 listed as "not yet built" that WERE closed since — a UI caller for `startNewSeason` (D88), real roster
 turnover (D89), a posted scouting cost (D90), real parent-affiliate data (D91), and the amateur draft
 itself (D93) — are resolved, not carried forward. See ROADMAP.md's "Next, in order."
@@ -301,6 +300,9 @@ itself (D93) — are resolved, not carried forward. See ROADMAP.md's "Next, in o
 | a drafted player's landed club's `parent` exactly matches the pick record's own drafting club id | checked directly, not sampled | same file |
 | setting `draftPhilosophy` to `"UPSIDE"` before rollover works, and the world's total population size stays exactly constant across a rollover that includes a real draft | checked directly | same file |
 | a genuine, pre-existing `makePlayer` id-collision risk exists at this project's current scale | a temporary diagnostic measured one sampled year absorbing "101.5%" of its draftees onto real roster slots — only possible if two distinct `Player` objects shared an `id` | disclosed in `DECISIONS.md` D93, diagnostic deleted, not a fix inside this pass |
+| the collision rate itself, directly — confirming the risk was real and quantifying it | 10,000 players collide 0 times, 50,000 collide once, 100,000 collide four times, matching the birthday-paradox prediction (~1.25, ~5.00); a save mints ~1,600/year, so ~160,000 by season 100 | fixed in `DECISIONS.md` D97; guard is `packages/sim-kit/test/identity.test.ts` |
+| the guard actually fails when it should | removing the id from one creation site makes `identity.test.ts` fail immediately and by name — verified, then reverted | same file |
+| supplying an explicit id does not shift the seeded RNG stream (save-reproducibility, D85) | the two streams checked in lockstep after a supplied-id and a fallback-id generation | same file |
 | the Draft page renders clean (empty state) across both shells/themes/widths | 8/8 new Playwright checks, 0 console errors, 0 horizontal overflow | `apps/web/e2e/visual.spec.ts` |
 | the Draft page's populated state (post-rollover, real picks) renders clean, and two real truncation/grammar bugs were found and fixed by looking at screenshots, not by an assertion | verified manually at 360px/1440px, both shells/themes | temporary Playwright spec, screenshots looked at, then deleted per D16 |
 
@@ -360,13 +362,14 @@ old build's own dollar figures beyond what's cited above would be citing a build
   itself is an approximation (worst 18 of 30 by winning percentage — no real playoff-qualification system
   exists yet to define "non-playoff" properly), and only the top-6 lottery's headline 16.5% figure is
   sourced; the rest of an 18-team pool's odds curve is a disclosed T3 linear-decay approximation.
-- **A genuine, pre-existing `makePlayer` id-collision risk was found this pass (via a draft-absorption
-  diagnostic) and is disclosed, not fixed.** `player.ts`'s id generator draws from only ~1e9 distinct
-  values (`Math.floor(r()*1e9).toString(36)`); at this project's current population scale plus 600 new
-  draft picks a year, a real (not certain, but real) chance exists that two distinct `Player` objects
-  share an id. This is `player.ts`'s own scheme, unrelated to `draft.ts`/`churn.ts`/`rollover.ts`
-  specifically — fixing it (a larger keyspace, or a monotonic counter) is separate work for whoever picks
-  it up next, not folded quietly into this pass.
+- **CLOSED (v2.15.1, `DECISIONS.md` D97): the `makePlayer` id-collision risk this pass disclosed is
+  fixed.** It was measured before being fixed — 50,000 players collide once, 100,000 collide four times —
+  and the fix is structural, not statistical: every real creation site now passes an id unique by
+  construction (`pr:<club>:<slot>`, `pd:<year>:<pick>`, `pc:<year>:<club>:<n>`), so a future creation site
+  that forgets is rejected by `test/identity.test.ts`'s prefix assertion in the same commit that adds it.
+  Note for anyone touching `makePlayer`: the random fallback is drawn **unconditionally**, before the
+  return, and must stay that way — short-circuiting it with `??` would consume one fewer value from the
+  seeded stream and make the same seed generate a different world.
 - **Roster churn is real but anonymous — free agency, contract expiration, and an amateur intake as their
   OWN systems are still not built.** `churn.ts` (`DECISIONS.md` D89) closes D87's own disclosed
   age-climbs-forever gap — `rollover.test.ts` now proves average age stabilizes rather than climbing — by
@@ -454,9 +457,9 @@ Books") is met AND populated, and Draft is now a third real, browsable page.
    restrictions all have real, sourced numbers waiting in RESEARCH.md §1.5 (D93's own disclosed scope
    boundary); interactive pick-by-pick drafting would need real pause/resume state-machine capability this
    engine doesn't have yet.
-4. **The `makePlayer` id-collision fix** — a real, pre-existing, disclosed defect (D93): a larger id
-   keyspace or a monotonic counter in `player.ts`, unrelated to any system built so far but real risk at
-   this project's current scale.
+4. ~~**The `makePlayer` id-collision fix**~~ — **done in v2.15.1** (`DECISIONS.md` D97). Kept here only so
+   the entry doesn't read as silently dropped: it was measured, confirmed real, and fixed structurally
+   rather than by widening the keyspace.
 
 **Playtest still beats roadmap.** Ask Jordan what stood out from playing the old build before assuming
 this ordering is right.

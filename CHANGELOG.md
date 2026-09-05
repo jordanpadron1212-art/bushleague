@@ -5,6 +5,37 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.15.1 · PLAYER IDS WERE A TIME BOMB — 2026-09-05
+
+v2.14.0 disclosed a suspected id-collision risk instead of fixing it. This pass measured it, found
+it real, and fixed it structurally.
+
+Ids were a random draw from ~1e9 values, which sounds like plenty and isn't — collisions scale with
+the square of the population, the same reason a room of 23 people probably shares a birthday.
+Measured, not argued: 50,000 generated players collide once, 100,000 collide four times. A sandbox
+save mints roughly 1,600 players a year, so a century-long save passes 160,000 and collides
+repeatedly. And a collision doesn't crash — the engine keys players by id into a Map, so one player
+silently overwrites another and the lineups, contracts and draft records pointing at him quietly
+re-point at someone else.
+
+Every real creation site now mints an id that can't collide by construction: `pr:<club>:<slot>` for
+world rosters, `pd:<year>:<pick>` for the draft, `pc:<year>:<club>:<n>` for churn. Uniqueness is now
+a property of the scheme rather than a probability.
+
+One trap was caught while writing the fix and is worth naming: writing the fallback as
+`opts.id ?? randomId()` would have short-circuited the random draw, consumed one fewer value from
+the seeded stream, and made the same seed generate a different world depending on whether callers
+passed ids — breaking save-reproducibility while every existing test still passed. The draw now
+happens unconditionally, and a test proves the two streams stay in lockstep.
+
+`test/identity.test.ts` guards it, and was verified to genuinely fail: removing the id from one
+creation site makes it fail immediately. Its most important assertion is a prefix check, so a future
+creation site that forgets to pass an id is rejected in the same commit that adds it. A fifty-season
+soak confirms no id is ever reused for a different person.
+
+Impact: negligible at runtime (286 tests still run in ~97s, no new allocation), decisive on
+correctness. See `DECISIONS.md` D97.
+
 ## v2.15.0 · THE VISUAL DIRECTION, SIGNED OFF AND SAVED — 2026-09-05
 
 Asked whether the UI was working, the answer was that it wasn't. Three rounds of real, cited
