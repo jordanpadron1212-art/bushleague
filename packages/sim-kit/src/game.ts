@@ -46,12 +46,15 @@ import type { Player } from "./player.js";
 import type { Club } from "./world.js";
 import type { BatterRates, PitcherRates, Rates } from "./rates.js";
 import { resolvePA, advOf, Outcome, ADV, type OutcomeCode } from "./pa-resolution.js";
+import { teamDefense, type FieldSlot, type TeamDefense } from "./fielding.js";
 import { inc } from "./util.js";
 
 export interface GameRoster {
   club: Club;
   /** Player ids, batting order. */
   lineup: readonly string[];
+  /** Who is standing where — `RosterChart.field`. Absent means league-average defence. */
+  field?: ReadonlyMap<FieldSlot, string>;
   /** Player ids, starting rotation. */
   rot: readonly string[];
   /** Player ids, bullpen. */
@@ -83,6 +86,8 @@ interface PitcherLine {
 }
 
 interface Side {
+  /** This club's fielding, computed once per game. `undefined` = league average. */
+  def: TeamDefense | undefined;
   lineup: readonly string[];
   rot: readonly string[];
   pen: readonly string[];
@@ -105,11 +110,27 @@ function pitcherBudget(rates: Rates | undefined): number {
   return bud || 16;
 }
 
-function makeSide(team: GameRoster, rotationIndex: number, rates: ReadonlyMap<string, Rates>): Side {
+function makeSide(
+  team: GameRoster,
+  rotationIndex: number,
+  rates: ReadonlyMap<string, Rates>,
+  players: ReadonlyMap<string, Player>,
+): Side {
   const cur = team.rot[rotationIndex % Math.max(1, team.rot.length)]!;
+  // The club's defence is fixed for the game — nine men, computed once,
+  // rather than re-derived on every one of ~76 plate appearances.
+  const assignment = new Map<FieldSlot, Player>();
+  if (team.field) {
+    for (const [slot, id] of team.field) {
+      const p = players.get(id);
+      if (p) assignment.set(slot, p);
+    }
+  }
+  const def = assignment.size ? teamDefense(assignment) : undefined;
   const pstat = new Map<string, PitcherLine>();
   pstat.set(cur, { o: 0, er: 0, ra: 0 });
   return {
+    def,
     lineup: team.lineup,
     rot: team.rot,
     pen: team.pen,
@@ -164,7 +185,10 @@ export function simGame(
   r: Rng,
 ): GameResult {
   // Index 0 bats first (away), matching the original's own `T` ordering.
-  const T: [Side, Side] = [makeSide(away, awayRotationIndex, rates), makeSide(home, homeRotationIndex, rates)];
+  const T: [Side, Side] = [
+    makeSide(away, awayRotationIndex, rates, players),
+    makeSide(home, homeRotationIndex, rates, players),
+  ];
   const A = advOf(env);
 
   let inn = 1;
@@ -227,7 +251,8 @@ export function simGame(
         }
         const bs = bat.st;
         const ps = pit.st;
-        const o: OutcomeCode = resolvePA(batRates, pitRates, env, r);
+        // D is the side in the field, so D's defence is what this ball meets.
+        const o: OutcomeCode = resolvePA(batRates, pitRates, env, r, D.def);
         inc(bs, "pa");
         inc(ps, "bf");
 

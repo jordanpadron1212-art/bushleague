@@ -37,6 +37,7 @@ import { SEASONS } from "./schedule.js";
 import { makePlayer, type Player, type Role } from "./player.js";
 import { refineScout } from "./scouting.js";
 import { clamp, nz, round2 } from "./util.js";
+import { FIELD_SLOTS, defFit, eligibleAt, type FieldSlot } from "./fielding.js";
 
 /** Roster size for a club nobody owns — DECISIONS.md, RESEARCH.md §5-9. */
 export const ROSTER_N: Record<string, number> = { MLB: 32, AAA: 26, AA: 26, HIA: 26, A: 26, INDY: 25 };
@@ -225,7 +226,17 @@ export function buildRosters(clubs: readonly Club[], r: Rng, ownedClubId?: strin
 
       // D97: an explicit id, unique by construction — this club, this slot.
       // buildRosters runs exactly once per world, so (club, k) can't repeat.
-      const p = makePlayer(r, level, role, age, { ...(spec ? { spec } : {}), id: `pr:${c.id}:${k}` });
+      // Positions come from a template, not the uniform draw. Cycling the
+      // eight fielding positions HARDEST FIRST guarantees that a club of
+      // any size owns a catcher and a shortstop before it owns a second
+      // first baseman — which is how real rosters are built, and without
+      // which `chartClub` is asked to find a catcher who does not exist.
+      // Pitchers keep their own SP/RP draw untouched.
+      const p = makePlayer(r, level, role, age, {
+        ...(spec ? { spec } : {}),
+        id: `pr:${c.id}:${k}`,
+        ...(role === "B" ? { pos: FIELDING_TEMPLATE[(k - nP) % FIELDING_TEMPLATE.length]! } : {}),
+      });
       p.cid = c.id;
       p.lvl = c.lvl;
       if (cl) p.svc = svc;
@@ -290,14 +301,39 @@ export interface RosterChart {
   rot: readonly string[];
   /** Player ids, bullpen. */
   pen: readonly string[];
+  /**
+   * Who is standing where. Added with the fielding model — before it a
+   * "lineup" was nine bats and the positions beside their names were
+   * decoration. `lineup` is the batting order; this is the alignment the
+   * defence is computed from.
+   */
+  field: ReadonlyMap<FieldSlot, string>;
 }
 
 /**
- * Builds one club's depth chart from its own roster — the best available
- * hitters by scouted overall become the lineup, the best available starters
- * the rotation, the best available relievers the bullpen. A club short of
- * arms still has to field a nine and take the mound, so each chart falls
- * back to whoever is on the roster rather than coming back empty.
+ * Builds one club's depth chart.
+ *
+ * THE LINEUP IS NOW A DEFENSIVE ALIGNMENT, not nine bats. Before the
+ * fielding model this took the best nine hitters by scouted overall, which
+ * produced real lineups carrying three right fielders and no catcher —
+ * visible the moment a screen finally rendered one.
+ *
+ * Positions are filled HARDEST FIRST, in `FIELD_SLOTS` order (C, SS, CF,
+ * 2B, 3B, RF, LF, 1B, DH), which is the sourced positional adjustment in
+ * descending difficulty (RESEARCH.md §21.6). That order is the algorithm's
+ * whole cleverness, and it mirrors how a real club is built: you find a
+ * catcher and a shortstop first, because almost nobody can do those jobs,
+ * and you can always put your last man at first base.
+ *
+ * Each candidate is scored for each slot as his bat plus his glove THERE —
+ * `defAt` having already charged him for playing out of position. So a
+ * good-hit/no-field player drifts down the spectrum to first base and DH on
+ * his own, without a rule saying so, and a shortstop who can hit stays at
+ * short because that is where his glove is worth most.
+ *
+ * A club too short to fill nine slots fields who it has rather than
+ * throwing — the same fallback the bat-only version had, for the same
+ * reason: a short roster still has to take the field.
  */
 export function chartClub(clubPlayers: readonly Player[]): RosterChart {
   const avail = clubPlayers.filter((p) => p.status !== "IL");
@@ -305,7 +341,42 @@ export function chartClub(clubPlayers: readonly Player[]): RosterChart {
   const sps = avail.filter((p) => p.role === "P" && p.pos === "SP").sort((a, b) => b.ovr - a.ovr);
   const rps = avail.filter((p) => p.role === "P" && p.pos === "RP").sort((a, b) => b.ovr - a.ovr);
 
-  let lineup = bats.slice(0, 9).map((p) => p.id);
+  const field = new Map<FieldSlot, string>();
+  const taken = new Set<string>();
+  const pool = bats.length ? bats : clubPlayers.slice();
+
+  for (const slot of FIELD_SLOTS) {
+    let best: Player | null = null;
+    let bestScore = -Infinity;
+    // Eligible men first. Only if a club has nobody who can do the job at
+    // all — no catcher anywhere on the roster — does it fall back to
+    // whoever is left, because a short roster still has to take the field.
+    const eligible = pool.filter((p) => !taken.has(p.id) && eligibleAt(p, slot));
+    const candidates = eligible.length ? eligible : pool;
+    for (const p of candidates) {
+      if (taken.has(p.id)) continue;
+      // The bat counts everywhere; the glove counts only where he is
+      // standing, and `defAt` has already taken the spectrum's cut out of
+      // it. Defence is scaled into grade points so the two are commensurate.
+      // `defFit`, not `defAt`: the UNCLAMPED figure, so a man who simply
+      // cannot play the position scores arbitrarily badly there instead of
+      // bottoming out level with someone who merely plays it poorly.
+      const score = p.ovr + (slot === "DH" ? 0 : (defFit(p, slot) - 50) * DEF_WEIGHT);
+      if (score > bestScore) {
+        bestScore = score;
+        best = p;
+      }
+    }
+    if (!best) break;
+    field.set(slot, best.id);
+    taken.add(best.id);
+  }
+
+  // The batting ORDER is still by bat — a manager writes the card in the
+  // order he wants them hitting, not in the order they stand on the grass.
+  const byId = new Map(pool.map((p) => [p.id, p]));
+  let lineup = [...field.values()].sort((a, b) => (byId.get(b)?.ovr ?? 0) - (byId.get(a)?.ovr ?? 0));
+
   let rot = sps.slice(0, 5).map((p) => p.id);
   let pen = rps.slice(0, 8).map((p) => p.id);
 
@@ -313,8 +384,28 @@ export function chartClub(clubPlayers: readonly Player[]): RosterChart {
   if (!rot.length) rot = sps.concat(rps).concat(clubPlayers).slice(0, 1).map((p) => p.id);
   if (!pen.length) pen = rot.slice();
 
-  return { lineup, rot, pen };
+  return { lineup, rot, pen, field };
 }
+
+/**
+ * How much a point of defensive grade is worth against a point of overall
+ * when deciding who plays where. Deliberately well under 1: a club will
+ * move a man to an easier position for his bat, but will not bench a
+ * clearly better hitter for a slightly better glove. Checked in
+ * `fielding.test.ts` by asserting a club's best hitter still starts.
+ */
+const DEF_WEIGHT = 0.35;
+
+/**
+ * The order positions are handed out when a roster is built — the sourced
+ * spectrum, hardest first (RESEARCH.md §21.6), cycled. Every club therefore
+ * has a catcher before it has a spare corner outfielder, at any roster size
+ * down to one. DH is absent on purpose: it is a role, not a fielding
+ * position, and `chartClub` gives it to whoever is left over, which is what
+ * happens on a real card.
+ */
+const FIELDING_TEMPLATE = ["C", "SS", "CF", "2B", "3B", "RF", "LF", "1B"] as const;
+
 
 /** `chartClub` for every club in the world at once, keyed by club id. */
 export function chartWorld(clubs: readonly Club[], players: readonly Player[]): Map<string, RosterChart> {

@@ -77,6 +77,13 @@ export interface Player {
 
 export interface MakePlayerOptions {
   ident?: [string, string];
+  /**
+   * An explicit fielding position. `buildRosters` supplies these from a
+   * template so that every club actually owns a catcher — left to the
+   * uniform draw, a real 21-batter roster came out with ZERO catchers and
+   * zero right fielders, which no assignment algorithm can repair.
+   */
+  pos?: Position | "SP" | "RP";
   /** Override the level's own centre/spread — used by independent-league talent centres (levels.ts's ILVL). */
   spec?: Pick<Level, "c" | "s">;
   /**
@@ -119,7 +126,12 @@ export function makePlayer(
   const [fn, ln] = opts.ident ?? genName(r);
   const bats: Bats = role === "P" ? (r() < 0.72 ? "R" : "L") : r() < 0.62 ? "R" : r() < 0.92 ? "L" : "S";
   const throwsHand: Throws = role === "P" ? (r() < 0.72 ? "R" : "L") : r() < 0.88 ? "R" : "L";
-  const pos: Position | "SP" | "RP" = role === "P" ? (r() < 0.55 ? "SP" : "RP") : pick(POS, r);
+  // The draw happens UNCONDITIONALLY, exactly as the id fallback below
+  // does and for the same reason (D97): a caller supplying a position must
+  // consume the identical amount of randomness as one that does not, or the
+  // whole seeded stream shifts and save-reproducibility (D85) is gone.
+  const drawnPos: Position | "SP" | "RP" = role === "P" ? (r() < 0.55 ? "SP" : "RP") : pick(POS, r);
+  const pos: Position | "SP" | "RP" = opts.pos ?? drawnPos;
 
   // Drawn unconditionally, and BEFORE the return, so the RNG stream is
   // consumed identically whether or not the caller supplied an id. Letting

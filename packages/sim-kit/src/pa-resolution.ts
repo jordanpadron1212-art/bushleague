@@ -24,6 +24,7 @@ import type { Rng } from "./rng.js";
 import type { LevelEnv } from "./levels.js";
 import type { BatterRates, PitcherRates } from "./rates.js";
 import { clamp, nz } from "./util.js";
+import type { TeamDefense } from "./fielding.js";
 
 /** Outcome codes — the original build's own numbering, preserved so a future box-score/stat-line layer can match it directly. */
 export const Outcome = {
@@ -125,6 +126,7 @@ function draw(
   pitcher: PitcherRates,
   env: LevelEnv,
   r: Rng,
+  def?: TeamDefense,
 ): OutcomeCode {
   let a = pSO;
   if (u < a) return Outcome.StrikeOut;
@@ -135,10 +137,14 @@ function draw(
   a += pHR;
   if (u < a) return Outcome.HomeRun;
 
-  // Ball in play.
-  const bab = log5(batter.bab, pitcher.bab, env.babip);
+  // Ball in play. This is where DIPS says the defence lives: once the ball
+  // is struck the pitcher's influence is largely spent, and what happens
+  // next is who is standing where. The league BABIP gains a third term for
+  // exactly that, and the error rate stops being a property of the LEVEL
+  // alone and becomes a property of the hands on the field too.
+  const bab = clamp(log5(batter.bab, pitcher.bab, env.babip) + (def?.babipDelta ?? 0), 0.15, 0.5);
   const uu = (u - a) / Math.max(1e-9, rem);
-  const er = errRate(env);
+  const er = errRate(env) * (def?.errFactor ?? 1);
   if (uu < er) return Outcome.ReachOnError;
   if (uu < er + bab * (1 - er)) {
     const v = r();
@@ -149,9 +155,40 @@ function draw(
   return Outcome.Out;
 }
 
-export function resolvePA(batter: BatterRates, pitcher: PitcherRates, env: LevelEnv, r: Rng): OutcomeCode {
-  const pBB = log5(batter.bb, pitcher.bb, env.bb) * ADV.bbCal;
-  const pSO = log5(batter.so, pitcher.so, env.k);
+/**
+ * How hard a stolen strike pushes the strikeout and walk rates.
+ *
+ * A framed strike is not a strikeout — it changes a count, and only some
+ * counts turn over. So this is a sensitivity, not an identity, and it is
+ * the one number here that could not be read off a source. It is therefore
+ * SET BY MEASUREMENT, not by argument: `fielding.test.ts` plays real
+ * seasons with an elite and an average catcher and checks the run
+ * difference lands near the ~15 runs the sourced +120-strike figure implies
+ * at the glossary's 0.125 runs per strike.
+ */
+export const FRAMING_SENSITIVITY = 10;
+
+/**
+ * `def` is the DEFENDING club's fielding, and it is optional so that every
+ * caller and calibration test written before the fielding model measures
+ * exactly what it measured before — the same technique D101 used when
+ * ticket pricing entered `gateDay`. Omitted means league-average defence
+ * and byte-identical behaviour.
+ */
+export function resolvePA(
+  batter: BatterRates,
+  pitcher: PitcherRates,
+  env: LevelEnv,
+  r: Rng,
+  def?: TeamDefense,
+): OutcomeCode {
+  // Framing moves CALLED STRIKES, so it lands here — before contact, on the
+  // strikeout and walk rates — and not on the ball in play. A catcher who
+  // steals strikes turns some walks into strikeouts; one who does not,
+  // does the reverse.
+  const frame = def ? def.framingStrikeShift * FRAMING_SENSITIVITY : 0;
+  const pBB = log5(batter.bb, pitcher.bb, env.bb) * ADV.bbCal * (1 - frame);
+  const pSO = log5(batter.so, pitcher.so, env.k) * (1 + frame);
   const pHR = log5(batter.hr, pitcher.hr, env.hrPA) * ADV.hrCal;
   const pHB = env.hbp;
   let rem = 1 - pBB - pSO - pHR - pHB;
@@ -159,7 +196,7 @@ export function resolvePA(batter: BatterRates, pitcher: PitcherRates, env: Level
   if (rem < 0.05) {
     const sc = 0.95 / (pBB + pSO + pHR + pHB);
     rem = 0.05;
-    return draw(r(), pBB * sc, pSO * sc, pHR * sc, pHB * sc, rem, batter, pitcher, env, r);
+    return draw(r(), pBB * sc, pSO * sc, pHR * sc, pHB * sc, rem, batter, pitcher, env, r, def);
   }
-  return draw(r(), pBB, pSO, pHR, pHB, rem, batter, pitcher, env, r);
+  return draw(r(), pBB, pSO, pHR, pHB, rem, batter, pitcher, env, r, def);
 }

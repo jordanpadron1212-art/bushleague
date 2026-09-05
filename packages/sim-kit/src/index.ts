@@ -17,6 +17,7 @@ export * from "./economics.js";
 export * from "./world.js";
 export * from "./schedule.js";
 export * from "./pa-resolution.js";
+export * from "./fielding.js";
 export * from "./roster.js";
 export * from "./game.js";
 export * from "./season.js";

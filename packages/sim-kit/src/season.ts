@@ -54,7 +54,11 @@ export function clubFormRecord(c: Pick<Club, "l10">): [wins: number, losses: num
 }
 
 function rosterFor(club: Club, chart: RosterChart): GameRoster {
-  return { club, lineup: chart.lineup, rot: chart.rot, pen: chart.pen };
+  // `field` MUST be carried through. Dropping it here compiles perfectly
+  // and silently reverts every club to league-average defence — the same
+  // shape of failure that left `def` and `arm` generated-but-unread for
+  // four passes. `fielding.test.ts` asserts a real season is affected.
+  return { club, lineup: chart.lineup, rot: chart.rot, pen: chart.pen, field: chart.field };
 }
 
 /**

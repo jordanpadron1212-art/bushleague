@@ -1914,6 +1914,42 @@ Historical framing: a 2010 Baseball Prospectus piece (Colin Wyers) argued defens
 - **A "2025 DRS leaders by position" list similarly had the RF slot wrong — REFUTED on that point.** Adolís García (16 DRS) led MLB right fielders, not Fernando Tatís Jr. (15 DRS, led only among *NL* right fielders). The other 9 positions in that list check out (§21.3).
 - **A separate "2025 catcher framing" pull (Valenzuela +7.54 best / O'Hoppe -10.69 worst) is a confirmed extraction artifact — REFUTED**, from a mis-scoped (unqualified-player) query. The real 2025 figures are Bailey +25.05 / Quero -12.90 (§21.3). Do not use the Valenzuela/O'Hoppe numbers for anything.
 
+### 21.6 The positional adjustment — the one defensive table that IS canonical and published
+
+Added 2026-09-05, while building the fielding model. §21.4 established that no OAA/DRS→20-80
+bridge exists. The POSITIONAL adjustment is a different question and it is fully published:
+FanGraphs' WAR uses these, per 162 defensive games, and they are the standard defensive spectrum
+in numeric form.
+
+| position | runs / 162 games |
+|---|---|
+| C | **+12.5** |
+| SS | **+7.5** |
+| 2B | **+2.5** |
+| 3B | **+2.5** |
+| CF | **+2.5** |
+| LF | **−7.5** |
+| RF | **−7.5** |
+| 1B | **−12.5** |
+| DH | **−17.5** |
+
+Applied as `((innings / 9) / 162) * position run value`. T1/T2 — FanGraphs Sabermetrics Library,
+"Positional Adjustment". https://library.fangraphs.com/misc/war/positional-adjustment/ and
+https://blogs.fangraphs.com/position-adjustments/
+
+**Why this matters for a sim and §21.4 does not contradict it.** The adjustment says how much
+harder each position is — it does NOT say how good a given fielder is at it. So it is a sound
+basis for POSITION ASSIGNMENT and for pricing a player moved off his natural spot, while the
+absent 20-80 bridge remains absent for rating the fielder himself. The two 2013 attempts at that
+bridge (§21.4) disagree by a factor of 1.4 — Cistulli's 20/50/80 = −30/0/+30 Def runs is 1.00
+run per grade point, Smith's UZR/150 z-score table (80=+22.8 … 20=−19.6) is 0.71 — and Smith's
+own caveat is that the realized MLB distribution never populates the 80/20 tails, because
+elite-glove/weak-bat players do not get full-time at-bats. A simulation that DOES populate those
+tails will therefore overstate defensive spread on either constant unless it is checked against
+a real team-level target.
+
+**Recorded 2026-09-05.**
+
 **Recorded 2026-09-04.**
 
 ---
