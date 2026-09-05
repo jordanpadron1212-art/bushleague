@@ -2418,3 +2418,98 @@ offline-capable PWA should not make a third-party request on every load); portin
 components — split-flap digits, the waterfall, the radial gauge, the aurora — in this pass (they
 belong to screens that mostly do not exist yet, and a gauge without a number worth gauging is
 decoration; the tokens they need are all present).
+
+---
+
+## D105 — Ten screens lit, four kept dark, and the registry's own notes corrected (v2.22.0)
+
+Fourteen pages had been declared-but-dark since the chassis pass. This pass lit **ten** of them —
+Budget, Gate, Standings, Schedule, Leaders, Organization, Lineup, Scouting, Settings, Save — and
+**deliberately left four dark**: Wire, Trades, Free agents, Ownership.
+
+### The audit came before the code, and the registry's own notes were wrong
+
+Each dark page carried a `lightsAt` note saying what blocked it. Several were **stale**, written
+before the systems they named had landed:
+
+| page | its note said | actually |
+|---|---|---|
+| Organization | waiting on "parent-affiliation research (RESEARCH.md's own open gap)" | `Club.parent` has carried real sourced affiliations since v2.12.0 |
+| Budget | "the books UI pass" | the three money dials became real in D90/D101/D102 |
+| Gate | "the money-loop pass" | every home date has posted a split gate entry since D88 |
+| Lineup | "nothing sets one yet" | under D96 nothing SHOULD; `chartClub` derives it |
+
+The four that stayed dark were verified the same way, not assumed: `state.wire`, `events`,
+`history`, `needs` and `form` are written by **zero** sites. Building them would be decoration.
+
+### The finding that reordered the whole pass
+
+`ticketPrice`, `payrollBudget` and `scoutingBudget` are real, tested, load-bearing mechanics that
+move talent, wins and cash — and **the owner could not reach any of them anywhere in the app.**
+They moved only if the desk happened to raise an ask. A game whose premise is "you own the club"
+was shipping with its three business levers unreachable. That made Budget the first screen built,
+not the fifth.
+
+### Delegation is honoured on the Budget screen, not routed around
+
+Jordan's call. A dial whose domain has been handed to staff at Notify or Silent renders **disabled
+with the reason printed**. Hiding it would make the page lie about what the club does; letting it
+work would make the delegation dial decorative. Verified in a browser in both states.
+
+### Measured before rendering, and both measurements changed the design
+
+- **Payroll authorised-vs-committed** runs −42.9% to +15.3% across 8 seeds (mean −16.0%). Not a
+  defect in the defaults — D103's service-time pricing doing its job, since a young 40-man is full
+  of league-minimum players and a veteran one costs double. So the gap is **headroom**, and the
+  first draft painting "over" in red was crying wolf at a number the owner did not cause.
+- **Leaders category switch** measured 81.7ms, which looked like a problem. A CONTROL — re-clicking
+  the category already selected, so the memo returns cached — came back at **65.3ms**. The work is
+  **16.4ms**; the raw filter+sort over 5,750 players is **0.30ms**. Nearly all of the first number
+  was the measurement rig. Trusting it would have meant optimising something that costs a third of
+  a millisecond.
+
+### Route code-splitting, measured three ways
+
+| | entry chunk (first paint) | total JS |
+|---|---|---|
+| 5 pages, static (before) | 396.0 KB | 396.0 KB |
+| 15 pages, static | 433.4 KB | 433.4 KB |
+| **15 pages, lazy (shipped)** | **384.2 KB** | 438.2 KB |
+
+First paint is **11.8 KB smaller than before the pass** while the lit page count tripled. Total JS
+grew 4.8 KB in chunk overhead, which costs only a reader who visits every screen. The registry is
+the only place that names a page component (D11), so this was one edit.
+
+### Three things the RENDER killed that reading the code would not have
+
+1. Four-line explanatory paragraphs under each Budget dial — at 360px the prose had eaten the
+   screen, two and a half panels visible on a page whose whole job is three dials side by side.
+2. Standings' per-club ranked bars — a five-club division clusters near .500, so .600 measured
+   100% and .491 measured 82% and every bar looked identical. Dropping them fit two more clubs on.
+3. "$/head" on every Gate row — all fourteen read $71.00, because per-head take is constant by
+   construction. An honest number identical on every row is a column of noise.
+
+### An engine gap this pass EXPOSED, and did not paper over
+
+Rendering Lineup produced a batting order of three right fielders, two left fielders and no
+catcher. Reading the engine explains it: `rateProfile` uses only `hit`, `pow`, `eye` and `spd`, so
+the `def` and `arm` tools are generated on every player and **never read**, and `p.pos` separates
+SP from RP and is otherwise cosmetic. There is no fielding model, so no result on any other screen
+is wrong.
+
+The page does **not** sort the card into something that looks like a real lineup. That would show
+an order the simulation is not playing, which is worse than showing an odd one. The screen
+discloses it and ROADMAP.md carries the engine work.
+
+### Impact
+
+**Structurally decisive.** The game goes from 5 reachable screens to 15, the owner's three money
+levers become reachable for the first time, and first-paint cost went *down*. Save-reproducibility
+(D85) is untouched: the three new store setters are plain owner inputs that draw no random numbers,
+exactly as `setDraftPhilosophy` already did. Two previously-disclosed gaps closed — `readBackup()`
+finally has a caller, and a save can leave the browser it was made in.
+
+Rejected: building Wire/Trades/Free agents/Ownership on empty arrays; sorting the Lineup card into
+a plausible-looking defensive alignment; a spinner in the Suspense fallback (under 200ms, showing
+nothing is correct); duplicating the scouting budget control onto the Scouting page (two controls
+writing one field is how they come to disagree).

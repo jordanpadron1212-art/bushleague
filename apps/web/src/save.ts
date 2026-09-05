@@ -227,6 +227,31 @@ export function readBackup(): Promise<unknown> {
   return withDb((d) => d.get(STORE, BACKUP_SLOT));
 }
 
+/**
+ * Puts the pre-migration copy back into the live slot, and drops the
+ * backup. Returns false when there is nothing to restore.
+ *
+ * WHAT THIS DOES AND DOES NOT FIX, because the difference matters and the
+ * UI says it too. The backup is the RAW save as it was BEFORE a migration
+ * ran. Restoring it means the next load migrates it again — so if a broken
+ * migration is what damaged the save, restoring does not by itself repair
+ * anything; it preserves the original data until a build with a corrected
+ * migration reaches the player. That is exactly what a backup is for, and
+ * promising more than that would be a lie.
+ */
+export async function restoreBackup(): Promise<boolean> {
+  // Cancel first, for the same reason `deleteSave` does: a queued write
+  // landing after the restore would overwrite it with the damaged state.
+  cancelQueued();
+  return withDb(async (d) => {
+    const raw = await d.get(STORE, BACKUP_SLOT);
+    if (raw === undefined) return false;
+    await d.put(STORE, raw, SLOT);
+    await d.delete(STORE, BACKUP_SLOT);
+    return true;
+  });
+}
+
 export function hasSave(): Promise<boolean> {
   return withDb(async (d) => (await d.count(STORE, SLOT)) > 0);
 }

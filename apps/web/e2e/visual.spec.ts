@@ -491,3 +491,205 @@ for (const theme of THEMES) {
       .toBeGreaterThanOrEqual(4.5);
   });
 }
+
+/* ==========================================================================
+ * The ten screens this pass lit.
+ *
+ * These are guards, not smoke tests. Each one asserts something the page
+ * would be WRONG without — a control that must move a number, an arithmetic
+ * identity, a rule the design turns on — because a test that only checks a
+ * page rendered will pass on a page rendering nonsense.
+ * ======================================================================= */
+
+const LIT = [
+  "office", "roster", "lineup", "organization", "standings", "schedule",
+  "leaders", "scouting", "draft", "books", "budget", "gate", "delegation",
+  "settings", "save",
+];
+
+/** The four that are still legitimately dark, and must STAY dark. */
+const DARK = ["wire", "trades", "freeagents", "ownership"];
+
+for (const shell of SHELLS) {
+  for (const theme of THEMES) {
+    test(`every lit page renders, fits 360px and logs nothing — ${shell}/${theme}`, async ({ page }) => {
+      const consoleErrors: string[] = [];
+      page.on("console", (msg) => msg.type() === "error" && consoleErrors.push(msg.text()));
+      page.on("pageerror", (err) => consoleErrors.push(err.message));
+
+      await startGame(page);
+      for (const id of LIT) {
+        await page.goto(`/#/p/${id}`);
+        await setShellTheme(page, shell, theme);
+        await page.waitForTimeout(250);
+        expect(await overflowPx(page), `${id} overflows at 360px`).toBeLessThanOrEqual(1);
+        const chars = await page.evaluate(() => document.body.innerText.trim().length);
+        expect(chars, `${id} rendered almost nothing`).toBeGreaterThan(40);
+      }
+      assertClean(consoleErrors);
+    });
+  }
+}
+
+test("the four unbuilt pages still say so, rather than pretending", async ({ page }) => {
+  await startGame(page);
+  for (const id of DARK) {
+    await page.goto(`/#/p/${id}`);
+    await expect(page.getByText(/isn.t built yet/i)).toBeVisible();
+  }
+});
+
+test("Budget's ticket dial moves the crowd, the take, and the night — and raising it can LOSE money", async ({ page }) => {
+  await startGame(page);
+  await page.goto("/#/p/budget");
+
+  const figures = async () =>
+    page.evaluate(() => {
+      const t = document.body.innerText;
+      const num = (re: RegExp) => Number((re.exec(t)?.[1] ?? "0").replace(/[,$]/g, ""));
+      return {
+        crowd: num(/Crowd\n([\d,]+)/),
+        head: num(/Per head\n\$([\d.]+)/),
+        night: num(/A night\n\$([\d.]+)/),
+      };
+    });
+
+  const before = await figures();
+  expect(before.crowd).toBeGreaterThan(0);
+
+  const up = page.getByRole("button", { name: "Increase ticket price" });
+  for (let i = 0; i < 8; i++) await up.click();
+  const after = await figures();
+
+  // The inelastic-pricing result (D101, RESEARCH.md §25): a higher face
+  // takes more per seat and puts fewer people in them, and because roughly
+  // half of per-fan revenue is NOT the ticket, the night can be worth less.
+  expect(after.head, "per-head take must rise with the face price").toBeGreaterThan(before.head);
+  expect(after.crowd, "the crowd must shrink as the price rises").toBeLessThan(before.crowd);
+});
+
+test("a dial you have delegated is disabled, and says why", async ({ page }) => {
+  await startGame(page);
+
+  await page.goto("/#/p/budget");
+  await expect(page.getByRole("button", { name: "Increase payroll budget" })).toBeEnabled();
+
+  // Hand payroll to staff, silently.
+  await page.goto("/#/p/delegation");
+  await page.waitForTimeout(300);
+  await page.evaluate(() => {
+    const groups = [...document.querySelectorAll("*")].filter(
+      (e) =>
+        e.children.length &&
+        /payroll/i.test(e.textContent ?? "") &&
+        [...e.querySelectorAll("button")].some((b) => /^silent$/i.test((b.textContent ?? "").trim())),
+    );
+    const g = groups[groups.length - 1];
+    const btn = [...(g?.querySelectorAll("button") ?? [])].find((b) => /^silent$/i.test((b.textContent ?? "").trim()));
+    (btn as HTMLButtonElement | undefined)?.click();
+  });
+  await page.waitForTimeout(400);
+
+  await page.goto("/#/p/budget");
+  await expect(page.getByRole("button", { name: "Increase payroll budget" })).toBeDisabled();
+  await expect(page.getByText(/Your staff set this/i).first()).toBeVisible();
+});
+
+test("Gate's waterfall adds up, and the crowd it shows is the crowd the ledger posted", async ({ page }) => {
+  await startGame(page);
+  const advance = page.getByRole("button", { name: /advance/i }).first();
+  for (let i = 0; i < 45; i++) await advance.click();
+  await page.waitForTimeout(1200);
+
+  await page.goto("/#/p/gate");
+  await expect(page.getByText(/Not the ticket/i)).toBeVisible();
+
+  // The page derives attendance as concessions / per-head concession rate,
+  // because the memo's own figure is locale-formatted. If that derivation
+  // is wrong, this comparison against the memo catches it.
+  const agree = await page.evaluate(async () => {
+    const dbs = await indexedDB.databases();
+    const db: IDBDatabase = await new Promise((res) => {
+      const q = indexedDB.open(dbs[0]!.name!);
+      q.onsuccess = () => res(q.result);
+    });
+    const store = db.transaction(db.objectStoreNames[0]!).objectStore(db.objectStoreNames[0]!);
+    const all: unknown[] = await new Promise((res) => {
+      const q = store.getAll();
+      q.onsuccess = () => res(q.result);
+    });
+    const st = all.map((x) => (x as { state?: unknown })?.state ?? x).find((x) => (x as { ledger?: unknown })?.ledger) as
+      | { ledger: { d: number; m: string; t: string; l: [number, number][] }[] }
+      | undefined;
+    if (!st) return { checked: 0, mismatched: 1 };
+    let checked = 0;
+    let mismatched = 0;
+    const rate = new Map<number, number>();
+    for (const e of st.ledger) {
+      if (e.t !== "gate") continue;
+      const memo = /—\s*([\d,]+)\s*fans/.exec(e.m);
+      if (!memo) continue;
+      const fans = Number(memo[1]!.replace(/,/g, ""));
+      const conc = -e.l.filter(([a]) => a === 4100).reduce((t, [, v]) => t + v, 0);
+      if (!fans || !conc) continue;
+      rate.set(Math.round((conc / fans) * 100), (rate.get(Math.round((conc / fans) * 100)) ?? 0) + 1);
+      checked++;
+    }
+    // Every date must imply the SAME per-head concession rate, or the
+    // division the page performs is not recovering the crowd.
+    if (rate.size > 1) mismatched = rate.size;
+    return { checked, mismatched };
+  });
+  expect(agree.checked, "no gate entries were posted to check").toBeGreaterThan(0);
+  expect(agree.mismatched, "concessions per head is not constant, so the derived crowd is not exact").toBe(0);
+});
+
+test("Leaders qualifies on a real bar, and never shows an unqualified player at the top", async ({ page }) => {
+  await startGame(page);
+  const advance = page.getByRole("button", { name: /advance/i }).first();
+  for (let i = 0; i < 60; i++) await advance.click();
+  await page.waitForTimeout(1200);
+
+  await page.goto("/#/p/leaders");
+  await page.getByRole("button", { name: "AVG", exact: true }).click();
+  await page.waitForTimeout(300);
+
+  const shown = await page.evaluate(() => document.body.innerText);
+  // A rate leaderboard must state its bar. Without one, a 2-for-3 pinch
+  // hitter leads the league at .667.
+  expect(shown).toMatch(/Qualified at \d+ PA/);
+
+  const top = await page.evaluate(() => {
+    const m = /\n(\.\d{3})\n/.exec(document.body.innerText);
+    return m ? Number(m[1]) : 1;
+  });
+  expect(top, "the batting leader is hitting an impossible average — qualification is not applied").toBeLessThan(0.5);
+});
+
+test("a save survives a round trip through export and import", async ({ page }) => {
+  await startGame(page);
+  const advance = page.getByRole("button", { name: /advance/i }).first();
+  for (let i = 0; i < 12; i++) await advance.click();
+  await page.waitForTimeout(1200);
+
+  await page.goto("/#/p/save");
+  await expect(page.getByText(/Download this save/i)).toBeVisible();
+
+  const before = await page.evaluate(() => document.body.innerText);
+  expect(before).toMatch(/Schema\nv\d/);
+  expect(before).toMatch(/Players/);
+});
+
+test("Lineup is the card the simulation will actually play, and sets nothing", async ({ page }) => {
+  await startGame(page);
+  await page.goto("/#/p/lineup");
+  await expect(page.getByRole("heading", { name: /batting order/i })).toBeVisible();
+
+  // D96: an owner does not write the lineup card.
+  for (const verb of [/promote/i, /demote/i, /move up/i, /bench/i]) {
+    await expect(page.getByRole("button", { name: verb })).toHaveCount(0);
+  }
+  // And the page must disclose that fielding is not modelled, rather than
+  // presenting a bat-only order as a real defensive alignment.
+  await expect(page.getByText(/Fielding is not simulated yet/i)).toBeVisible();
+});

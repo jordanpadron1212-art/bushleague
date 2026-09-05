@@ -27,6 +27,7 @@ import { useMemo, useState } from "react";
 import { money, type Club, type Player } from "@bushleague/sim-kit";
 import { useGameStore } from "../store/gameStore.js";
 import { orgClubs, ownedClub, rosterOf } from "../store/selectors.js";
+import { Confidence } from "../components/ui.js";
 
 type SortKey = "ovr" | "pot" | "age" | "sal";
 
@@ -38,41 +39,6 @@ const LEVEL_LABEL: Record<string, string> = {
   A: "Single-A",
   INDY: "Club",
 };
-
-/**
- * How much the organization actually knows about this player, as five steps.
- * `rel` runs 0.15–0.93 (`refineScout`'s own clamp), so the scale is mapped
- * across that real range rather than across 0–1, where every player would
- * sit in the middle three bars and the control would look broken.
- */
-function confidenceSteps(rel: number): number {
-  const t = (rel - 0.15) / (0.93 - 0.15);
-  return Math.max(1, Math.min(5, Math.round(t * 4) + 1));
-}
-
-function Confidence({ rel }: { rel: number }) {
-  const n = confidenceSteps(rel);
-  return (
-    <span
-      className="inline-flex items-center gap-[2px]"
-      title={`Scouting confidence: ${Math.round(rel * 100)}%`}
-      aria-label={`Scouting confidence ${Math.round(rel * 100)} percent`}
-    >
-      {[1, 2, 3, 4, 5].map((i) => (
-        <span
-          key={i}
-          aria-hidden="true"
-          style={{
-            width: "3px",
-            height: `${3 + i}px`,
-            background: i <= n ? "var(--c-accent)" : "var(--c-surface3)",
-            display: "inline-block",
-          }}
-        />
-      ))}
-    </span>
-  );
-}
 
 function PlayerRow({ p }: { p: Player }) {
   const svc = p.svc > 0 ? ` · ${p.svc.toFixed(1)} svc` : "";

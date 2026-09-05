@@ -210,9 +210,39 @@ exists.
 
 **9. ~~Apply the War Room design system~~ — DONE, v2.21.0 (D104).** Tokens, type, motion and focus
 across every screen. Five of the design system's own values failed D18 and were re-solved; contrast
-is now enforced by browser tests rather than recorded in a comment. **Still open from §5:** the
-signature components (split-flap digits, waterfall, radial gauge, live conic border,
-drag-to-compare, aurora + grain) are not ported — they belong to the screens that light next.
+is now enforced by browser tests rather than recorded in a comment.
+
+**10. ~~Light the dark screens~~ — DONE, v2.22.0 (D105).** Ten lit: Budget, Gate, Standings,
+Schedule, Leaders, Organization, Lineup, Scouting, Settings, Save. Routes are code-split, so first
+paint got *smaller* (396.0 KB → 384.2 KB) while lit screens went 5 → 15.
+
+**Four pages are still dark, and the reason is data, not effort.** `state.wire`, `events`,
+`history`, `needs` and `form` are written by exactly ZERO sites — verified, not assumed:
+
+- **Wire** — needs the market + winter passes to write anything into `state.wire`.
+- **Trades** — no trade system exists.
+- **Free agents** — no market system exists.
+- **Ownership** — no ownership ladder exists.
+
+Do not light these before the system behind them writes something.
+
+**From §5 of the design system:** the waterfall is now ported (Gate). Still unported: split-flap
+digits, the radial gauge, the live conic border, drag-to-compare, the aurora + grain. Each is now
+waiting on a *reason*, not a screen — a live in-progress game for the conic border, a single
+percentage worth a gauge. Don't port them for their own sake.
+
+**11. FIELDING IS NOT SIMULATED — found by rendering the Lineup screen (D105).** `rateProfile`
+reads only `hit`, `pow`, `eye` and `spd`. The `def` and `arm` tools are generated on every player
+and **never read**, and `p.pos` separates SP from RP and is otherwise cosmetic. So `chartClub`
+picks the nine best bats and a real lineup comes out with three right fielders and no catcher.
+
+Nothing currently displayed is wrong because of it — there is no fielding result to be wrong — and
+the Lineup screen discloses it rather than sorting the card into a plausible-looking lie. But this
+is now the most visible realism gap in the engine, because a screen finally shows it. Whoever takes
+it should decide, in this order: (a) does `chartClub` get positional constraints, (b) does `def`/
+`arm` enter the PA resolution as a fielding model, (c) both. (a) alone is cheap and fixes the
+appearance without touching results; (b) changes every simulated season and needs the full
+`sim-integrity` treatment against RESEARCH.md.
 
 **Next for the delegation model, in order:**
 
@@ -225,8 +255,8 @@ drag-to-compare, aurora + grain) are not ported — they belong to the screens t
 2. **Staff as people** (`proposals/OWNER-AND-STAFF.md` §3) — competence hidden behind scouting them,
    philosophy that makes Approve a real choice rather than a rubber stamp, and a relationship that
    constant overriding damages. The dial is meaningless without someone on the other end of it.
-3. **Reframe Lineup and Roster** per D96 — the Lineup page as designed has an owner setting a batting
-   order, which is a bench coach's job.
+3. ~~**Reframe Lineup and Roster** per D96~~ — **DONE.** Roster landed in v2.20.0; Lineup in
+   v2.22.0 as a read-only view of the card `chartClub` derives and `simGame` actually plays.
 
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
 plan.** Still directionally right once the game exists again; re-sequence it against passes 1-2 above

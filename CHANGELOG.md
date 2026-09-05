@@ -5,6 +5,56 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.22.0 · THE LIGHTS GO ON — 2026-09-05
+
+Ten of the fourteen dark screens are now real. Four are still dark, on purpose, and the page says
+which and why.
+
+**Lit:** Budget, Gate, Standings, Schedule, Leaders, Organization, Lineup, Scouting, Settings, Save.
+**Still dark:** Wire, Trades, Free agents, Ownership — because `state.wire`, `events`, `history`,
+`needs` and `form` are written by exactly zero sites. Building a screen on an empty array is
+decoration, and this project does not ship decoration.
+
+### You can finally spend your own money
+
+`ticketPrice`, `payrollBudget` and `scoutingBudget` are real, tested mechanics that move talent,
+wins and cash — and until today you could not reach any of them. They moved only when your staff
+happened to ask. Budget puts all three on one screen.
+
+Delegate a domain to staff and its dial goes **disabled with the reason printed**, rather than
+vanishing or quietly working behind your back.
+
+### The Gate screen shows the game's best economic result
+
+Every home date already posted a journal entry splitting gate, concessions, parking and
+merchandise. Nothing had ever pulled them apart. Pulled apart, a season reads **"not the ticket:
+46%"** — which is the real-world MLB figure this engine was tuned against.
+
+Drive the ticket dial from $41 to $49 and watch: per-head take rises to $78.41, the crowd falls to
+26,010, and the night is worth **less** — $2.09M down to $2.04M. A fan who stays home buys no hot
+dog either.
+
+### And you can get your save out of the browser
+
+Export writes it to a file; import reads one back through the same migration checks a save on disk
+gets. Round-trip verified exact. The pre-upgrade backup, which has existed since v2.19.0 with
+nothing able to read it, finally has a restore button — and honest wording about what a restore
+does and does not repair.
+
+### Faster, despite tripling the page count
+
+Routes are code-split now. First-paint JavaScript went from 396.0 KB to **384.2 KB** while the
+number of real screens went from 5 to 15.
+
+### One thing we found by looking
+
+Rendering the Lineup screen produced a batting order with three right fielders and no catcher.
+That is not a screen bug: there is no fielding model in the engine yet, so the card is picked on
+bat alone. The screen says so rather than sorting itself into something that looks right but is
+not what the simulation plays. It is on the roadmap.
+
+See `DECISIONS.md` D105.
+
 ## v2.21.0 · THE WAR ROOM, APPLIED — 2026-09-05
 
 The design you signed off on in v2.15.0 has never been in the app. It is now, on every screen.

@@ -154,7 +154,7 @@ exactly as you left it.
 
 Working and verified: the pnpm workspace and its CI/CD to GitHub Pages · the token layer (two shells,
 two themes, three density tiers, contrast computed against DECISIONS.md D18's own rule) · the page
-registry (`DECISIONS.md` D11's pattern, now 18 pages, **2 live**) · `@bushleague/sim-kit`'s ledger,
+registry (`DECISIONS.md` D11's pattern, 19 pages, **15 live**, routes code-split) · `@bushleague/sim-kit`'s ledger,
 chart of accounts, RNG and formatters, all tested against real sourced examples · a PWA that installs
 and precaches for offline play after a first visit · player generation and grading, calibrated against
 RESEARCH.md §7.1 (`DECISIONS.md` D79) · **club/world generation** — all 218 real clubs with correct
@@ -339,6 +339,24 @@ old build's own dollar figures beyond what's cited above would be citing a build
 
 ## Known gaps — say these out loud, do not let them look solved
 
+- **FIELDING IS NOT SIMULATED, and a screen now shows it.** `rateProfile` reads only `hit`, `pow`,
+  `eye` and `spd`; the `def` and `arm` tools are generated on every player and **never read**, and
+  `p.pos` separates SP from RP and is otherwise cosmetic. So `chartClub` takes the nine best BATS and
+  a real batting order comes out with three right fielders and no catcher. Found by rendering the
+  Lineup screen in v2.22.0 (D105) — not by reading the code, which had looked fine for four passes.
+  Nothing currently displayed is *wrong* because of it (there is no fielding result to be wrong), and
+  the Lineup page discloses it rather than sorting the card into a plausible-looking lie. ROADMAP.md
+  item 11 carries the options. **Do not "fix" this by reordering the display** — that would show an
+  order the simulation is not playing.
+- **Four pages are still dark and must stay dark: Wire, Trades, Free agents, Ownership.** Verified in
+  v2.22.0, not assumed: `state.wire`, `events`, `history`, `needs` and `form` are written by exactly
+  ZERO sites. Each needs its system first (the market pass, the winter pass, a trade engine, an
+  ownership ladder). Lighting one on an empty array would be the decoration this project does not
+  ship.
+- **The Pythagorean exponent on Standings (1.83) is not a sourced figure.** `selectors.ts` says so in
+  its own comment. It is display-only — it touches no engine path, no RNG draw and no ledger entry —
+  but if anyone ever wants to move it into the engine it needs a source first.
+
 - **`bush-league-v0.10.html` is not in this container and never was in the repo.** See "Waiting for
   you" item 4 above — anyone who needs to re-verify this pass's reconstructed money-loop functions
   (`gateDay`/`postMonth`/`seedOpeningBooks`/`rosterPayroll`) against the real primary source needs it
@@ -353,8 +371,11 @@ old build's own dollar figures beyond what's cited above would be citing a build
   roster higher than `ECON.MLB`'s reconstructed revenue figures cover. Re-tuning either system further is
   real work for whoever picks it up next armed with either the primary source or a sourced MLB target,
   not a fix to slip inside another pass.
-- **A monthly scouting cost now posts for real (`DECISIONS.md` D90) — what's still missing is a scouting
-  DEPARTMENT and an owner-facing dial.** `Economy.scouting`/`state.scoutingBudget` are real, disclosed T3
+- **The owner-facing dial gap is CLOSED as of v2.22.0 (D105)** — Budget carries ticket price, payroll
+  and scouting, and Scouting shows what the spend bought. What is still missing below is the scouting
+  DEPARTMENT (staff), not the control.
+- **A monthly scouting cost posts for real (`DECISIONS.md` D90) — what's still missing is a scouting
+  DEPARTMENT.** `Economy.scouting`/`state.scoutingBudget` are real, disclosed T3
   figures (chart-of-accounts entry 5300, previously unposted, closed this pass) that feed a bounded
   reliability boost into `refineScout` — but there is no scouting-director/area-scout staff system
   (`FRONT-OFFICE-DESIGN-PROPOSAL.md`'s own scope, still unsigned) and no UI control anywhere in the app

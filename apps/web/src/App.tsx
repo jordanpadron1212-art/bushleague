@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { createHashRouter, Navigate, RouterProvider } from "react-router-dom";
 import AppShell from "./components/AppShell.js";
 import NewGamePage from "./pages/NewGamePage.js";
@@ -15,7 +15,19 @@ function PageRoute({ pageId }: { pageId: string }) {
   const page = findPage(pageId);
   if (!page) return <Navigate to="/p/office" replace />;
   const Element = page.element;
-  return <Element />;
+  // Every page but Office is a lazy chunk (see `registry.tsx`), so a
+  // boundary is required or the first navigation throws.
+  //
+  // The fallback is deliberately EMPTY. ui-components.md: "Under ~200ms,
+  // show nothing — a flash of skeleton is worse than a brief pause." These
+  // chunks are 2-6KB served from the same origin the page already came
+  // from; a spinner would appear and vanish inside one frame and read as a
+  // stutter. The div holds the layout so nothing jumps when it arrives.
+  return (
+    <Suspense fallback={<div className="h-full" aria-busy="true" />}>
+      <Element />
+    </Suspense>
+  );
 }
 
 const router = createHashRouter([
