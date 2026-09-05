@@ -117,7 +117,7 @@ describe("churn — the Frontier League against Build 0.9's own sourced target",
       const p30 = fr.filter((p) => p.age >= 30).length / fr.length;
       expect(p30).toBeCloseTo(2 / 25, 5); // exactly the Veteran row's own share of the roster, every year
     }
-  }, 20000);
+  });
 });
 
 describe("churn — world-level guarantees", () => {
@@ -139,7 +139,7 @@ describe("churn — world-level guarantees", () => {
         expect(p.age).toBeLessThanOrEqual(50);
       }
     }
-  }, 20000);
+  });
 
   it("the owned club still gets its bigger OWNED_N roster after churn, not the plain ROSTER_N", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 13, year: 2026 });

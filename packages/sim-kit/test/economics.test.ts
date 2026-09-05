@@ -107,7 +107,7 @@ describe("economics — ledger integrity over a full season", () => {
       if (c < minCash) minCash = c;
     }
     expect(minCash).toBeGreaterThan(0);
-  }, 15000);
+  });
 });
 
 describe("economics — MLB net income against the tuning target", () => {
@@ -163,7 +163,7 @@ describe("economics — MLB net income against the tuning target", () => {
     const oneMonthMedia = 7_900_000 / 12;
     expect(maxAR).toBeLessThanOrEqual(oneMonthMedia * 1.01);
     expect(maxAR).toBeGreaterThan(0); // proves the accrual mechanism actually engaged, not a no-op
-  }, 15000);
+  });
 });
 
 describe("economics — independent leagues, recalibrated against the sourced -$385/+$963-at-.500 target", () => {

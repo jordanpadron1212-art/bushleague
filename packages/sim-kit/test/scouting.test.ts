@@ -133,7 +133,7 @@ describe("scouting — wired end to end through advanceDay (DECISIONS.md D90)", 
     expect(withSample.length).toBeGreaterThan(0);
     const improved = withSample.filter((p) => p.rel > (relBefore.get(p.id) ?? 0));
     expect(improved.length).toBeGreaterThan(0);
-  }, 20000);
+  });
 
   it("a bigger scouting budget raises the owned roster's AVERAGE reliability — not asserted per-player, a real discovered reason why", () => {
     // NOT a per-player monotonic guarantee, and that's a real finding from

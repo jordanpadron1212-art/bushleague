@@ -49,7 +49,7 @@ describe("rollover — mechanical guarantees", () => {
     const mine = state.world.clubs.find((c) => c.id === "MLB_NYY")!;
     const myGames = state.sched.filter(([, h, a]) => state.world.clubs[h] === mine || state.world.clubs[a] === mine);
     expect(myGames.length).toBe(162);
-  }, 20000);
+  });
 
   it("ages every SURVIVING player by exactly one year, churns in real new players too, and leaves no non-finite value anywhere in state", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 6, year: 2026 });
@@ -73,7 +73,7 @@ describe("rollover — mechanical guarantees", () => {
     expect(survivors).toBeGreaterThan(0); // churn is real retention, not 100% turnover
     expect(arrivals).toBeGreaterThan(0); // churn is real turnover, not 100% retention
     expect(scanNonFinite(state)).toEqual([]);
-  }, 20000);
+  });
 
   it("the new season is actually playable — advanceDay plays real games again after rollover", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 7, year: 2026 });
@@ -86,7 +86,7 @@ describe("rollover — mechanical guarantees", () => {
     while (result.played.length === 0 && guard++ < 30) result = advanceDay(state);
     expect(result.played.length).toBeGreaterThan(0);
     expect(state.season.year).toBe(2027);
-  }, 20000);
+  });
 
   it("three consecutive rollovers all succeed and keep advancing the year and every player's age", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 8, year: 2026 });
@@ -98,7 +98,7 @@ describe("rollover — mechanical guarantees", () => {
     expect(scanNonFinite(state)).toEqual([]);
     const mine = state.players.find((p) => p.cid === "MLB_NYY")!;
     expect(mine.age).toBeGreaterThan(18); // sanity: still a real, bounded age, not runaway or NaN
-  }, 20000);
+  });
 
   it("FIXED, verified directly: a club's average age STABILIZES across many consecutive rollovers instead of climbing forever — D87's own disclosed consequence, closed by churn.ts (DECISIONS.md D89)", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 9, year: 2026 });
@@ -147,7 +147,7 @@ describe("rollover — mechanical guarantees", () => {
     }
     expect(landedOnMlb).toBe(0); // no draftee ever debuts directly onto an active MLB roster
     expect(landedOnAffiliate).toBeGreaterThan(0); // and real ones did land somewhere real
-  }, 20000);
+  });
 
   it("a drafted player who lands on a roster is placed at his OWN drafting org's affiliate, not a different org's", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 15, year: 2026 });
@@ -165,7 +165,7 @@ describe("rollover — mechanical guarantees", () => {
       checked++;
     }
     expect(checked).toBeGreaterThan(0);
-  }, 20000);
+  });
 
   it("the owner's draft philosophy is read from state, and the whole world's population size stays exactly constant across a rollover that includes a real draft", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 16, year: 2026 });
@@ -176,5 +176,5 @@ describe("rollover — mechanical guarantees", () => {
     expect(state.players.length).toBe(before);
     const myFirstPick = state.lastDraft!.find((p) => p.clubId === "MLB_NYY");
     expect(myFirstPick).toBeDefined();
-  }, 20000);
+  });
 });
