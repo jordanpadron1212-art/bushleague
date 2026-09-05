@@ -119,6 +119,40 @@ const MILB_SALARY_SCALE: Record<string, number> = { AAA: 35800, AA: 30250, HIA: 
  * ~$217/month, not on a contract at all per the league's own rules,
  * RESEARCH.md T2); MiLB is the flat 2025 CBA minimum by level, T2.
  */
+/**
+ * The league minimum. RESEARCH.md §15.1 — T1, $780,000 for 2026.
+ * A player with under three years of service earns this almost regardless
+ * of how good he is, which is the single largest source of salary
+ * dispersion on a real roster.
+ */
+export const MLB_MIN_SALARY = 780000;
+
+/**
+ * What a player earns as a share of his open-market value, by service time.
+ *
+ * The structure is T1 (RESEARCH.md §15.1): under 3.000 years a player has no
+ * leverage and earns near the minimum; from 3.000 to 6.000 he is arbitration
+ * eligible; at 6.000 he is a free agent and paid the market. **The three
+ * arbitration shares themselves are T3** — the widely used industry
+ * rule of thumb that arbitration years pay roughly a quarter, then two
+ * fifths, then three fifths of free-agent value. No published schedule
+ * exists, because arbitration is decided case by case.
+ *
+ * This is what fixes a defect the Roster page surfaced the moment it could
+ * be looked at (D103): pricing purely off a grade rounded to the nearest 5
+ * gave every 65-grade player on the roster the identical $13.00M salary, and
+ * every 60 the identical $8.95M. A real roster's defining financial feature
+ * is the opposite — a 65-grade rookie on the minimum next to a 65-grade
+ * veteran on eight figures.
+ */
+export function salaryForService(marketValue: number, svc: number): number {
+  if (svc < 3) return MLB_MIN_SALARY;
+  if (svc >= 6) return marketValue;
+  const share = svc < 4 ? 0.25 : svc < 5 ? 0.4 : 0.6;
+  // Never pay an arbitration-eligible player less than a rookie would get.
+  return Math.max(MLB_MIN_SALARY, marketValue * share);
+}
+
 export function contractFor(
   p: Player,
   club: Pick<Club, "lvl" | "lg">,
@@ -133,9 +167,12 @@ export function contractFor(
   marketFactor = 1,
 ): void {
   if (club.lvl === "MLB") {
-    const base = (760000 + Math.pow(clamp(p.ovr - 30, 0, 50) / 50, 2.6) * 31000000) * marketFactor;
-    p.sal = Math.round(base / 50000) * 50000;
+    // Service time FIRST, because as of D103 it is what prices the contract.
+    // Moving this line above the salary consumes no extra `r()` and does not
+    // reorder any draw — the salary expression uses none.
     p.svc = round2(clamp((p.age - 22) * 0.9 + r() * 1.4, 0, 16));
+    const market = (760000 + Math.pow(clamp(p.ovr - 30, 0, 50) / 50, 2.6) * 31000000) * marketFactor;
+    p.sal = Math.round(salaryForService(market, p.svc) / 50000) * 50000;
     p.yrs = p.svc < 3 ? 1 : 1 + Math.floor(r() * 5);
     p.opt = p.svc < 3 ? Math.max(0, 3 - Math.floor(r() * 3)) : 0;
   } else if (club.lvl === "INDY") {

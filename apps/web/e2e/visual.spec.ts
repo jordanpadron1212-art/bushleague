@@ -298,3 +298,60 @@ test("answering a question is recorded and survives a reload", async ({ page }) 
   // The answer lives in the save, not in React state.
   await expect(page.getByRole("button", { name: /fill our needs/i })).toHaveAttribute("aria-pressed", "true");
 });
+
+/**
+ * The roster (`DECISIONS.md` D103). A view of an asset, not an editor — so
+ * this also guards the D96 rule that the page offers no way to move anybody.
+ */
+for (const shell of SHELLS) {
+  for (const theme of THEMES) {
+    test(`Roster shows the whole organization — ${shell}/${theme}`, async ({ page }, testInfo) => {
+      const consoleErrors: string[] = [];
+      page.on("console", (msg) => msg.type() === "error" && consoleErrors.push(msg.text()));
+      page.on("pageerror", (err) => consoleErrors.push(err.message));
+
+      await startGame(page);
+      await page.goto("/#/p/roster");
+      await page.getByRole("heading", { name: /organization/i }).waitFor();
+      await setShellTheme(page, shell, theme);
+
+      // Every level of the org, not just the big-league club.
+      await expect(page.getByText("Majors")).toBeVisible();
+      await expect(page.getByText("Triple-A")).toBeVisible();
+      await expect(page.getByText("Single-A")).toBeVisible();
+
+      expect(await overflowPx(page)).toBeLessThanOrEqual(1);
+      assertClean(consoleErrors);
+      await page.screenshot({ path: testInfo.outputPath(`roster-${shell}-${theme}.png`), fullPage: false });
+    });
+  }
+}
+
+test("the roster offers no way to move a player — D96, and the page says why", async ({ page }) => {
+  await startGame(page);
+  await page.goto("/#/p/roster");
+  await page.getByRole("heading", { name: /organization/i }).waitFor();
+
+  for (const verb of [/promote/i, /demote/i, /release/i, /send down/i, /call up/i]) {
+    await expect(page.getByRole("button", { name: verb })).toHaveCount(0);
+  }
+  // The absence is stated, so it reads as a decision rather than a gap.
+  await expect(page.getByText(/your general manager decides who plays where/i)).toBeVisible();
+});
+
+test("the roster shows real salary dispersion, not one number per grade", async ({ page }) => {
+  // D103's defect, guarded in the browser: pricing off a rounded grade alone
+  // gave a 40-man roster about four distinct salaries. If that regresses,
+  // this page is the first place it would be visible.
+  await startGame(page);
+  await page.goto("/#/p/roster");
+  await page.getByRole("heading", { name: /organization/i }).waitFor();
+
+  const salaries = await page.evaluate(() =>
+    Array.from(document.querySelectorAll("li span:last-child"))
+      .map((el) => el.textContent ?? "")
+      .filter((t) => t.startsWith("$")),
+  );
+  expect(salaries.length).toBeGreaterThan(20);
+  expect(new Set(salaries).size).toBeGreaterThan(8);
+});

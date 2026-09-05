@@ -2266,3 +2266,74 @@ posting the authorised budget as the expense while contracts said otherwise (bre
 and Books would show it); applying the talent shift to players already under contract (you cannot
 buy a better version of a man you already employ — it lands on the intake, so the decision
 compounds across seasons, which is the right timescale for an owner).
+
+## 2026-09-05 — The Roster page, and the defect it exposed the moment anyone could look
+
+**D103 · A baseball game in which you cannot see your own players. The Roster page lights, per
+D96 as a view of an asset rather than an editor — and looking at it immediately surfaced an engine
+defect no test had any reason to catch.**
+
+### The page
+
+Every player in the organization, MLB down to Single-A, grouped by level, sortable by grade,
+ceiling, age or salary. **It offers no way to move anybody, and that is the design**, not an
+unfinished feature: D96 settled that promoting, demoting and releasing are a general manager's job,
+and a Roster page with those buttons would be exactly the assumption D96 exists to reject. The page
+says so in a line at the bottom and points at the Delegation screen, so the absence reads as a
+decision. A Playwright check asserts no such button exists.
+
+**Law 10 becomes visible for the first time.** Every grade shown is a *scouted* estimate, and each
+row carries a five-step confidence bar from `p.rel` — how much the organization actually knows
+about that player. That is what the scouting budget buys (D90, D100), and until now nothing in the
+app showed it. A 23-year-old with a 70 and two bars is a completely different asset from a veteran
+with a 70 and five.
+
+### What looking at it found
+
+The first screenshot showed a roster where **every 65-grade player earned exactly $13.00M and every
+60 earned exactly $8.95M.** `contractFor` priced contracts purely off `p.ovr`, which is rounded to
+the nearest 5 — so a 40-man roster carried about **four distinct salaries**. No unit test was ever
+going to flag that; it is only obvious when you render forty rows next to each other.
+
+That is the reverse of how a real roster works. **Salary dispersion at equal talent is the defining
+financial feature of baseball**, and its cause is service time, which this engine has carried on
+every player since the roster pass and never once used for pay.
+
+### The fix, and it was already sourced
+
+RESEARCH.md §15.1 had the structure at T1 all along: under 3.000 years a player earns near the
+league minimum; from 3.000 to 6.000 he is arbitration eligible; at 6.000 he is a free agent paid
+the market. `salaryForService` implements exactly that, with the league minimum at **$780,000**
+(T1, 2026) and arbitration at roughly 25/40/60% of open-market value (**T3** — a widely used rule
+of thumb, not a published schedule, and labelled as such).
+
+Measured on one real 40-man roster, before and after:
+
+| | distinct salaries | min | max |
+|---|---|---|---|
+| before | ~4 | $8.95M | $13.00M |
+| after | **16** | **$0.80M** | $13.00M |
+
+And the shape is right: three different 60-grade players now earn $800K, $5.40M and $8.95M
+depending on where they are in their service clock.
+
+### The claim in D102 that this proved wrong
+
+D102 said the payroll expense "equals what the owner authorised." **It no longer does, and it
+should not.** Contracts now total **62–70%** of the authorisation, because a roster carrying
+pre-arbitration and arbitration players is genuinely cheaper than its talent. A real club's payroll
+IS the sum of its contracts, and coming in under budget is good management rather than a leak. The
+test that asserted "close to" has been replaced by one that bounds the discount from both sides —
+between 45% and 95% — so it stays a discount rather than drifting into a disconnect.
+
+**The calibration got better, not worse.** Cost per marginal win moved from **$7.8M to $5.25M**,
+closer to the ~$6.5M anchor D102 derived. Wins across the payroll range are unchanged (61.5 / 75.5 /
+91.0), because only pricing moved, not talent.
+
+Also fixed by reading the same screenshot: the ceiling column repeated the grade on every veteran
+row, because `refineScout` leaves potential equal to the current grade past age 25. It now shows a
+dash — "he is what he is" — and the number only when there is genuinely more to come.
+
+Rejected: re-solving D102's market exponent so contracts match the authorisation again (it would
+mean paying MORE per player to cancel out the service discount, which is the realistic part);
+adding promote/demote/release controls (D96); showing true grades anywhere (Law 10).

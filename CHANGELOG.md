@@ -5,6 +5,42 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.20.0 · YOU CAN FINALLY SEE YOUR TEAM — AND IT WAS LYING TO YOU — 2026-09-05
+
+A baseball game where you couldn't look at your own players. The Roster page lights: every player
+in the organization, majors down to Single-A, sortable, with what your scouts think of each of them
+and how sure they are.
+
+It moves nobody, and that's the design. Promoting, demoting and releasing are your general
+manager's job — a Roster page with those buttons is exactly the assumption the whole owner model
+exists to reject. The page says so rather than leaving the gap looking unfinished.
+
+This is also the first screen where the hidden-truth rule is visible. Every grade is what your
+scouts report, not what a player is, and the little bar under each grade is how confident they are.
+That's what the scouting budget has been buying since v2.11.0 with nothing in the app to show it.
+
+THEN LOOKING AT IT CAUGHT SOMETHING NO TEST WOULD HAVE. The first screenshot showed a roster where
+every 65-grade player earned exactly $13.00M and every 60 earned exactly $8.95M. Contracts were
+priced purely off a grade rounded to the nearest 5, so a 40-man roster had about four distinct
+salaries. That is the reverse of real baseball, where salary dispersion at equal talent is the
+defining financial feature — and the cause, service time, has been sitting on every player in this
+game since the roster pass, unused for pay.
+
+The structure was already researched and sourced: under three years you earn near the league
+minimum whatever you're worth, three to six you're arbitration eligible, at six you're a free agent
+paid the market. Now implemented. That same roster went from 4 distinct salaries to 16, from a
+$8.95M floor to $800K. Three different 60-grade players now earn $800K, $5.40M and $8.95M depending
+on where they are in their service clock — and a 23-year-old 70-grade catcher on the minimum is
+suddenly the most valuable thing you own.
+
+It also proved a claim in v2.19.0 wrong. Payroll no longer equals what you authorised — contracts
+now total 62-70% of it, because young players are genuinely cheap. That's right, not a leak: a real
+club's payroll is the sum of its contracts, and coming in under budget is good management. The
+calibration actually improved — cost per marginal win moved from $7.8M to $5.25M, closer to the
+$6.5M anchor.
+
+See `DECISIONS.md` D103 and `RESEARCH.md` §15.1.
+
 ## v2.19.0 · PAYROLL IS REAL — AND THE OBVIOUS MODEL WOULD HAVE BOUGHT 45 WINS — 2026-09-05
 
 The last inert owner lever. What you authorise for payroll now sets both the quality of who your

@@ -26,6 +26,7 @@ import OfficePage from "./OfficePage.js";
 import BooksPage from "./BooksPage.js";
 import DraftPage from "./DraftPage.js";
 import DelegationPage from "./DelegationPage.js";
+import RosterPage from "./RosterPage.js";
 import DarkPage from "./DarkPage.js";
 
 export type PageGroup = "CLUB" | "LEAGUE" | "TALENT" | "MONEY" | "DESK";
@@ -45,7 +46,7 @@ export interface PageDef {
 export const PAGES: readonly PageDef[] = [
   // CLUB
   { id: "office", label: "Office", group: "CLUB", icon: "office", element: OfficePage, live: true },
-  { id: "roster", label: "Roster", group: "CLUB", icon: "roster", element: DarkPage, live: false, lightsAt: "the roster grid pass (UI.md §13.3's own deferral — the data already exists)" },
+  { id: "roster", label: "Roster", group: "CLUB", icon: "roster", element: RosterPage, live: true },
   { id: "lineup", label: "Lineup", group: "CLUB", icon: "lineup", element: DarkPage, live: false, lightsAt: "the roster/lineup UI pass — simGame already reads a real lineup, nothing sets one yet" },
   { id: "organization", label: "Organization", group: "CLUB", icon: "org", element: DarkPage, live: false, lightsAt: "parent-affiliation research (RESEARCH.md's own open gap) + a UI pass" },
   // LEAGUE

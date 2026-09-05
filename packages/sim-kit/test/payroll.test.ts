@@ -28,7 +28,7 @@ import {
   payrollTalentShift,
   rosterPayroll,
 } from "../src/economics.js";
-import { contractFor } from "../src/roster.js";
+import { MLB_MIN_SALARY, contractFor, salaryForService } from "../src/roster.js";
 import type { GameState } from "../src/state.js";
 
 const NORM_ANNUAL = 14_600_000 * 12; // ECON.MLB.payroll is MONTHLY
@@ -141,15 +141,84 @@ describe("what it actually buys — measured across real multi-season saves", ()
     expect(perWin).toBeLessThan(15_000_000);
   }, 1_800_000);
 
-  it("what the owner authorises is close to what the contracts actually total", () => {
-    // Not exact, and honestly so: contracts persist, so a club that raises
-    // its budget carries older, cheaper deals for a few years. Within ~20%
-    // is what "the ledger reflects the decision" means here.
-    expect(rich.payroll).toBeGreaterThan(NORM_ANNUAL * PAYROLL_MAX_RATIO * 0.8);
-    expect(lean.payroll).toBeLessThan(NORM_ANNUAL * PAYROLL_MIN_RATIO * 1.2);
+  it("a club comes in UNDER its authorisation, because service time is cheap", () => {
+    // D103. This asserted "close to" until service-time pricing landed, and
+    // that assertion was the wrong one: a real club's payroll is the sum of
+    // its contracts, and a roster carrying pre-arbitration and arbitration
+    // players spends well under what its owner authorised. Measured at
+    // 62-70% of the authorisation across the range. Coming in under budget
+    // is good management, not a leak — but it must stay a discount rather
+    // than becoming a disconnect, so this bounds it from both sides.
+    for (const [ratio, run] of [[PAYROLL_MIN_RATIO, lean], [PAYROLL_MAX_RATIO, rich]] as const) {
+      const authorised = NORM_ANNUAL * ratio;
+      expect(run.payroll).toBeGreaterThan(authorised * 0.45);
+      expect(run.payroll).toBeLessThan(authorised * 0.95);
+    }
   }, 1_800_000);
 
   it("and spending more genuinely costs more — the balance can now be drained", () => {
     expect(rich.payroll).toBeGreaterThan(lean.payroll * 2.5);
   }, 1_800_000);
+});
+
+describe("service-time pricing (D103) — the reason a roster has any salary spread at all", () => {
+  it("prices a player on his service class, not only on his grade", () => {
+    const market = 10_000_000;
+    // Under three years: no leverage, the minimum, however good he is.
+    expect(salaryForService(market, 0)).toBe(MLB_MIN_SALARY);
+    expect(salaryForService(market, 2.9)).toBe(MLB_MIN_SALARY);
+    // Arbitration: a rising share of open-market value.
+    expect(salaryForService(market, 3)).toBeCloseTo(market * 0.25, 6);
+    expect(salaryForService(market, 4)).toBeCloseTo(market * 0.4, 6);
+    expect(salaryForService(market, 5)).toBeCloseTo(market * 0.6, 6);
+    // Six years: a free agent, paid the market.
+    expect(salaryForService(market, 6)).toBe(market);
+    expect(salaryForService(market, 12)).toBe(market);
+  });
+
+  it("never pays an arbitration player less than a rookie would earn", () => {
+    // A fringe player's 25% share is below the minimum; the floor holds.
+    expect(salaryForService(1_000_000, 3)).toBe(MLB_MIN_SALARY);
+  });
+
+  it("rises monotonically with service, which is what makes a veteran expensive", () => {
+    const market = 20_000_000;
+    let prev = 0;
+    for (const svc of [0, 2, 3, 4, 5, 6, 10]) {
+      const sal = salaryForService(market, svc);
+      expect(sal).toBeGreaterThanOrEqual(prev);
+      prev = sal;
+    }
+  });
+
+  it("produces a REAL roster: many distinct salaries, not four repeated ones", () => {
+    // The defect this fixes, stated as the test that would have caught it.
+    // Pricing purely off a grade rounded to the nearest 5 gave a 40-man
+    // roster about four distinct salaries — every 65 on exactly $13.00M.
+    const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    const roster = s.players.filter((p) => p.cid === "MLB_NYY");
+    const salaries = roster.map((p) => p.sal);
+    const distinct = new Set(salaries).size;
+
+    expect(roster.length).toBeGreaterThan(25);
+    expect(distinct).toBeGreaterThan(10);
+    // And the spread is the point: a rookie on the minimum alongside a
+    // veteran on eight figures.
+    expect(Math.min(...salaries)).toBeLessThanOrEqual(MLB_MIN_SALARY + 50_000);
+    expect(Math.max(...salaries)).toBeGreaterThan(5_000_000);
+    expect(Math.max(...salaries) / Math.min(...salaries)).toBeGreaterThan(8);
+  });
+
+  it("two players with the SAME grade can earn very different money", () => {
+    // The single most characteristic fact about a real roster, and the one
+    // the old model made impossible.
+    const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    const roster = s.players.filter((p) => p.cid === "MLB_NYY");
+    const byGrade = new Map<number, number[]>();
+    for (const p of roster) byGrade.set(p.ovr, [...(byGrade.get(p.ovr) ?? []), p.sal]);
+
+    const spread = [...byGrade.values()].filter((v) => v.length > 1).map((v) => Math.max(...v) / Math.min(...v));
+    expect(spread.length).toBeGreaterThan(0);
+    expect(Math.max(...spread)).toBeGreaterThan(2);
+  });
 });

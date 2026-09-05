@@ -4,7 +4,7 @@
  * same things the same way, rather than each re-deriving "the owned
  * club's next game" or "division standings" slightly differently.
  */
-import type { Club, GameState } from "@bushleague/sim-kit";
+import type { Player, Club, GameState } from "@bushleague/sim-kit";
 
 export function ownedClub(state: GameState): Club | null {
   if (!state.ownedClubId) return null;
@@ -50,4 +50,30 @@ export function divisionStandings(state: GameState, club: Pick<Club, "lvl" | "lg
     club: c,
     gb: leader ? (leader.w - c.w + (c.l - leader.l)) / 2 : 0,
   }));
+}
+
+/**
+ * Every club in the owner's organization, MLB first then down the ladder
+ * (`DECISIONS.md` D96: you own the whole org, and it is a REPORTING context
+ * — not five rosters you hand-edit). An independent club simply has no
+ * affiliates, so the same shape degrades to one club with nothing
+ * special-cased.
+ */
+export function orgClubs(state: GameState): Club[] {
+  const mine = ownedClub(state);
+  if (!mine) return [];
+  const order = ["MLB", "AAA", "AA", "HIA", "A", "INDY"];
+  return state.world.clubs
+    .filter((c) => c.id === mine.id || c.parent === mine.id)
+    .sort((a, b) => order.indexOf(a.lvl) - order.indexOf(b.lvl));
+}
+
+/** Everyone on one club, pitchers first then batters, best scouted grade first within each. */
+export function rosterOf(state: GameState, clubId: string): Player[] {
+  return state.players
+    .filter((p) => p.cid === clubId)
+    .sort((a, b) => {
+      if (a.role !== b.role) return a.role === "P" ? -1 : 1;
+      return b.ovr - a.ovr;
+    });
 }

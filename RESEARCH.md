@@ -1414,6 +1414,19 @@ All T1 and all codified. These should be hard-coded constants behind a CBA-versi
 | award shares | $2.5M (MVP/Cy Young) down to $150K | T1 |
 | Rookie of the Year win | $750K | T1 |
 | largest single pre-arb payout | Paul Skenes, $3,436,343 (2025); $5,588,400 across 2024–25 | T1 |
+| league minimum salary, 2026 | **$780,000** | T1 |
+| arbitration share of open-market value, by year | ~25% / 40% / 60% | **T3** |
+
+**On that last row.** The three-tier STRUCTURE is T1 and codified — under 3.000 years a player has
+no leverage, 3.000 to 6.000 he is arbitration eligible, at 6.000 he is a free agent. The three
+*shares* are a widely used industry rule of thumb, not a published schedule, because arbitration is
+decided case by case. Adopted as a design knob and labelled as one (`roster.ts`'s `salaryForService`).
+
+**Why this matters more than it looks.** Pricing a contract off talent alone gives a roster almost
+no salary dispersion — measured before this landed, a 40-man roster carried about **four distinct
+salaries**, every 65-grade player on exactly $13.00M. Service time is the single largest source of
+real dispersion: a 23-year-old 70-grade catcher on the league minimum sits beside a 28-year-old
+65-grade reliever on $13M, and *that* is what a real payroll looks like. See `DECISIONS.md` D103.
 
 · Sources: MLB Trade Rumors; ESPN, Nov 2025; MLB.com; FanGraphs.
 · Prospect Promotion Incentive (2022 CBA): a club earns an extra amateur-draft pick if a pre-arb

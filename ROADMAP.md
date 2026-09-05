@@ -197,6 +197,17 @@ accumulates cash monotonically, so its trigger would never fire).
 `ticketPrice` now moves attendance and gate revenue against a sourced elasticity, and `ticketing` is
 the fourth live delegation area.
 
+**8. ~~The Roster page~~ — DONE, v2.20.0 (D103).** A view of an asset per D96, and the screen that
+exposed the engine's missing salary dispersion. Service-time pricing now landed.
+
+**Re-measured and still negative (D100 re-run after payroll went live):** every club still
+accumulates cash at every payroll level — $222M to $257M across five seasons even at maximum payroll
+while winning 97–115 games. **Winning pays for itself**, because the attendance it drives offsets
+the wage bill. The month-end cash call and the optional insolvency fail state remain unbuildable
+without a different lever: the **competitive balance tax** (real, published, and already flagged as
+deferred in D93) or an **owner distribution**. Do not re-propose the cash call before one of those
+exists.
+
 **Next for the delegation model, in order:**
 
 1. ~~**`payrollBudget`**~~ — **DONE, v2.19.0 (D102).** Both halves of "make money real" have landed.
