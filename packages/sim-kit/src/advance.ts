@@ -17,9 +17,19 @@
  *
  * Depth charts and rate profiles are recomputed here every call, not read
  * from a cache on `state` — see `newgame.ts`'s own note on why neither is
- * persisted. Rebuilding both for the whole world costs low milliseconds
- * (`game.test.ts`/`season.test.ts` already do this every test run), cheap
- * next to the game simulation itself.
+ * persisted. NOT CACHED, deliberately: a stale depth chart would silently
+ * change what the simulation does, which is far worse than recomputing.
+ *
+ * They are, however, built only for the clubs PLAYING TODAY. `playDay`
+ * looks up nothing else, so building all 218 clubs and all 5,750 rate
+ * lines every simulated day was work thrown away — and it stopped being
+ * cheap when the fielding model made `chartWorld` more expensive
+ * (measured: 11.3ms + `buildRates` 7.7ms = ~3.6s per simulated season,
+ * every day of it recomputed from inputs that change monthly at most).
+ *
+ * This is a SCOPING change, not a cache: the clubs that play get exactly
+ * the charts and rates they would have got before, computed from the same
+ * inputs in the same way. Nothing can go stale because nothing is kept.
  *
  * The money loop (`economics.ts`'s `gateDay`/`postMonth`) is wired in here
  * too — RECONSTRUCTED, not re-verified against the primary source (see
@@ -63,8 +73,23 @@ const BOX_CAP = 400;
  */
 export function advanceDay(state: GameState): AdvanceResult {
   const day = dateToSerial(state.date);
-  const charts = chartWorld(state.world.clubs, state.players);
-  const rates = buildRates(state.players, state.world.clubs);
+  // Who actually plays today — scanned the same way `playDay` scans, from
+  // the same cursor, including its skip of anything stranded before today.
+  const todayClubIds = new Set<string>();
+  for (let i = state.sp; i < state.sched.length; i++) {
+    const g = state.sched[i]!;
+    if (g[0] < day) continue;
+    if (g[0] > day) break;
+    const h = state.world.clubs[g[1]];
+    const a = state.world.clubs[g[2]];
+    if (h) todayClubIds.add(h.id);
+    if (a) todayClubIds.add(a.id);
+  }
+
+  const todayClubs = state.world.clubs.filter((c) => todayClubIds.has(c.id));
+  const todayPlayers = state.players.filter((p) => p.cid !== undefined && todayClubIds.has(p.cid));
+  const charts = chartWorld(todayClubs, todayPlayers);
+  const rates = buildRates(todayPlayers, todayClubs);
   const players = new Map(state.players.map((p) => [p.id, p] as const));
   const r = mulberry32((state.seed + day) >>> 0);
 
