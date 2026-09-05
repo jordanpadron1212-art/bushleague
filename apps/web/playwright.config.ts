@@ -1,4 +1,24 @@
+import { existsSync } from "node:fs";
 import { defineConfig, devices } from "@playwright/test";
+
+/**
+ * Which Chromium to drive.
+ *
+ * Playwright's default resolves to `chrome-headless-shell`, which is NOT
+ * what a preinstalled-browser image necessarily ships. This container has
+ * `/opt/pw-browsers/chromium` and no headless shell, so an unconfigured
+ * `playwright test` here fails EVERY test in 3ms with "Executable doesn't
+ * exist" — which looks nothing like a real failure and is easy to misread
+ * as one, or to miss entirely behind a wrapper's exit code.
+ *
+ * Resolution order: an explicit PLAYWRIGHT_CHROMIUM_PATH, then the common
+ * preinstalled location if it exists, then Playwright's own default (which
+ * is what CI uses, since CI runs `playwright install` and has the shell).
+ * `undefined` means "Playwright decides", so CI is unaffected.
+ */
+const CHROMIUM =
+  process.env.PLAYWRIGHT_CHROMIUM_PATH ??
+  (existsSync("/opt/pw-browsers/chromium") ? "/opt/pw-browsers/chromium" : undefined);
 
 /**
  * CI-only visual QA. DECISIONS.md D16's lesson from the old build: "the
@@ -31,7 +51,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 360, height: 740 },
-        launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH },
+        launchOptions: { executablePath: CHROMIUM },
       },
     },
     {
@@ -39,7 +59,7 @@ export default defineConfig({
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 1440, height: 900 },
-        launchOptions: { executablePath: process.env.PLAYWRIGHT_CHROMIUM_PATH },
+        launchOptions: { executablePath: CHROMIUM },
       },
     },
   ],

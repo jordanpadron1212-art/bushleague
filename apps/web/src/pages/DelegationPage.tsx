@@ -124,7 +124,21 @@ export default function DelegationPage() {
                   {d.note}
                 </p>
 
-                <div className="mt-[var(--sp-2)] flex flex-wrap gap-[var(--sp-1)]">
+                {/*
+                  Named group, and it is an accessibility fix before it is a
+                  test fix. Eleven domains each render the same four level
+                  buttons, so without this a screen reader walks the page
+                  hearing "Silent, Silent, Silent…" with nothing to say which
+                  club function each belongs to. Naming the group also makes
+                  the control addressable — a browser test that had to walk
+                  the DOM guessing which "Silent" was payroll's picked the
+                  wrong one and failed on CI.
+                */}
+                <div
+                  role="group"
+                  aria-label={`${d.label} — how much you handle yourself`}
+                  className="mt-[var(--sp-2)] flex flex-wrap gap-[var(--sp-1)]"
+                >
                   {DELEGATION_LEVELS.map((l) => {
                     const on = level === l;
                     return (

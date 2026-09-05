@@ -554,6 +554,17 @@ test("Budget's ticket dial moves the crowd, the take, and the night — and rais
       };
     });
 
+  // `page.evaluate` does NOT auto-wait the way a web-first assertion does, so
+  // reading straight after `goto` reads whatever React has painted so far —
+  // which on a fast machine is the finished page and on a slower CI runner is
+  // nothing. The first version of this test did exactly that, passed here
+  // every time, and failed on GitHub's runner four times out of four. Wait for
+  // the control, then poll the figure itself.
+  await page.getByRole("button", { name: "Increase ticket price" }).waitFor();
+  await expect
+    .poll(async () => (await figures()).crowd, { message: "the Budget page never rendered a crowd figure" })
+    .toBeGreaterThan(0);
+
   const before = await figures();
   expect(before.crowd).toBeGreaterThan(0);
 
@@ -575,20 +586,20 @@ test("a dial you have delegated is disabled, and says why", async ({ page }) => 
   await expect(page.getByRole("button", { name: "Increase payroll budget" })).toBeEnabled();
 
   // Hand payroll to staff, silently.
+  //
+  // Addressed by the named group, not by walking the DOM. The first version
+  // of this hunted for "an element containing 'payroll' that also contains a
+  // Silent button" and took the last match — which found a different
+  // domain's group, left payroll on hands-on, and failed. Eleven domains
+  // render the same four buttons; only an accessible name tells them apart.
   await page.goto("/#/p/delegation");
-  await page.waitForTimeout(300);
-  await page.evaluate(() => {
-    const groups = [...document.querySelectorAll("*")].filter(
-      (e) =>
-        e.children.length &&
-        /payroll/i.test(e.textContent ?? "") &&
-        [...e.querySelectorAll("button")].some((b) => /^silent$/i.test((b.textContent ?? "").trim())),
-    );
-    const g = groups[groups.length - 1];
-    const btn = [...(g?.querySelectorAll("button") ?? [])].find((b) => /^silent$/i.test((b.textContent ?? "").trim()));
-    (btn as HTMLButtonElement | undefined)?.click();
-  });
-  await page.waitForTimeout(400);
+  const payroll = page.getByRole("group", { name: /^Payroll budget/ });
+  await expect(payroll).toBeVisible();
+  await payroll.getByRole("button", { name: "Silent", exact: true }).click();
+  await expect(payroll.getByRole("button", { name: "Silent", exact: true })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
 
   await page.goto("/#/p/budget");
   await expect(page.getByRole("button", { name: "Increase payroll budget" })).toBeDisabled();

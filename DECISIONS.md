@@ -2513,3 +2513,54 @@ Rejected: building Wire/Trades/Free agents/Ownership on empty arrays; sorting th
 a plausible-looking defensive alignment; a spinner in the Suspense fallback (under 200ms, showing
 nothing is correct); duplicating the scouting budget control onto the Scouting page (two controls
 writing one field is how they come to disagree).
+
+### D105 addendum — the pass shipped red, and how that got past me
+
+v2.22.0's first CI run **failed and did not deploy**. Two things went wrong, and the second
+is the one worth writing down.
+
+**The bug.** One new browser test read the page with `page.evaluate` immediately after
+`page.goto`, with nothing in between:
+
+```ts
+await page.goto("/#/p/budget");
+const before = await figures();          // reads whatever React has painted so far
+```
+
+`page.evaluate` has none of the auto-waiting that a web-first assertion carries. Its sibling
+test three blocks down does `await expect(...).toBeEnabled()` first and passed on the same
+runner, which is what identified the cause. Fixed by waiting for the control and then polling
+the figure itself.
+
+**Measured, with a control, rather than assumed to be a slow-runner flake.** CPU throttling
+via CDP, old read strategy vs new, three trials each:
+
+| throttle | old | new |
+|---|---|---|
+| 1× | 0/3 | 3/3 |
+| 8× | 0/3 | 3/3 |
+| 20× | 0/3 | 3/3 |
+
+The old code failed **even unthrottled**. This was never a marginal race — the read simply
+never worked, and an earlier standalone version of the same check had a
+`waitForTimeout(500)` that was dropped when it became a test.
+
+**How it got past me, which is the real lesson.** I ran the suite in the background and read
+`[exited with code 0]` from the task wrapper as success. It was not: the run was 100 passed /
+2 failed. **The background-task wrapper's exit code does not reflect the wrapped command's
+exit code in this environment** — the same wrapper reported `exit 0` for a `vitest` run whose
+own output ended in `Exit status 1`. Every claim of "green" in this pass that came from a
+backgrounded run was therefore unverified, and one of them was wrong and reached both a
+commit message and a status report.
+
+**Rule going forward: read the output, never the wrapper's exit code.** Capture to a file
+(`cmd > log 2>&1; echo "EXIT=$?" >> log`) and grep the summary line.
+
+**A third thing, and it was NOT a real failure.** The engine suite failed locally four times
+during this pass with 1–8 tests down. Every single failure was a `Test timed out`, never an
+assertion. CI ran the same suite on a clean runner in **139 seconds, all 388 passing**, faster
+than this container manages it — the local failures were contention from a browser, a preview
+server and a second `vitest` competing for four cores. `packages/` is untouched by this entire
+pass, which is the structural reason it could not have been a real regression. Recorded
+because a stack of red local runs is exactly the thing that gets waved off wrongly in the
+other direction too.

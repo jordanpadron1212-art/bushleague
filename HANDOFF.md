@@ -109,6 +109,31 @@ keep regrowing as each remaining system is ported — it is not yet the equivale
 "every diagnostic in one command," just several of that command's individual diagnostics, each in its
 own real test file.**
 
+### Two ways this gate has lied, both found the hard way in v2.22.0
+
+**1. Read the OUTPUT, never a wrapper's exit code.** Running any of the above as a backgrounded
+command in an agent session gives you a completion notice whose exit code does NOT track the
+wrapped command's. A `vitest` run whose own output ended `Exit status 1` was reported as
+`exit 0`; so was a Playwright run that was 100 passed / 2 failed. Capture and grep instead:
+
+```
+cmd > /tmp/out.log 2>&1; echo "EXIT=$?" >> /tmp/out.log
+grep -E "Test Files|Tests |passed|failed|EXIT=" /tmp/out.log
+```
+
+**2. `playwright test` needs a browser it can actually launch.** Playwright's default resolves
+to `chrome-headless-shell`; a preinstalled-browser container may ship only `chromium`. When it
+cannot launch, EVERY test fails in about 3ms with "Executable doesn't exist" — which looks
+nothing like a real failure and is trivially misread as one. `playwright.config.ts` now
+resolves `/opt/pw-browsers/chromium` itself when it exists, so this should not recur; if you
+see a wall of 3ms failures, that is what it is, not your code.
+
+**3. Red engine tests here are usually contention, and you must prove it.** This container has
+four cores and runs the engine suite slower than GitHub's runner does. Running it alongside a
+browser, a preview server or a second `vitest` produces timeouts — never assertion failures.
+The tell is the error text: `Test timed out in NNNNms` is load; anything comparing two values
+is real. Re-run it ALONE before concluding anything.
+
 Then — not optional, `DECISIONS.md` D16's lesson survives the rewrite — **look at the Playwright
 screenshots** (`apps/web/test-results/`, or the `visual-qa-screenshots` artifact on a CI run). Eight of
 the ten worst defects in the old build were found by eye with every harness green.
