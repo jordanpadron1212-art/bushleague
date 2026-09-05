@@ -136,9 +136,13 @@ offered and not selected); unloaded leagues **exist as data but don't play** —
 budgets that buy and sell, no games simulated; the fail state is **optional, set at new-game**; and
 league depth is answered by making leagues **authorable data** rather than by sourcing quantity, which
 collapses selection, the shipped packs and custom leagues into one mechanism. Still open: what the
-owner owns (one club / a whole organization / a portfolio) — recommendation is organization with
-portfolio deferred, and it does **not** block this build, since configuration decides what exists and
-ownership decides what you control.
+owner owns — **resolved 2026-09-05 (D96)**: you own the whole organization, but you do not operate
+it. Staff do, through a per-area delegation dial. See `proposals/OWNER-AND-STAFF.md`, which is now the
+interaction model for every screen in the game and should be read before designing any of them.
+
+**1a. The delegation dial** (`proposals/OWNER-AND-STAFF.md` step 1) — settings exist per area, and the
+systems that already run automatically (the draft philosophy, churn) start reporting through it. Small,
+and it proves or disproves the game's core interaction model before any new simulation is written.
 
 **1b. Apply the signed-off visual direction to the app** (`design/DESIGN-SYSTEM.md` §7). Deliberately
 sequenced after 1: the league picker is the most important screen in the game and does not exist yet,

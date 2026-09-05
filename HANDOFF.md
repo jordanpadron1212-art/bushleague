@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 95 of them are already recorded, several against
+proposing anything that feels like a new idea — 96 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -16,8 +16,14 @@ things that sound good.
 > clubs at all levels and leagues, the player picks **which leagues load into a save**, custom
 > leagues come later as their own layer, and the role is **always owner, in every save**. Scoped and
 > designed the same day: **DECISIONS.md D95** records the answers, `proposals/WORLD-CONFIGURATION.md`
-> is the design awaiting sign-off. One question is still open — what the owner actually owns — and it
-> does not block the build.
+> is the design awaiting sign-off.
+
+> **You own the organization; you do NOT operate it (D96) — read `proposals/OWNER-AND-STAFF.md`
+> before designing any screen.** Staff run baseball operations. A per-area delegation dial
+> (Hands-on / Approve / Notify / Silent) decides what reaches the owner's desk. This invalidates the
+> pending **Lineup** page as designed (an owner does not set a batting order) and makes **Roster** a
+> view of an asset rather than a place to move players. v2.14.0's draft philosophy is the pattern
+> done right, before it had a name.
 
 > **The visual direction is signed off and saved (D94), but is NOT in the app yet.** `design/
 > war-room.html` is the approved reference; `design/DESIGN-SYSTEM.md` is the spec. The app still
@@ -50,12 +56,13 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D95. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D96. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
 | `PROJECT-INSTRUCTIONS.md` / `STACK-AND-ENGINES.md` | the standing brief this mirrors, and the tooling inventory this pass's stack choices were drawn from |
 | `design/war-room.html` + `design/DESIGN-SYSTEM.md` | **the signed-off visual direction (D94)** — the reference render, and the buildable spec every new screen is built against. NOT yet applied to the app; see §7 of the spec |
+| `proposals/OWNER-AND-STAFF.md` | **the interaction model for the whole game (D96)** — you own the org, staff operate it, delegation is per-area and player-set. Read before designing ANY screen |
 | `proposals/WORLD-CONFIGURATION.md` | **the next build** — league packs, selection, the background world (D95). Awaiting sign-off |
 | `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md` | unbuilt, still awaiting Jordan's call on its §1 — see "Waiting for you" below |
 

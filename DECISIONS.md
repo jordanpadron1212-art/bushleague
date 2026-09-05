@@ -1678,3 +1678,69 @@ League box score); a closed world where unloaded means nonexistent (would break 
 sell-players-to-affiliated-orgs mechanic that drove the original build's churn). See
 `CHANGELOG.md` — unversioned until the build lands; this is a decision record, not a shipped
 system.
+
+---
+
+## 2026-09-05 — You own the organization; you do not operate it. Delegation is the game's core mechanic
+
+**D96 · Asked whether owning a club meant owning its farm system, Jordan answered a better
+question than the one asked:** "I am an owner, I should not be managing players or calling up or
+sending down players — my GM and managers can bring things to my desk if I elect that option and
+we can discuss and recommend moves/trades/signings/releases etc. I want it fully customizable how
+much I can control or have it delegated to staff etc." The question was about the *scope* of
+ownership; the answer is about the *mode of interaction*, and it defines the whole game.
+
+**The model: every decision area carries a delegation setting — Hands-on, Approve, Notify, or
+Silent — set per area and changeable mid-save.** Hands-on means nothing happens without you.
+Approve means staff propose with reasoning and you decide. Notify means they act and tell you.
+Silent means they act and it's in the log if you go looking. A save with everything Hands-on is a
+micro-manager's game; everything Silent is a pure business-of-baseball game where you hire, fund,
+and watch. **Both are legitimate, and one engine serves both** — which is exactly what an endless
+sandbox needs, because it lets one save become several different games over its life.
+
+**Staff hiring and firing is the one area that is never delegable.** Delegating who you hire is
+delegating the game. Everything else — payroll, ticket pricing, capex, scouting spend, player
+moves, signings, trades, the draft, lineups — sits on the dial.
+
+**This retroactively validates v2.14.0's draft philosophy.** The owner sets best-available /
+fill-needs / upside and the organization executes it — policy-setting, not player-moving. That was
+this pattern built before it had a name, and it is the template for every other area.
+
+**It also invalidates a planned screen, which is why this is recorded rather than just discussed.**
+The page registry has a **Lineup** page pending — an owner setting a batting order. That is a bench
+coach's job, not an owner's. It becomes a read-only view of what the manager chose (questionable,
+and overridable only under Hands-on), or it leaves the registry. **Roster** is likewise a view of an
+asset, not a place the owner drags players between levels.
+
+**Delegation is only interesting if the person on the other end is.** Staff therefore need
+competence (hidden behind scouting *them*, the same way player grades are hidden — Law 10 already
+covers the principle), philosophy (a GM who values youth proposes different trades than one who
+wants to win now, which is what makes Approve a real choice rather than a rubber stamp), and a
+relationship with the owner that constant overriding damages. A great GM on Silent is the reward
+for hiring well; a bad GM on Silent is how you discover you hired badly — months later, by reading
+what he did. This finally forces an answer to `FRONT-OFFICE-DESIGN-PROPOSAL.md`'s long-open staff
+question, which has been deferred across several passes: the delegation dial is meaningless
+without real staff behind it, so staff stop being optional.
+
+**It settles `WORLD-CONFIGURATION.md` §8's open question, and dissolves my stated concern with it.**
+You own the whole organization — the MLB club plus its AAA/AA/High-A/Single-A and complex clubs —
+but you hold them as assets and cost centres, not as five rosters to hand-edit. The "every screen
+needs a which-club switcher" objection I raised was overstated: it is a *reporting* context, not an
+editing context, which is much cheaper.
+
+**Jordan's stated ambition, recorded so scope is not quietly trimmed later:** "a deep and highly
+advanced game engine with lots of scenarios and features to be generated through gameplay." The
+event/scenario engine is where that lives — proposals, notifications, problems (an expiring stadium
+lease, an underperforming affiliate, a manager wanting an extension) and judgment calls escalated
+regardless of setting. `proposals/OWNER-AND-STAFF.md` has the design and a four-step build order
+that starts with the dial itself and no staff behind it, so the interaction model can be proven or
+disproven cheaply before any new simulation is written.
+
+Also confirmed this exchange: **the college layer ships built by me, and is editable and extendable
+by Jordan** — not authored from scratch by the player.
+
+Rejected: treating the owner as a GM with a nicer title (the assumption most management sims make,
+and the one two of this project's own planned screens had quietly inherited); a single global
+"realism/difficulty" slider instead of per-area delegation (it would collapse the most interesting
+choice in the game into one number); building staff before the dial (the dial is provable in
+isolation and tells us whether the model works at all). See `proposals/OWNER-AND-STAFF.md`.

@@ -1,7 +1,7 @@
 # PROPOSAL — World configuration: league packs, selection, and the background world
 
-**Status: awaiting sign-off. One question still open (§8).** Written 2026-09-05 against the
-decisions Jordan gave the same day. Nothing here is built yet.
+**Status: awaiting sign-off.** Written 2026-09-05 against the decisions Jordan gave the same day;
+§8 was resolved later the same day by D96. Nothing here is built yet.
 
 This replaces the ownership ladder as the top roadmap item. It is the foundation for the
 sandbox: real clubs at every level, the player choosing which leagues load, and custom
@@ -17,7 +17,7 @@ leagues as a first-class layer rather than a bolt-on.
 | Unloaded leagues | **Exist as data, don't play** — real named clubs with budgets that buy and sell players; no games, standings or box scores simulated |
 | Fail state | **Optional, set at new-game** — sandbox by default, insolvency available |
 | How deep the college layer goes | **Through the custom-league system** — leagues are authorable data, and college ships as a pack built with that same mechanism |
-| What the owner owns | **Still open — see §8** |
+| What the owner owns | **The whole organization — but staff operate it (D96, §8)** |
 
 The fourth answer is the important one architecturally: it says the answer to "how much
 college data do we source" is *not* a number, it's a system. Leagues stop being hardcoded
@@ -166,27 +166,19 @@ assumes.
 
 ---
 
-## 8. Still open: what the owner owns
+## 8. Resolved: you own the organization, but you don't operate it
 
-Not decided. The three candidates, with what each costs:
+**Answered 2026-09-05 (DECISIONS.md D96, `proposals/OWNER-AND-STAFF.md`).** You own the whole
+organization — the MLB club plus its AAA/AA/High-A/Single-A and complex clubs. But you hold them
+as **assets and cost centres, not as rosters you hand-edit.** Staff run baseball operations, and a
+per-area delegation dial (Hands-on / Approve / Notify / Silent) decides what reaches your desk.
 
-- **One club** — matches today's `ownedClubId: string | null` exactly. No schema change. But
-  D91's parent-affiliate data stays mostly decorative.
-- **A whole organization** — owning an MLB club means running its ~7 affiliates as assets.
-  Makes the affiliate data load-bearing and makes an MLB save genuinely different from an
-  indy save. Needs `ownedClubId` to become an org reference plus a derived club list, and
-  every screen needs a "which club" context.
-- **A portfolio** — multiple unrelated clubs. Maximum sandbox, unlike real baseball, and the
-  most invasive: club-context switching on every screen from day one.
+That dissolves the concern this section originally raised. "Every screen needs a which-club
+switcher" assumed the owner edits rosters at each level. They don't — it's a *reporting* context,
+which is far cheaper. An independent club simply has no affiliates, so the same model degrades to
+a single club with nothing special-cased.
 
-**Recommendation: organization, with portfolio deferred behind a toggle.** It makes existing
-sourced data pay off, it is the shape real ownership takes, and it does not force
-club-switching UI into screens that don't need it yet.
-
-This does **not** block §1–§7. World configuration decides what exists; ownership decides what
-you control. They can be built in that order.
-
----
+Portfolio ownership (unrelated clubs at once) stays deferred behind a toggle.
 
 ## 9. Build order, and how each step is proven
 
