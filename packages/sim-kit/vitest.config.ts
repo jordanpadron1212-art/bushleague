@@ -17,17 +17,23 @@ export default defineConfig({
      * is roughly +1s per simulated season, and that was enough to tip the
      * whole cluster over at once.
      *
-     * 120s, and ONE number for the whole suite — no per-test budgets at
+     * 300s, and ONE number for the whole suite — no per-test budgets at
      * all. Three earlier attempts set it at the edge of measured cost (5s,
      * then 20s, then 60s) and each one failed something by 0.6-10%: 5109ms
      * against 5000, 22152ms against 20000, 60374ms against 60000. Tuning a
      * timeout to just above what you measured is how you get a suite that
      * fails whenever the machine is busy.
      *
-     * For scale: CI runs this ENTIRE suite in 139 seconds, while a single
-     * test here can take 60. This container is several times slower for
-     * this workload, so the budget is set for the slow case with real
-     * headroom rather than for the fast one.
+     * A fourth attempt at 120s failed too, and for the same reason as the
+     * first three: I set it from CI's 139-second total rather than from
+     * what the slowest test costs HERE. Measured on this container, the
+     * five-independent-league calendar-year test runs 120.3-120.4s across
+     * repeated runs — so a 120s budget had zero headroom, which is the
+     * exact error the paragraph above describes.
+     *
+     * 300s is ~2.5x the slowest thing this suite actually does on the
+     * slowest machine it runs on. CI, which finishes the whole suite in
+     * 139 seconds, never comes near it.
      *
      * A timeout exists to catch a HANG, and 120s catches a hang exactly as
      * well as 5s does.
@@ -37,6 +43,6 @@ export default defineConfig({
      * fails, and the calibration bands against RESEARCH.md's published
      * lines are exactly as tight as they were.
      */
-    testTimeout: 120_000,
+    testTimeout: 300_000,
   },
 });
