@@ -19,31 +19,7 @@ import { dateToSerial, formatShort, incomeStatement, money, toSerial, unreadCoun
 import { useGameStore } from "../store/gameStore.js";
 import Desk from "../components/Desk.js";
 import { divisionStandings, nextGameFor, ownedClub } from "../store/selectors.js";
-
-function Panel({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
-  return (
-    <section className="border-b" style={{ borderColor: "var(--c-border)" }}>
-      <header className="flex items-center justify-between px-[var(--sp-3)] py-[var(--sp-1)]">
-        <h2
-          className="text-[var(--fs-sm)] font-semibold"
-          style={{ color: "var(--c-dim)", textTransform: "var(--shell-label-case)" as never, letterSpacing: "var(--shell-label-track)" }}
-        >
-          {title}
-        </h2>
-        {right}
-      </header>
-      <div className="px-[var(--sp-3)] pb-[var(--sp-3)]">{children}</div>
-    </section>
-  );
-}
-
-function EmptyLine({ children }: { children: React.ReactNode }) {
-  return (
-    <p className="text-[var(--fs-sm)]" style={{ color: "var(--c-dim2)" }}>
-      {children}
-    </p>
-  );
-}
+import { EmptyLine, Panel } from "../components/ui.js";
 
 export default function OfficePage() {
   const state = useGameStore((s) => s.state);

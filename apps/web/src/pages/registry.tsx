@@ -27,6 +27,11 @@ import BooksPage from "./BooksPage.js";
 import DraftPage from "./DraftPage.js";
 import DelegationPage from "./DelegationPage.js";
 import RosterPage from "./RosterPage.js";
+import BudgetPage from "./BudgetPage.js";
+import GatePage from "./GatePage.js";
+import StandingsPage from "./StandingsPage.js";
+import SchedulePage from "./SchedulePage.js";
+import LeadersPage from "./LeadersPage.js";
 import DarkPage from "./DarkPage.js";
 
 export type PageGroup = "CLUB" | "LEAGUE" | "TALENT" | "MONEY" | "DESK";
@@ -50,9 +55,9 @@ export const PAGES: readonly PageDef[] = [
   { id: "lineup", label: "Lineup", group: "CLUB", icon: "lineup", element: DarkPage, live: false, lightsAt: "the roster/lineup UI pass — simGame already reads a real lineup, nothing sets one yet" },
   { id: "organization", label: "Organization", group: "CLUB", icon: "org", element: DarkPage, live: false, lightsAt: "parent-affiliation research (RESEARCH.md's own open gap) + a UI pass" },
   // LEAGUE
-  { id: "standings", label: "Standings", group: "LEAGUE", icon: "standings", element: DarkPage, live: false, lightsAt: "a standings UI pass — the real data (Club.w/l/gb) already exists, see selectors.ts" },
-  { id: "schedule", label: "Schedule", group: "LEAGUE", icon: "schedule", element: DarkPage, live: false, lightsAt: "a schedule UI pass — the real data already exists" },
-  { id: "leaders", label: "Leaders", group: "LEAGUE", icon: "leaders", element: DarkPage, live: false, lightsAt: "a leaderboard UI pass — real per-player stats already accumulate in Player.st" },
+  { id: "standings", label: "Standings", group: "LEAGUE", icon: "standings", element: StandingsPage, live: true },
+  { id: "schedule", label: "Schedule", group: "LEAGUE", icon: "schedule", element: SchedulePage, live: true },
+  { id: "leaders", label: "Leaders", group: "LEAGUE", icon: "leaders", element: LeadersPage, live: true },
   { id: "wire", label: "Wire", group: "LEAGUE", icon: "wire", element: DarkPage, live: false, lightsAt: "the market + winter passes" },
   // TALENT
   { id: "scouting", label: "Scouting", group: "TALENT", icon: "scouting", element: DarkPage, live: false, lightsAt: "a dedicated scouting UI pass — the scouting budget/reliability mechanism itself is real (DECISIONS.md D90)" },
@@ -61,8 +66,8 @@ export const PAGES: readonly PageDef[] = [
   { id: "freeagents", label: "Free agents", group: "TALENT", icon: "fa", element: DarkPage, live: false, lightsAt: "the market pass" },
   // MONEY
   { id: "books", label: "Books", group: "MONEY", icon: "books", element: BooksPage, live: true },
-  { id: "budget", label: "Budget", group: "MONEY", icon: "budget", element: DarkPage, live: false, lightsAt: "the books UI pass" },
-  { id: "gate", label: "Gate", group: "MONEY", icon: "gate", element: DarkPage, live: false, lightsAt: "the money-loop pass" },
+  { id: "budget", label: "Budget", group: "MONEY", icon: "budget", element: BudgetPage, live: true },
+  { id: "gate", label: "Gate", group: "MONEY", icon: "gate", element: GatePage, live: true },
   { id: "ownership", label: "Ownership", group: "MONEY", icon: "ownership", element: DarkPage, live: false, lightsAt: "the ownership-ladder pass" },
   // DESK
   { id: "delegation", label: "Delegation", group: "DESK", icon: "settings", element: DelegationPage, live: true },

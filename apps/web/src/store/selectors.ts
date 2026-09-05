@@ -77,3 +77,40 @@ export function rosterOf(state: GameState, clubId: string): Player[] {
       return b.ovr - a.ovr;
     });
 }
+
+/**
+ * Every division in one league, in a stable order, each already ranked by
+ * `divisionStandings`. Standings needs the whole league, not just the
+ * owner's own division, and deriving it here keeps the ordering identical
+ * to the row the Office panel already shows.
+ */
+export function leagueDivisions(
+  state: GameState,
+  club: Pick<Club, "lvl" | "lg">,
+  /** The owner's own division is listed FIRST — it is the one they came to read. */
+  first?: string,
+): { div: string; rows: StandingsRow[] }[] {
+  const divs = [...new Set(state.world.clubs.filter((c) => c.lvl === club.lvl && c.lg === club.lg).map((c) => c.div))].sort();
+  if (first && divs.includes(first)) divs.sort((a, b) => (a === first ? -1 : b === first ? 1 : 0));
+  return divs.map((div) => ({ div, rows: divisionStandings(state, { ...club, div }) }));
+}
+
+/**
+ * Expected wins from run differential — what MLB.com's own standings page
+ * labels "X-W/L" (RESEARCH.md's read of it, §286, which also records that
+ * they label run differential DIFF).
+ *
+ * DISCLOSURE: `rs`/`ra` are real, accumulated by the sim. The EXPONENT is
+ * not a figure this project has sourced — 1.83 is the widely-used
+ * sabermetric refinement of the original squared form, and it is used here
+ * as a DISPLAY derivation only. It touches no engine path, no RNG draw and
+ * no ledger entry; changing it would move a number on this one screen and
+ * nothing else. Recorded rather than smuggled.
+ */
+export const PYTH_EXPONENT = 1.83;
+
+export function expectedWins(rs: number, ra: number, games: number): number | null {
+  if (!(games > 0) || !(rs > 0 && ra > 0)) return null;
+  const share = Math.pow(rs, PYTH_EXPONENT) / (Math.pow(rs, PYTH_EXPONENT) + Math.pow(ra, PYTH_EXPONENT));
+  return share * games;
+}

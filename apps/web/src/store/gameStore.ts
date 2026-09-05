@@ -68,6 +68,15 @@ interface GameStore {
   startNewSeason: () => Promise<void>;
   /** The owner's own draft philosophy (DECISIONS.md D93) — takes effect at the NEXT rollover's draft, not retroactively; `runDraft` reads `state.draftPhilosophy` fresh every time it runs. */
   setDraftPhilosophy: (philosophy: DraftPhilosophy) => Promise<void>;
+  /**
+   * The three owner money dials (D101/D102/D90). Each is a plain owner
+   * INPUT — it draws no random numbers, so setting one cannot perturb the
+   * seeded stream and save-reproducibility (D85) is untouched. That is the
+   * same property `setDraftPhilosophy` relies on.
+   */
+  setTicketPrice: (dollars: number) => Promise<void>;
+  setPayrollBudget: (annual: number) => Promise<void>;
+  setScoutingBudget: (annual: number) => Promise<void>;
   /** Writes anything the write-behind queue is still holding (`DECISIONS.md` D99). Called when the page is about to be hidden. */
   flush: () => Promise<void>;
   /**
@@ -226,6 +235,44 @@ export const useGameStore = create<GameStore>((set, get) => ({
       await saveGame(current);
     } catch (err) {
       set({ error: `Couldn't save — ${String(err)}. Your progress this session is still here, but won't survive a reload.` });
+    }
+  },
+  setTicketPrice: async (dollars) => {
+    const current = get().state;
+    if (!current) return;
+    // Clamped on the way IN so state can never hold a price the engine
+    // would silently clamp on every read — a stored value that does not
+    // mean what it says is the defect this guards.
+    current.ticketPrice = Math.max(1, Math.round(dollars));
+    set({ state: { ...current } });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}.` });
+    }
+  },
+
+  setPayrollBudget: async (annual) => {
+    const current = get().state;
+    if (!current) return;
+    current.payrollBudget = Math.max(0, Math.round(annual));
+    set({ state: { ...current } });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}.` });
+    }
+  },
+
+  setScoutingBudget: async (annual) => {
+    const current = get().state;
+    if (!current) return;
+    current.scoutingBudget = Math.max(0, Math.round(annual));
+    set({ state: { ...current } });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}.` });
     }
   },
 }));
