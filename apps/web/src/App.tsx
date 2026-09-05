@@ -36,6 +36,7 @@ export default function App() {
   const state = useGameStore((s) => s.state);
   const loading = useGameStore((s) => s.loading);
   const saveProblem = useGameStore((s) => s.saveProblem);
+  const flush = useGameStore((s) => s.flush);
   const loadFromDisk = useGameStore((s) => s.loadFromDisk);
 
   useEffect(() => {
@@ -45,6 +46,28 @@ export default function App() {
     // render would re-read IndexedDB for no reason.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    // Day-advances are persisted through a write-behind queue (D99), so at
+    // any instant up to two seconds of play may not be on disk yet. This is
+    // where that debt is settled.
+    //
+    // `visibilitychange` rather than `beforeunload`: it fires reliably when
+    // a tab is backgrounded or an app is swiped away on mobile — which is
+    // how this game is actually left — and it fires EARLY enough that an
+    // IndexedDB write still has time to start. `beforeunload` is unreliable
+    // on mobile and often too late for async storage. `pagehide` is kept as
+    // the desktop close-tab path.
+    const onHide = () => {
+      if (document.visibilityState === "hidden") void flush();
+    };
+    document.addEventListener("visibilitychange", onHide);
+    window.addEventListener("pagehide", flush);
+    return () => {
+      document.removeEventListener("visibilitychange", onHide);
+      window.removeEventListener("pagehide", flush);
+    };
+  }, [flush]);
 
   if (loading) {
     return (

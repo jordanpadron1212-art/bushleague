@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 98 of them are already recorded, several against
+proposing anything that feels like a new idea — 99 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -56,7 +56,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D98. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D99. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -300,6 +300,10 @@ itself (D93) — are resolved, not carried forward. See ROADMAP.md's "Next, in o
 | a drafted player's landed club's `parent` exactly matches the pick record's own drafting club id | checked directly, not sampled | same file |
 | setting `draftPhilosophy` to `"UPSIDE"` before rollover works, and the world's total population size stays exactly constant across a rollover that includes a real draft | checked directly | same file |
 | a genuine, pre-existing `makePlayer` id-collision risk exists at this project's current scale | a temporary diagnostic measured one sampled year absorbing "101.5%" of its draftees onto real roster slots — only possible if two distinct `Player` objects shared an `id` | disclosed in `DECISIONS.md` D93, diagnostic deleted, not a fix inside this pass |
+| the save's real size and composition, and what a day-advance actually costs | 2.39 MB, of which 89.5% is 5,750 players and 8.6% is 13,866 schedule rows; `structuredClone` ~48 ms, one IndexedDB put ~23 ms — measured in a real browser, not jsdom | `DECISIONS.md` D99 |
+| whether writing per-day was blocking the click (it was NOT — my first framing was wrong) | synchronous work per advance 8.2 ms before vs 7.7 ms after, long-task totals 249 ms vs 232 ms — both noise, because the store already `set()`s before awaiting the write | corrected in D99 rather than reported as a win |
+| what write-behind actually bought | instrumented `IDBObjectStore.put` over 30 days of play: 30 writes / 73.8 MB became 1 write / 2.6 MB — 30x fewer writes, ~467 MB/season of churn down to ~16 MB | same |
+| the two ways write-behind can destroy a save, and that the guards work | a queued write landing after a new game or after a delete; both guards removed temporarily and both tests went red | `apps/web/test/save.test.ts` |
 | a save the app can't read produced a crash, not a refusal — and then invited the player to overwrite it | planted a "newer build" save and ran it against the pre-fix bundle in a real browser: `Unexpected Application Error! l is not iterable`, ten frames into a minified router callback, then a fallthrough to the club picker whose next click calls `startNewGame` | fixed in `DECISIONS.md` D98; guards are `packages/sim-kit/test/migrate.test.ts`, `apps/web/test/save.test.ts`, and 10 new Playwright checks |
 | the migration chain, its failure modes, and the backup-before-overwrite sequence — none of which the empty real registry can exercise | 35 engine tests driving synthetic chains through the real code via two documented test-only seams (`loadStateWith`, `loadGame(read)`) | same files |
 | the save-problem screen said the same thing twice, one line under the other | read the screenshot; the engine's `detail` and the screen's guidance line both explained "made by a newer build / update the game" | fixed — the engine states the problem, the UI states the remedy |

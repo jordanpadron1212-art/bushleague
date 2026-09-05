@@ -26,7 +26,7 @@ import {
   type AdvanceResult,
   type DraftPhilosophy,
 } from "@bushleague/sim-kit";
-import { saveGame, loadGame } from "../save.js";
+import { saveGame, loadGame, queueSave, flushSave } from "../save.js";
 
 /**
  * A save that exists on disk but could not be read. Kept separate from
@@ -63,6 +63,8 @@ interface GameStore {
   startNewSeason: () => Promise<void>;
   /** The owner's own draft philosophy (DECISIONS.md D93) — takes effect at the NEXT rollover's draft, not retroactively; `runDraft` reads `state.draftPhilosophy` fresh every time it runs. */
   setDraftPhilosophy: (philosophy: DraftPhilosophy) => Promise<void>;
+  /** Writes anything the write-behind queue is still holding (`DECISIONS.md` D99). Called when the page is about to be hidden. */
+  flush: () => Promise<void>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -114,15 +116,35 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
+  /**
+   * One day. Persisted through the write-behind queue rather than written
+   * outright (`DECISIONS.md` D99): the save is 2.39 MB and writing all of
+   * it after every day cost more than simulating the day did. Thirty rapid
+   * advances now write once.
+   *
+   * No longer async in substance — it returns immediately and the write
+   * happens after. The signature stays a promise so callers don't change.
+   */
   advance: async () => {
     const current = get().state;
     if (!current) return;
     const result = advanceDay(current);
     set({ state: { ...current }, lastResult: result });
+    queueSave(current, (err) =>
+      set({ error: `Couldn't save — ${String(err)}. Your progress this session is still here, but won't survive a reload.` }),
+    );
+  },
+
+  /**
+   * Writes anything still queued and waits for it. `App.tsx` calls this
+   * when the page is about to be hidden or discarded — the last moment a
+   * write can still reliably start.
+   */
+  flush: async () => {
     try {
-      await saveGame(current);
+      await flushSave();
     } catch (err) {
-      set({ error: `Couldn't save — ${String(err)}. Your progress this session is still here, but won't survive a reload.` });
+      set({ error: `Couldn't save — ${String(err)}.` });
     }
   },
 

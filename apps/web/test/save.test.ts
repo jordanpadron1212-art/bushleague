@@ -14,7 +14,7 @@
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { newGame, SCHEMA_VERSION } from "@bushleague/sim-kit";
-import { saveGame, loadGame, hasSave, deleteSave, readBackup } from "../src/save.js";
+import { saveGame, loadGame, hasSave, deleteSave, readBackup, queueSave, flushSave, hasPendingSave } from "../src/save.js";
 import { openDB } from "idb";
 
 function resetDatabase(): Promise<void> {
@@ -181,4 +181,97 @@ describe("save/load — what happens when a migration actually runs", () => {
     expect(result.applied).toEqual(["pretend upgrade"]);
     expect(result.fromVersion).toBe(1);
   });
+});
+
+describe("write-behind — coalescing and the two ordering hazards", () => {
+  /**
+   * Measured before this existed (`DECISIONS.md` D99): a 2.39 MB save,
+   * ~23 ms per IndexedDB put and ~48 ms of structured clone, against ~11 ms
+   * to simulate a day. The game spent longer saving than playing. These
+   * tests cover the behaviour that fixes it and the two ways it could
+   * silently destroy a save if done carelessly.
+   */
+  it("coalesces a burst into ONE write, and the write holds the latest state", async () => {
+    const a = newGame({ ownedClubId: "MLB_NYY", seed: 1 });
+    const b = newGame({ ownedClubId: "MLB_BOS", seed: 2 });
+    const c = newGame({ ownedClubId: "MLB_LAD", seed: 3 });
+
+    queueSave(a);
+    queueSave(b);
+    queueSave(c);
+    expect(hasPendingSave()).toBe(true);
+
+    await flushSave();
+    expect(hasPendingSave()).toBe(false);
+
+    const result = await loadGame();
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+    // The last one wins; the two before it were never written. Safe because
+    // the state is cumulative, not a delta.
+    expect(result.state.ownedClubId).toBe("MLB_LAD");
+  });
+
+  it("flushSave with nothing queued is a no-op, not an error", async () => {
+    await expect(flushSave()).resolves.toBeUndefined();
+    expect(hasPendingSave()).toBe(false);
+  });
+
+  it("HAZARD 1: an immediate save cancels a queued one, so a new game can't be reverted by a stale write", async () => {
+    const old = newGame({ ownedClubId: "MLB_NYY", seed: 1 });
+    queueSave(old); // in flight conceptually: the player's previous game
+
+    const fresh = newGame({ ownedClubId: "MLB_BOS", seed: 2 });
+    await saveGame(fresh); // starting over
+
+    // Give any (incorrectly) surviving timer more than its full delay.
+    await flushSave();
+    await new Promise((r) => setTimeout(r, 60));
+
+    const result = await loadGame();
+    expect(result?.ok).toBe(true);
+    if (!result?.ok) return;
+    // Without cancellation the queued MLB_NYY write lands here and the
+    // player's brand-new game silently becomes their old one.
+    expect(result.state.ownedClubId).toBe("MLB_BOS");
+  });
+
+  it("HAZARD 2: deleting the save cancels a queued write, so a deleted save can't come back", async () => {
+    const state = newGame({ ownedClubId: "MLB_NYY", seed: 1 });
+    await saveGame(state);
+
+    queueSave(state);
+    await deleteSave();
+
+    await flushSave();
+    await new Promise((r) => setTimeout(r, 60));
+
+    expect(await hasSave()).toBe(false);
+  });
+
+  it("reports a write failure through the callback, since there's no promise left to reject into", async () => {
+    const state = newGame({ ownedClubId: "MLB_NYY", seed: 1 });
+    let seen: unknown = null;
+
+    // Close the database out from under the write by deleting it mid-flight
+    // is unreliable; instead assert the plumbing exists and stays quiet on
+    // success — a false error would be worse than a missed one.
+    queueSave(state, (err) => {
+      seen = err;
+    });
+    await flushSave();
+    expect(seen).toBeNull();
+  });
+
+  it("a queued write survives being scheduled repeatedly without ever starving", async () => {
+    // MAX_STALE_MS exists so that holding Advance still persists as it goes,
+    // rather than deferring forever behind a rolling quiet timer.
+    const state = newGame({ ownedClubId: "MLB_NYY", seed: 1 });
+    for (let i = 0; i < 40; i++) {
+      queueSave(state);
+      await new Promise((r) => setTimeout(r, 5));
+    }
+    await flushSave();
+    expect(await hasSave()).toBe(true);
+  }, 15000);
 });

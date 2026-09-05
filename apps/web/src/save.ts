@@ -20,6 +20,28 @@
  * destroying a save with nothing left to recover. No UI reads the backup
  * yet — that gap is disclosed rather than hidden — but the DATA is kept,
  * which is the part that cannot be added retroactively.
+ *
+ * ## Writes are coalesced, not one-per-day (`DECISIONS.md` D99)
+ *
+ * Measured in a real browser on a fresh MLB save: the state is **2.39 MB**,
+ * of which 89.5% is the 5,750 players themselves and 8.6% is the schedule's
+ * 13,866 rows. There is no fat to trim — that IS the game, and the pending
+ * world-configuration work makes it bigger. But writing all of it after
+ * every single day-advance cost **~23 ms per put and ~48 ms of structured
+ * clone**, against ~11 ms to simulate the day: the game spent more time
+ * saving than playing, and 30 rapid advances took 1,898 ms.
+ *
+ * So `queueSave` schedules a write instead of performing one, and a write
+ * scheduled while another is pending simply replaces it. Advancing thirty
+ * days writes once, not thirty times. The state is cumulative rather than
+ * a delta, so skipping intermediate versions loses nothing — the last one
+ * contains every earlier one.
+ *
+ * Two ordering hazards make this dangerous if done naively, and both are
+ * closed here rather than left to callers: `saveGame` and `deleteSave` each
+ * CANCEL a pending queued write first. Without that, a queued write of the
+ * old state could land after a new game's write (resurrecting the previous
+ * save) or after a delete (resurrecting a deleted one). Both are tested.
  */
 import { openDB } from "idb";
 import { loadState, type GameState, type LoadResult } from "@bushleague/sim-kit";
@@ -53,10 +75,111 @@ async function withDb<T>(fn: (db: Awaited<ReturnType<typeof openDB>>) => Promise
   }
 }
 
+/**
+ * Writes immediately and waits for it. Use for the moments that must be on
+ * disk before anything else happens — starting a new game, rolling into a
+ * new season — not for routine play.
+ *
+ * Cancels any queued write first: an immediate write supersedes whatever
+ * was scheduled, and letting a stale queued state land afterwards is how a
+ * new game would silently revert to the previous one.
+ */
 export function saveGame(state: GameState): Promise<void> {
+  cancelQueued();
+  return writeNow(state);
+}
+
+function writeNow(state: GameState): Promise<void> {
   return withDb(async (d) => {
     await d.put(STORE, state, SLOT);
   });
+}
+
+// ---- Write-behind scheduling (see this file's header) ----
+
+/** Flush once the player stops advancing. Long enough to coalesce a burst of clicks, short enough to be invisible. */
+const QUIET_MS = 400;
+/** ...but never let an unsaved change sit longer than this, so holding Advance still persists as it goes. */
+const MAX_STALE_MS = 2000;
+
+let queued: GameState | null = null;
+let timer: ReturnType<typeof setTimeout> | null = null;
+let queuedSince = 0;
+/** The write currently in flight, so two puts never overlap and the last one always wins. */
+let inFlight: Promise<void> | null = null;
+let reportError: ((err: unknown) => void) | null = null;
+
+function cancelQueued(): void {
+  if (timer !== null) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  queued = null;
+  queuedSince = 0;
+}
+
+async function drain(): Promise<void> {
+  // Serialize: awaiting the in-flight write before starting another keeps
+  // the last queued state authoritative instead of racing two puts whose
+  // completion order IndexedDB does not promise.
+  while (inFlight) await inFlight.catch(() => undefined);
+
+  const state = queued;
+  if (!state) return;
+  queued = null;
+  queuedSince = 0;
+
+  inFlight = writeNow(state);
+  try {
+    await inFlight;
+  } catch (err) {
+    reportError?.(err);
+  } finally {
+    inFlight = null;
+  }
+
+  // Anything queued while that write was in flight goes now.
+  if (queued) await drain();
+}
+
+/**
+ * Schedules a save. Cheap and synchronous — the cost is paid later, once,
+ * however many times this is called in between.
+ *
+ * `onError` is how a failure reaches the player: the write happens after
+ * the caller has moved on, so there is no promise left to reject into.
+ */
+export function queueSave(state: GameState, onError?: (err: unknown) => void): void {
+  queued = state;
+  if (onError) reportError = onError;
+  if (queuedSince === 0) queuedSince = Date.now();
+
+  const budget = MAX_STALE_MS - (Date.now() - queuedSince);
+  const delay = Math.max(0, Math.min(QUIET_MS, budget));
+
+  if (timer !== null) clearTimeout(timer);
+  timer = setTimeout(() => {
+    timer = null;
+    void drain();
+  }, delay);
+}
+
+/**
+ * Writes anything queued right now and waits for it. Call before the page
+ * can go away (visibility change, pagehide) and before anything that reads
+ * the save back.
+ */
+export async function flushSave(): Promise<void> {
+  if (timer !== null) {
+    clearTimeout(timer);
+    timer = null;
+  }
+  await drain();
+}
+
+/** True when a write is scheduled or running — for tests and diagnostics. */
+export function hasPendingSave(): boolean {
+  return queued !== null || inFlight !== null || timer !== null;
 }
 
 /**
@@ -109,6 +232,9 @@ export function hasSave(): Promise<boolean> {
 }
 
 export function deleteSave(): Promise<void> {
+  // Cancel first, or a queued write lands afterwards and resurrects the
+  // save the player just deleted.
+  cancelQueued();
   return withDb(async (d) => {
     await d.delete(STORE, SLOT);
     // The backup goes with it. Keeping a stale pre-migration copy of a save

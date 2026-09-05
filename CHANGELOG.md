@@ -5,6 +5,40 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.16.1 · THE SAVE WAS WRITTEN 190 TIMES A SEASON — 2026-09-05
+
+A design review flagged that every day-advance wrote the whole save to IndexedDB. Verified, then
+fixed — and the fix is not the one the first framing implied.
+
+Measured in a real browser: the save is 2.39 MB, of which 89.5% is the 5,750 players and 8.6% is
+the schedule's 13,866 rows. There is nothing to trim — that is the game, and the pending
+world-configuration work makes it bigger. So the question was how often to write, not what.
+
+The obvious story — "a 23 ms write blocks every click" — turned out to be wrong, and measuring it
+said so: the store already calls `set()` before awaiting the write, so the put runs after the click
+handler returns. Synchronous work per advance was 8.2 ms before and 7.7 ms after. That is noise,
+and this entry says so rather than claiming a frame-rate win.
+
+What actually changed, counted by instrumenting IndexedDB directly over 30 days of play:
+30 writes and 73.8 MB become 1 write and 2.6 MB. Roughly 467 MB of storage churn per season
+becomes ~16 MB. That is an I/O, battery and flash-wear fix, and it matters most on a phone, where
+this game is most likely to be played and where IndexedDB is slowest.
+
+Writes are now queued and coalesced: a write scheduled while another is pending replaces it, which
+is safe only because the state is cumulative rather than a delta. A 400 ms quiet timer catches a
+burst of clicks; a 2 s staleness cap means holding Advance still persists as it goes.
+
+Write-behind adds two ways to destroy a save that writing immediately does not have — a queued
+write landing after a new game (silently reverting it) or after a delete (resurrecting it). Both
+are cancelled inside the persistence layer rather than left to callers, both are tested, and both
+tests were verified to genuinely fail when the guard is removed.
+
+The app flushes when the page is hidden, which is when a phone actually leaves a game.
+
+Accepted cost, stated plainly: up to ~2 seconds of play may not be on disk at any instant. Nothing
+corrupts — the state is cumulative and the engine deterministic, so a killed tab costs a few
+replayed days. See `DECISIONS.md` D99.
+
 ## v2.16.0 · SAVES CAN NOW SURVIVE A SCHEMA CHANGE — 2026-09-05
 
 Every save has carried a version stamp since v2.9.0. Nothing ever read it. That's fine while the

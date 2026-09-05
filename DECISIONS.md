@@ -1910,3 +1910,88 @@ be more); versioning by feature-detection instead of a stamp (the stamp already 
 already written); attempting a best-effort load of a future save (it produces exactly the
 `l is not iterable` screen this decision exists to eliminate); deleting an unreadable save to get
 the player to a clean state (the bytes are the only copy — refusing to touch them is the point).
+
+## 2026-09-05 — The save was written 190 times a season when once every few days would do
+
+**D99 · A design review measured that `gameStore.advance()` writes the entire save to IndexedDB
+after every single day-advance. Verified independently, then fixed — but the fix is not the one the
+first framing implied, and the difference is worth recording because I got it wrong first.**
+
+### What was measured
+
+In a real browser, on a fresh MLB save:
+
+| | |
+|---|---|
+| Save size | **2.39 MB** |
+| `players` | 2,139,194 B — **89.5%**, 5,750 players at ~370 B each |
+| `sched` | 205,417 B — 8.6%, 13,866 rows |
+| everything else | ~1.9% (`world` 43 KB, `ledger` 326 B, `ui` 254 B) |
+| `structuredClone(state)` | ~48 ms |
+| one IndexedDB `put` | ~23 ms |
+
+**There is no fat to trim.** The save is 90% the population, which *is* the game — and the pending
+world-configuration work (~180 complex/rookie clubs plus a college layer) makes it substantially
+bigger. So the question was never what to write; it was how often.
+
+### The correction
+
+The obvious framing — "a 23 ms write blocks every click" — is **wrong**, and measuring it said so.
+`gameStore.advance` calls `set()` *before* `await saveGame(current)`, so the `await` already yields
+and the put runs after the click handler returns. Measured synchronous work per advance:
+**8.2 ms before, 7.7 ms after** — a 6% difference, which is noise. Long-task totals across 30
+advances: 249 ms vs 232 ms. Also noise.
+
+Recording this because the first version of this entry claimed a frame-time win, and the honest
+measurement does not support one.
+
+### What actually changed
+
+Instrumenting `IDBObjectStore.prototype.put` and advancing 30 days at a realistic pace:
+
+| | writes | bytes written |
+|---|---|---|
+| before | **30** | **73.8 MB** |
+| after | **1** | **2.6 MB** |
+
+**A 30× reduction in write operations and 28× in bytes.** Over a 190-day season that is roughly
+467 MB of storage churn replaced by ~16 MB. That is not a frame-rate fix; it is an I/O, battery,
+and flash-wear fix, and it matters most exactly where this game is most likely to be played — a
+phone, where IndexedDB is slower and writes are more expensive. It also scales with the save, which
+is about to grow.
+
+### The mechanism, and the two hazards that make it dangerous
+
+`queueSave` schedules a write rather than performing one; a write scheduled while another is pending
+simply **replaces** it. This is safe only because `GameState` is cumulative rather than a delta —
+the latest version contains every earlier one, so skipping intermediates loses nothing. A 400 ms
+quiet timer coalesces a burst; a 2,000 ms staleness cap means holding Advance still persists as it
+goes rather than deferring forever behind a rolling timer.
+
+Write-behind introduces two ways to destroy a save that writing immediately does not have. **Both
+are closed inside `save.ts` rather than left to callers to remember, and both are tested — and both
+tests were verified to genuinely fail when the guard is removed:**
+
+1. **A queued write landing after a new game.** `saveGame` cancels the queue first. Without it, the
+   player starts over, and a moment later the previous save silently overwrites the new one.
+2. **A queued write landing after a delete.** `deleteSave` cancels the queue too. Without it, a
+   deleted save comes back.
+
+Writes are also serialized — a new write awaits the in-flight one — because IndexedDB does not
+promise completion order across overlapping transactions, and the *last* state must win.
+
+`App.tsx` flushes on `visibilitychange → hidden` and `pagehide`. `visibilitychange` is the load-
+bearing one: it fires reliably when a tab is backgrounded or an app is swiped away on a phone —
+which is how this game is actually left — and early enough that an async write still has time to
+start. `beforeunload` is unreliable on mobile and generally too late for IndexedDB.
+
+**Accepted cost, stated plainly:** at any instant up to ~2 seconds of play may not be on disk. If
+the tab is killed outright (not backgrounded), those few days are lost. Nothing is corrupted — the
+state is cumulative and the engine deterministic, so the player replays a few days. That is a good
+trade for a 30× cut in writes, and it is the trade every write-behind cache makes.
+
+Rejected: splitting the save into hot and cold stores (Law 2 — the state IS the save — and 90% of
+it is one array that changes every day anyway); dropping `sched` and regenerating it (8.6% of the
+save, and it would need the exact RNG state to reproduce); a Web Worker for the write (structured
+clone to the worker costs what the write costs); writing less often but unconditionally (the
+staleness cap already bounds the loss, and a fixed interval either loses more or coalesces less).
