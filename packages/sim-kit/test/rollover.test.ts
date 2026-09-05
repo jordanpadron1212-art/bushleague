@@ -122,7 +122,7 @@ describe("rollover — mechanical guarantees", () => {
     // And a real sanity bound: nowhere near the ~35+ a fully closed
     // population reaches after just a handful of years (see D87's history).
     expect(ages[ages.length - 1]!).toBeLessThan(32);
-  }, 120000);
+  });
 
   it("runs a real amateur draft every rollover (DECISIONS.md D93): state.lastDraft is a complete, real record, and drafted players actually land on the drafting org's own MiLB affiliates — never the MLB roster itself", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 14, year: 2026 });
