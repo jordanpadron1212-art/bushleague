@@ -1528,3 +1528,77 @@ rounds or the bonus-pool financial system in the same pass (real, sourced, subst
 see above). What's still not built: CB rounds, the bonus pool/slot values/overage tax, revenue-sharing
 lottery restrictions, interactive picking, a dedicated Scouting page, the ownership ladder, and the
 `makePlayer` id-collision fix now disclosed above. See `CHANGELOG.md` v2.14.0.
+
+---
+
+## 2026-09-05 — The visual direction is signed off, saved into the repo, and is now the scheme every future feature is built in
+
+**D94 · Asked directly whether the UI was working, the answer was "I hate the UI" — and the
+response was research, not a re-skin by taste.** Three rounds of real, cited investigation
+(premium fintech dashboards, Bloomberg Terminal's own accessibility rebuild, esports
+broadcast overlays, then the newest Baseline CSS) produced a direction, iterated live against
+Jordan's reactions ("scratching the itch but not quite there", "more high definition", "make
+the color scheme fully customizable"), until: "absolutely loving that default color scheme."
+That direction is now saved as `design/war-room.html` (the approved reference render) and
+`design/DESIGN-SYSTEM.md` (the buildable spec). **Every new screen and feature from here is
+built in this scheme.**
+
+**The core of it is a rule, not a palette: the accent touches data and action only, never
+chrome.** Every premium dashboard examined enforces the same split independently — neutral
+chrome, one rationed brand accent, and "direction" (up/down, good/bad) as a separate channel
+entirely. That single rule is what reads as expensive; the specific hues are almost
+incidental, which is precisely why they could be made fully customizable without the design
+falling apart.
+
+**Fully customizable, and it survives any hue the owner picks.** Everything colored derives
+from two hue angles (`--accent-h`, `--live-h`); lightness and chroma are pinned at values
+that stay in-gamut across the whole hue circle, so no per-hue hand-correction is needed —
+the finding that made a one-dial theme engine viable at all. OKLCH takes over where it
+parses (a picked red reads as vivid as a picked cyan; raw HSL does not have that property),
+falling back to HSL everywhere else. `@property` registration on just the two seed hues makes
+a theme change glide across the entire page rather than snap. Positive/negative stay fixed
+and uncustomizable **on purpose** — an owner must never have to wonder whether green means
+"good" or "brand".
+
+**Three real defects were found by building it, not by reading about it.** (1) A `var target`
+name collision between the gauge and countdown timers, which would have silently broken the
+gauge — caught by reading `stroke-dashoffset` back out of a headless browser rather than
+trusting the code by eye. (2) Single-key keyboard shortcuts shipped with no way to disable
+them, violating WCAG 2.1.4 at Level A — fixed with a toggle in the shortcut sheet itself plus
+a modifier-carrying `⌘/` mirror. (3) A per-second ticking countdown left readable by screen
+readers, which is unusable; the visible timer is now `aria-hidden` with announcements only on
+minute boundaries. The last two were introduced by this work and found by researching it
+properly afterward — recorded here because the pattern (ship, then research what you shipped)
+is what caught them.
+
+**One thing was tried and cut rather than shipped broken:** `document.startViewTransition()`
+for a cross-fade on theme changes. Direct instrumentation showed its callback silently never
+firing in the render environment. The `@property` transition already delivers the same glide,
+so the exotic API was removed rather than kept as a decorative risk.
+
+**A course correction worth recording, because it was mine to catch and I didn't.** The
+first owner-facing charts I proposed were a draft-lottery-odds curve and a scouting-reliability
+gauge — GM instruments. Jordan's correction was flat: "im a team owner; this is more business
+and Financials." The section was rebuilt around a cash-flow waterfall (reconciling exactly:
+18.6 + 11.2 + 10.9 − 15.2 − 11.2 − 0.1 = 14.2, with the monthly payroll tying to the annual
+figure shown elsewhere on the page) and the real measured price-of-a-win spread from this
+project's own economic QA — a 41× range from the American Association to the Pecos League.
+The lesson generalises past this page: **this game is played as an owner, and instruments
+should be the ones an owner's accountant would recognise.**
+
+**Verified, not assumed**: every feature exercised in a real headless browser — theme
+persistence across reload, palette encoded in and restored from the URL hash, each keyboard
+shortcut in both toggle states, the compare wipe by drag and by keyboard, both chart
+renderers, tooltip behaviour, and zero horizontal overflow at 1280px and 400px with zero
+console errors. Layer geometry for the compare wipe was measured (both layers exactly 104px)
+rather than eyeballed, because a wipe between two differently-sized layers is a lie.
+
+Rejected: applying the new tokens to the app in the same pass (the app still ships the
+original palette — a deliberate ordering call, since the league-configuration work will add
+the most important screen in the game and re-skinning three screens before adding a fourth
+is backwards); building the visual direction from taste rather than sourced references;
+`mix-blend-mode:overlay` for film grain (it mathematically collapses on a near-black ground —
+`plus-lighter` is additive and actually shows); Apple's Liquid Glass refraction (Firefox has
+no support, per-frame expensive, and wrong for a screen stared at for hours). What is NOT yet
+done: the app itself, whose re-skin is specified in `design/DESIGN-SYSTEM.md` §7 and awaits
+the world-configuration work landing first. See `CHANGELOG.md` v2.15.0.

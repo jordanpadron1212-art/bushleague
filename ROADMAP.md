@@ -92,7 +92,13 @@ What's next and what's genuinely open. Updated against reality — not against t
 
 **Status (pre-rewrite): v0.10 shipped 2026-08-28.** `bush-league-v0.10.html`. Seventeen harnesses, 380+ passing assertions, 2 known reds — both pre-existing and both in the game engine, not the world (`simcal.js`: BB/9 10.4% high; `sweep3.js`: batting order captures 44% of achievable signal).
 
-**THE ARC — unchanged by the rewrite:** the **ownership ladder** — the climb from the floor to the Show is the game. The five independent leagues are the bottom rungs.
+**THE ARC — RETIRED 2026-09-05.** This file said for a long time that "the ownership ladder — the
+climb from the floor to the Show — is the game." Jordan corrected that directly: **it is an endless
+sandbox.** Real clubs at all levels and leagues, the player chooses **which leagues load into a
+save**, **custom leagues** arrive later as their own layer, and the role is **always owner, in every
+save**. The struck-through arc is kept here rather than deleted, same convention as the rest of this
+file, so nobody re-derives it from an old doc. ~~the ownership ladder — the climb from the floor to
+the Show is the game; the five independent leagues are the bottom rungs~~
 
 **v0.8 made the market. v0.9 made the world survive it.** v0.8 gave every club free agency, sign and release, and turned five published rulebooks into predicates. v0.9 discovered that a closed population under an age rule has exactly one destiny — run v0.8 out ten years and the Frontier League has a **median age of 36 with 100% of the league aged 30 or over** — and built the churn that real independent baseball runs on: weekly contract purchases by affiliated organisations, contracts expiring every January, an age-curve exit, a demand-sized intake, an exclusive re-sign window, and a four-month open market.
 
@@ -119,8 +125,22 @@ settable draft philosophy for the owned club, and a real scouting cost whose rel
 roster actually shows over a season. The RNG stream is fully save-reproducible, and CI actually deploys to
 GitHub Pages on every push — both genuine improvements over the original, which never closed either gap.
 
-**1. The ownership ladder** (club valuation and purchase) — unchanged from the pre-rewrite ordering, now
-the standing top item with scouting, parent affiliation, AND the draft all done. `proposals/
+**1. World configuration — which leagues load into a save.** The new top item, and it displaces the
+ownership ladder, which was the old arc (see the retired-arc note above). `buildWorld()` currently
+generates all 218 clubs unconditionally; a sandbox needs that to be a parameter. It reaches the
+schedule, the economy, the draft and the save schema, and it is the foundation custom leagues will
+need later — so it is much cheaper now, while `SCHEMA_VERSION` is 1 and there are no real saves to
+protect. Four scope questions were put to Jordan on 2026-09-05 (what "all levels and leagues"
+includes; whether the rest of baseball still simulates off-screen when it isn't loaded; one club or a
+whole organization; whether there is a fail state). **Do not start this build before those answers
+are in** — each one changes the shape of it.
+
+**1b. Apply the signed-off visual direction to the app** (`design/DESIGN-SYSTEM.md` §7). Deliberately
+sequenced after 1: the league picker is the most important screen in the game and does not exist yet,
+so re-skinning three screens before adding a fourth is backwards.
+
+**2. The ownership ladder** (club valuation and purchase) — demoted, and needs redesigning against the
+sandbox framing rather than the retired climb. `proposals/
 FRONT-OFFICE-DESIGN-PROPOSAL.md`'s open §1 question (does an affiliate purchase carry real baseball
 authority, or none?) still blocks designing it properly. The ladder's valuation model should use
 RESEARCH.md §14.3's team-specific ratio (+36%, one verified transaction), not §9.6's retracted "~1.5×

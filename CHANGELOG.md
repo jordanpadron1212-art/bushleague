@@ -5,6 +5,41 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.15.0 · THE VISUAL DIRECTION, SIGNED OFF AND SAVED — 2026-09-05
+
+Asked whether the UI was working, the answer was that it wasn't. Three rounds of real, cited
+research — premium fintech dashboards, Bloomberg Terminal's own accessibility rebuild, esports
+broadcast overlays, and the newest Baseline CSS — produced a direction, iterated live until it
+landed. It's now saved in the repo: `design/war-room.html` is the approved reference render,
+`design/DESIGN-SYSTEM.md` is the buildable spec. Every future screen and feature is built in
+this scheme.
+
+The core is a rule rather than a palette: the accent touches data and action only, never chrome,
+and "direction" (up/down) is a separate channel that is never brand and never customizable. That
+rule is what reads as expensive — which is exactly why the hues themselves could then be made
+fully customizable without the design coming apart. Two hue dials drive every colored thing on
+the page, held at a lightness and chroma that stay in-gamut across the whole hue circle, with
+OKLCH where it parses and HSL everywhere else, and `@property` making a theme change glide across
+the entire page instead of snapping. Palettes persist and are encoded in the URL, so a link
+carries a theme.
+
+Also shipped in the reference: split-flap scoreboard digits, a rotating conic-gradient live
+border, a cash-flow waterfall and a real measured price-of-a-win chart (a 41× spread across the
+independent leagues, straight from this project's own economic QA), a drag-to-compare wipe, a
+payroll gauge, keyboard control of everything, scroll-driven reveals, film grain, and an aurora
+built from the theme's own hues.
+
+Three real defects were found by building and then researching it: a variable collision that
+would have silently broken the gauge, single-key shortcuts that violated WCAG 2.1.4 Level A with
+no way to disable them, and a per-second countdown left readable by screen readers. All three
+fixed. One technique — `document.startViewTransition()` — was instrumented, found to silently
+never fire here, and cut rather than shipped as a decorative risk.
+
+Not done, deliberately: the app itself still ships the original palette. The re-skin is specified
+in `design/DESIGN-SYSTEM.md` §7 and waits for the world-configuration work, since that adds the
+most important screen in the game and re-skinning three screens before adding a fourth is
+backwards. See `DECISIONS.md` D94.
+
 ## v2.14.0 · THE AMATEUR DRAFT — 2026-09-04
 
 With scouting (v2.11.0) and parent affiliation (v2.12.0) both real, the standing blocker on the amateur
