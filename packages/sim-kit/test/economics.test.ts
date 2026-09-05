@@ -167,15 +167,18 @@ describe("economics — MLB net income against the tuning target", () => {
 });
 
 describe("economics — independent leagues, recalibrated against the sourced -$385/+$963-at-.500 target", () => {
-  it("stays balanced, solvent and finite across all five independent leagues", async () => {
-    const leagues: [id: string, seed: number, label: string][] = [
-      ["INDY_FRON_143", 3, "Frontier League"],
-      ["INDY_AAPB_131", 3, "American Association"],
-      ["INDY_PION_161", 3, "Pioneer League"],
-      ["INDY_ALPB_121", 3, "Atlantic League"],
-      ["INDY_PECO_173", 3, "Pecos League"],
-    ];
-    for (const [id, seed, label] of leagues) {
+  // One test per league, for the same mechanical reason as the margin sweep
+  // below: a worker running five full calendar years back-to-back cannot
+  // answer the reporter, and vitest exits red with every test green.
+  it.each([
+    ["INDY_FRON_143", 3, "Frontier League"],
+    ["INDY_AAPB_131", 3, "American Association"],
+    ["INDY_PION_161", 3, "Pioneer League"],
+    ["INDY_ALPB_121", 3, "Atlantic League"],
+    ["INDY_PECO_173", 3, "Pecos League"],
+  ] as [id: string, seed: number, label: string][])(
+    "%s stays balanced, solvent and finite over a full calendar year",
+    async (id, seed, label) => {
       const { state } = await playFullYear(id, seed);
       const audit = auditBooks(state.ledger);
       expect(audit.fails, `${label}: ${audit.fails.join("; ")}`).toEqual([]);
@@ -183,8 +186,8 @@ describe("economics — independent leagues, recalibrated against the sourced -$
       const is = incomeStatement(state.ledger);
       expect(Number.isFinite(is.net)).toBe(true);
       expect(Number.isFinite(is.totalRev)).toBe(true);
-    }
-  });
+    },
+  );
 
   // Measured on seeds this project's own solve did NOT train on (10-12,
   // held out from the [1-4] seeds `INDY_OPEX_RECAL`/`opScale` were fit
