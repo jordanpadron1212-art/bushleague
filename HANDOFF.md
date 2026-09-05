@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 94 of them are already recorded, several against
+proposing anything that feels like a new idea — 95 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -14,9 +14,10 @@ things that sound good.
 > ROADMAP.md said for a long time that "the ownership ladder — the climb from the floor to the
 > Show — is the game." That is no longer the design. The game is an **endless sandbox**: real
 > clubs at all levels and leagues, the player picks **which leagues load into a save**, custom
-> leagues come later as their own layer, and the role is **always owner, in every save**. Scope
-> questions on this were put to Jordan on 2026-09-05 and the answers decide the world-
-> configuration build — do not start it before reading them.
+> leagues come later as their own layer, and the role is **always owner, in every save**. Scoped and
+> designed the same day: **DECISIONS.md D95** records the answers, `proposals/WORLD-CONFIGURATION.md`
+> is the design awaiting sign-off. One question is still open — what the owner actually owns — and it
+> does not block the build.
 
 > **The visual direction is signed off and saved (D94), but is NOT in the app yet.** `design/
 > war-room.html` is the approved reference; `design/DESIGN-SYSTEM.md` is the spec. The app still
@@ -49,12 +50,13 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D94. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D95. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
 | `PROJECT-INSTRUCTIONS.md` / `STACK-AND-ENGINES.md` | the standing brief this mirrors, and the tooling inventory this pass's stack choices were drawn from |
 | `design/war-room.html` + `design/DESIGN-SYSTEM.md` | **the signed-off visual direction (D94)** — the reference render, and the buildable spec every new screen is built against. NOT yet applied to the app; see §7 of the spec |
+| `proposals/WORLD-CONFIGURATION.md` | **the next build** — league packs, selection, the background world (D95). Awaiting sign-off |
 | `proposals/FRONT-OFFICE-DESIGN-PROPOSAL.md` | unbuilt, still awaiting Jordan's call on its §1 — see "Waiting for you" below |
 
 No `qa/` folder and no `compose.py` — those belonged to the retired single-file build and have no

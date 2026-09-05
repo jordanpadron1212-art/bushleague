@@ -1602,3 +1602,79 @@ is backwards); building the visual direction from taste rather than sourced refe
 no support, per-frame expensive, and wrong for a screen stared at for hours). What is NOT yet
 done: the app itself, whose re-skin is specified in `design/DESIGN-SYSTEM.md` §7 and awaits
 the world-configuration work landing first. See `CHANGELOG.md` v2.15.0.
+
+---
+
+## 2026-09-05 — The sandbox is defined: leagues become data, unloaded leagues still exist, and the fail state is opt-in
+
+**D95 · Four scope questions were put to Jordan and three came back decided; the fourth
+reshaped the architecture more than any of them.** Recorded here because they arrived through
+a question UI that persists nowhere, and every one of them constrains the next build.
+
+**Decided: the world grows by complex/rookie ball and an amateur/college layer** — on top of
+the existing 218 (30 MLB + 120 affiliated + 68 independent). International pro leagues (NPB,
+KBO, Mexican, winter ball) were offered and NOT selected; they stay unbuilt rather than
+assumed.
+
+**Decided: leagues you don't load still exist as data, but don't play.** Unloaded clubs are
+real named entities with real budgets that buy and sell players and set market prices — no
+games, standings or box scores are simulated for them. This keeps every talent pipeline
+intact (an indy-only save still has affiliated orgs buying your best player) at almost no
+runtime cost, and it is what makes ~180 complex clubs and hundreds of college programs
+affordable at all. The one genuinely new number it needs — how often background clubs buy,
+and at what price — is NOT invented: this project already solved it once, in the original
+build's v0.9 winter cycle, and the rate gets re-derived against those same sourced churn
+targets (roster continuity 24–41%, median age 26, `CHANGELOG.md` Build 0.9) by the same
+empirical method D86 and D89 used.
+
+**Decided: the fail state is optional, set at new-game.** Sandbox by default — money is
+tracked honestly and shown, nothing forces you out. Insolvency available for players who want
+the books to have teeth. Costs slightly more than either alone and serves both, which is the
+right trade for a game whose whole framing is "endless sandbox."
+
+**The fourth answer changed the architecture: asked how deep the college layer should go, the
+answer was "make it a customization option to add custom leagues."** That reframes the
+question from a sourcing quantity into a system. Leagues stop being hardcoded tables and
+become authorable data — and league selection, the complex/rookie pack, the college pack and
+user-made leagues all collapse into one mechanism instead of four. `proposals/
+WORLD-CONFIGURATION.md` is the design.
+
+**The real work this exposes: `world-data.ts` holds the world in three mutually incompatible
+shapes** — `MLB` as flat tuple rows, `MILB` as a level-keyed record with a separate flat
+parent lookup, `INDY` as objects each carrying their own game count, attendance, cap, opex
+scale and published roster table — and `buildWorld()` walks all three with three different
+code paths, taking no arguments. Adding a league today means writing code, not data. Collapsing
+those into one format without losing anything is the pass, and it is provable: the world built
+from packs must be byte-identical to the world built from the constants (same ids, abbreviations,
+divisions, parents, capacities) or it doesn't land.
+
+**One limit is stated up front rather than discovered later: run environments are calibrated
+measurements, not settings.** Per-level realism rests on RESEARCH.md §7.1's published lines,
+which `calibration.test.ts` checks 50 ways. A custom league therefore declares which existing
+environment it plays in; it cannot author a new one, because nothing real would be behind it.
+The UI says so plainly. This is what stops custom leagues from quietly dismantling the realism
+the entire project is built on.
+
+**Sequenced deliberately: this lands before the new tokens reach the app (D94).** The league
+picker is the most important screen in the game and does not exist yet; re-skinning three
+existing screens before adding a fourth is backwards. It also has to land while
+`SCHEMA_VERSION` is 1 and no real saves exist, because it changes what a save *is* — a
+`worldConfig` block carrying loaded packs, per-league played/background/absent state, custom
+packs (stored in the save, so a save stays self-contained), and the insolvency flag.
+
+**Still open, deliberately not guessed: what the owner actually owns** — one club, a whole
+organization with its ~7 affiliates, or a portfolio of unrelated clubs. Jordan asked to
+discuss it rather than pick. The recommendation on the table is organization-with-portfolio-
+deferred, because it makes D91's sourced affiliate data load-bearing instead of decorative and
+matches the shape real ownership takes. It does not block the world-configuration build:
+configuration decides what exists, ownership decides what you control, and they can be built
+in that order.
+
+Rejected: sourcing all ~300 NCAA Division I programs as a data-entry pass (the custom-league
+system answers it better, and §4's constraint means the players were always going to be
+generated regardless); international pro leagues (offered, not selected — not assumed in);
+fully simulating unloaded leagues (heaviest option, and nobody watches a Florida Complex
+League box score); a closed world where unloaded means nonexistent (would break the
+sell-players-to-affiliated-orgs mechanic that drove the original build's churn). See
+`CHANGELOG.md` — unversioned until the build lands; this is a decision record, not a shipped
+system.

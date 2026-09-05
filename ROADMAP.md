@@ -130,10 +130,15 @@ ownership ladder, which was the old arc (see the retired-arc note above). `build
 generates all 218 clubs unconditionally; a sandbox needs that to be a parameter. It reaches the
 schedule, the economy, the draft and the save schema, and it is the foundation custom leagues will
 need later — so it is much cheaper now, while `SCHEMA_VERSION` is 1 and there are no real saves to
-protect. Four scope questions were put to Jordan on 2026-09-05 (what "all levels and leagues"
-includes; whether the rest of baseball still simulates off-screen when it isn't loaded; one club or a
-whole organization; whether there is a fail state). **Do not start this build before those answers
-are in** — each one changes the shape of it.
+protect. **Scoped and designed 2026-09-05 — see `proposals/WORLD-CONFIGURATION.md` and DECISIONS.md D95.**
+Decided: the world grows by complex/rookie and an amateur/college layer (international pro leagues
+offered and not selected); unloaded leagues **exist as data but don't play** — real named clubs with
+budgets that buy and sell, no games simulated; the fail state is **optional, set at new-game**; and
+league depth is answered by making leagues **authorable data** rather than by sourcing quantity, which
+collapses selection, the shipped packs and custom leagues into one mechanism. Still open: what the
+owner owns (one club / a whole organization / a portfolio) — recommendation is organization with
+portfolio deferred, and it does **not** block this build, since configuration decides what exists and
+ownership decides what you control.
 
 **1b. Apply the signed-off visual direction to the app** (`design/DESIGN-SYSTEM.md` §7). Deliberately
 sequenced after 1: the league picker is the most important screen in the game and does not exist yet,
