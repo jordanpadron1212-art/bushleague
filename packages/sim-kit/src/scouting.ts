@@ -72,8 +72,14 @@ export interface CareerSample {
  * own level's baseline (`Economy.scouting`) saturates the full boost, and
  * spending nothing gets none.
  */
-const SCOUT_BOOST_MAX = 0.12;
-const SCOUT_BOOST_SATURATE_AT = 2;
+/** The most reliability money can add. Exported with `SCOUT_BOOST_SATURATE_AT` (D100). */
+export const SCOUT_BOOST_MAX = 0.12;
+/**
+ * Spending this multiple of the club's scouting baseline saturates the boost —
+ * past it, more money buys nothing. Exported since D100 so the desk can offer
+ * the owner a budget choice bounded by the real curve instead of an invented one.
+ */
+export const SCOUT_BOOST_SATURATE_AT = 2;
 
 /** `spend`/`baseline` are both annual dollar figures — the same convention every other `Economy` line already uses. */
 export function scoutBoostFor(spend: number, baseline: number): number {

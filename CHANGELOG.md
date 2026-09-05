@@ -5,6 +5,57 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.17.0 · THE DELEGATION DIAL — 2026-09-05
+
+You own the club. You don't have to operate it. Every area of the business now has a setting —
+Hands-on, Approve, Notify, Silent — and it decides whether your people ask you first, tell you
+after, or just handle it. Set per area, changeable any time. This is the mechanic the whole game
+answers to.
+
+Seven agents designed and critiqued this in parallel. Their dominant finding was that every
+emitter all four designs proposed fired at the season rollover — which runs once a year, against
+~190 day-advances. A desk fed only by the rollover is empty 189 days out of 190. That is annual
+mail, not a desk, and it would have missed the entire point.
+
+Two claims were verified against the real code rather than trusted, and both held exactly. The
+rollover moves the clock 186 days in one call, so any expiring desk item filed there would lapse
+before you could see it — which is why nothing here expires; each question is consumed at the
+moment it would matter. And an owner's answer already reshapes the whole world: the same rollover
+consumes 310,466 random draws under best-player-available, 309,971 under fill-needs, 309,540
+under upside. Two designs had built machinery to defend an invariant the engine never had. The
+property that actually matters is that the dial's routing can't move the simulation — your answer
+legitimately can, because that's what an answer is.
+
+The critique's own centrepiece was a monthly cash call: borrow, cut scouting, or ride it out when
+cash breaks a floor. Measuring the cash curve killed it. Every club at every level accumulates
+money monotonically — the Yankees go from $170M to $335M over three seasons, and the tightest club
+in the game dips 25% once and then climbs. Nothing is ever in trouble, because payroll and ticket
+price are both inert and nothing drains the balance. That feature would have been a trigger that
+never fires. It is not built, and the measurement is recorded so nobody proposes it again before
+the economy has a spending lever.
+
+What's on the desk instead: a month-end close (cash and the month's net, ~7 times a season, on
+ordinary days), your draft policy for the year, and what you're spending on scouting — which also
+closes a gap open since v2.11.0, where the scouting budget was real but had no owner-facing
+control at all.
+
+The four settings genuinely differ. Hands-on asks and offers no recommendation — you said you'd
+decide. Approve asks and your people name their pick. Notify acts and tells you. Silent acts and
+says nothing. Every one of them writes to the log: Silent costs you the notice, never the record.
+And every question shows what happens if you ignore it, before you ignore it.
+
+Staff hiring is never delegable, and that's enforced by the type system rather than by a rule
+someone has to remember — it isn't representable in the settings at all. The screen still shows it,
+as a control you can't move, because hiding it would hide the rule.
+
+Three of eleven areas have something behind them today. The other eight say "not yet active" and
+what they're waiting for, rather than pretending to work.
+
+Verified with a control test first: the fingerprint used to prove worlds identical is itself shown
+to detect a single extra random draw, so no equivalence claim below it is vacuous. 356 engine
+tests, 24 app tests, 60 browser checks. Two bugs were caught by looking at screenshots rather than
+by assertions. See `DECISIONS.md` D100.
+
 ## v2.16.1 · THE SAVE WAS WRITTEN 190 TIMES A SEASON — 2026-09-05
 
 A design review flagged that every day-advance wrote the whole save to IndexedDB. Verified, then

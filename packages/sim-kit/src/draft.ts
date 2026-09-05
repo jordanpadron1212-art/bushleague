@@ -165,7 +165,12 @@ export function buildDraftOrder(mlbClubs: readonly Club[], r: Rng): string[] {
 }
 
 /** Each MLB org's current pitcher share across its own MLB roster and every affiliate found via `Club.parent` — the input `DraftPhilosophy.NEED` biases against, target ~0.47 per this codebase's own established roster-composition convention (`roster.ts`'s `nP`). */
-function pitcherRatioByOrg(clubs: readonly Club[], players: readonly Player[]): Map<string, number> {
+/**
+ * Each org's pitcher share of its whole system, keyed by MLB club id.
+ * Exported since D100 so the desk can recommend a draft policy from the same
+ * signal the draft itself uses to score need — one number, one meaning.
+ */
+export function pitcherRatioByOrg(clubs: readonly Club[], players: readonly Player[]): Map<string, number> {
   const clubById = new Map(clubs.map((c) => [c.id, c] as const));
   const counts = new Map<string, { p: number; b: number }>();
   for (const pl of players) {
@@ -184,7 +189,8 @@ function pitcherRatioByOrg(clubs: readonly Club[], players: readonly Player[]): 
   return ratios;
 }
 
-const NEED_TARGET_P_RATIO = 0.47;
+/** The pitcher share the NEED philosophy steers an org toward. Exported for the desk's recommendation (D100). */
+export const NEED_TARGET_P_RATIO = 0.47;
 const NEED_BONUS = 6;
 
 function scoreProspect(p: Player, philosophy: DraftPhilosophy, pRatio: number | undefined): number {

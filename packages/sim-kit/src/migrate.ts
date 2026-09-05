@@ -42,6 +42,7 @@
  */
 import type { GameState } from "./state.js";
 import { SCHEMA_VERSION } from "./state.js";
+import { defaultDelegation } from "./delegation.js";
 
 /** A save as it comes off disk: an object of unknown fields, nothing more. */
 export type RawSave = Record<string, unknown>;
@@ -109,7 +110,33 @@ export type LoadResult =
  *
  * Step 3 is the one that is easy to skip and the one that catches the bug.
  */
-export const MIGRATIONS: readonly Migration[] = [];
+export const MIGRATIONS: readonly Migration[] = [
+  {
+    from: 1,
+    to: 2,
+    name: "add the delegation dial",
+    /**
+     * `DECISIONS.md` D100. A v1 save predates the dial entirely, so this
+     * backfills the three new fields and leaves everything else alone.
+     *
+     * Note the types: this takes and returns `RawSave`, so `defaultDelegation()`
+     * is called for its VALUE and the result is spread in as plain data. It
+     * deliberately does not import or assert `GameState` — see this file's
+     * header for why a migration typed against the current state shape is a
+     * bug that compiles.
+     *
+     * `log` is left untouched. Its element type gained two OPTIONAL fields
+     * (`dm`, `sf`), so every v1 line is already a legal v2 line; rewriting
+     * them would be work that changes nothing.
+     */
+    migrate: (save) => ({
+      ...save,
+      delegation: { ...defaultDelegation() },
+      asks: [],
+      nextAsk: 1,
+    }),
+  },
+];
 
 const isObject = (o: unknown): o is RawSave =>
   typeof o === "object" && o !== null && !Array.isArray(o);

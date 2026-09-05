@@ -25,6 +25,11 @@ import {
   type NewGameOptions,
   type AdvanceResult,
   type DraftPhilosophy,
+  type DelegableDomain,
+  type DelegationLevel,
+  answer as answerAskOnDesk,
+  acknowledgeLog,
+  setDelegation,
 } from "@bushleague/sim-kit";
 import { saveGame, loadGame, queueSave, flushSave } from "../save.js";
 
@@ -65,6 +70,17 @@ interface GameStore {
   setDraftPhilosophy: (philosophy: DraftPhilosophy) => Promise<void>;
   /** Writes anything the write-behind queue is still holding (`DECISIONS.md` D99). Called when the page is about to be hidden. */
   flush: () => Promise<void>;
+  /**
+   * Answers a question on the desk (`DECISIONS.md` D100). Recorded now;
+   * the engine consumes it at the moment it matters — the next month
+   * crossing for a budget, the next rollover for a draft policy — which is
+   * what keeps an unanswered desk from ever blocking the simulation.
+   */
+  answerAsk: (askId: string, optionId: string) => Promise<void>;
+  /** Moves the dial for one area. `staff` is not delegable and is not representable here. */
+  setDelegation: (domain: DelegableDomain, level: DelegationLevel) => Promise<void>;
+  /** Marks every surfaced log line read. */
+  acknowledge: () => Promise<void>;
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -162,6 +178,42 @@ export const useGameStore = create<GameStore>((set, get) => ({
       await saveGame(current);
     } catch (err) {
       set({ error: `Couldn't save — ${String(err)}. Your progress this session is still here, but won't survive a reload.` });
+    }
+  },
+
+  answerAsk: async (askId, optionId) => {
+    const current = get().state;
+    if (!current) return;
+    answerAskOnDesk(current, askId, optionId);
+    set({ state: { ...current } });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}.` });
+    }
+  },
+
+  setDelegation: async (domain, level) => {
+    const current = get().state;
+    if (!current) return;
+    current.delegation = setDelegation(current.delegation, domain, level);
+    set({ state: { ...current } });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}.` });
+    }
+  },
+
+  acknowledge: async () => {
+    const current = get().state;
+    if (!current) return;
+    current.log = acknowledgeLog(current.log);
+    set({ state: { ...current } });
+    try {
+      await saveGame(current);
+    } catch (err) {
+      set({ error: `Couldn't save — ${String(err)}.` });
     }
   },
 

@@ -40,6 +40,7 @@ import { econFor, gateDay, postMonth } from "./economics.js";
 import { refineScout, scoutBoostFor } from "./scouting.js";
 import type { JeCounter } from "./ledger.js";
 import type { GameState } from "./state.js";
+import { reportMonthClose, resolveScoutingBudget } from "./desk.js";
 
 export interface AdvanceResult {
   /** Every game played across the whole world this day. */
@@ -94,7 +95,19 @@ export function advanceDay(state: GameState): AdvanceResult {
     if (monthCrossed) {
       const newDay = dateToSerial(state.date);
       const inSeason = newDay >= state.season.open && newDay <= state.season.close;
+
+      // D100 — the desk's only IN-SEASON hook, and the reason the desk is
+      // something other than annual mail: `startNewSeason` runs once a year,
+      // this runs ~7 times a season. Settled BEFORE the month posts, so an
+      // answered budget takes effect on the month it was answered for rather
+      // than a month late. Consumes no randomness.
+      resolveScoutingBudget(state);
+
       postMonth(state.ledger, counter, newDay, mine, state.players, E, inSeason, state.scoutingBudget);
+
+      // The notice that arrives on an ordinary Tuesday — real numbers
+      // `postMonth` has just produced, no forecast and no new simulation.
+      reportMonthClose(state, dateToSerial(prevDate), newDay);
 
       // Scouting only ever tightens what the owner already knows about their
       // OWN organization (DECISIONS.md D90) — recomputed here, monthly, for

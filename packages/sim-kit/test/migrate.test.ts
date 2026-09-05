@@ -330,9 +330,43 @@ describe("the real registry", () => {
     for (const m of MIGRATIONS) expect(m.to).toBeGreaterThan(m.from);
   });
 
-  it("is empty exactly while the schema has never changed — a reminder, not a constraint", () => {
-    // If this fails because SCHEMA_VERSION moved, delete the assertion; if it
-    // fails because a migration was added at version 1, something is wrong.
-    if (SCHEMA_VERSION === 1) expect(MIGRATIONS.length).toBe(0);
+  it("carries exactly one migration per version step, with no gaps", () => {
+    expect(MIGRATIONS.length).toBe(SCHEMA_VERSION - 1);
+  });
+
+  it("upgrades a REAL v1 save — one built by newGame with the v2 fields stripped — into something playable", () => {
+    // The test `migrate.ts`'s own header specifies as step 3 of adding a
+    // migration, and the one that would catch a backfill that produces a
+    // state the engine can't actually run.
+    const save = realSave();
+    delete save["delegation"];
+    delete save["asks"];
+    delete save["nextAsk"];
+    save["v"] = 1;
+
+    const result = loadState(save);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.applied).toEqual(["add the delegation dial"]);
+    expect(result.state.v).toBe(2);
+    expect(result.state.asks).toEqual([]);
+    expect(result.state.nextAsk).toBe(1);
+    expect(result.state.delegation.draft).toBe("approve");
+    expect(result.state.delegation).not.toHaveProperty("staff");
+    // And the world survived the trip untouched.
+    expect(result.state.world.clubs.length).toBeGreaterThan(200);
+    expect(result.state.players.length).toBeGreaterThan(3000);
+  });
+
+  it("a v1 save's existing log lines are still legal v2 lines — the new fields are optional, so nothing is rewritten", () => {
+    const save = realSave();
+    save["v"] = 1;
+    save["log"] = [{ d: 100, t: "old.line", c: "something that happened" }];
+    delete save["delegation"];
+
+    const result = loadState(save);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.log).toEqual([{ d: 100, t: "old.line", c: "something that happened" }]);
   });
 });

@@ -29,6 +29,7 @@ import { fromSerial, dateToSerial } from "./date.js";
 import { buildWorld } from "./world.js";
 import { buildRosters } from "./roster.js";
 import { buildFullSeasonSchedule, seasonWindow } from "./schedule.js";
+import { raiseDraftPolicyAsk, raiseScoutingAsk } from "./desk.js";
 import { econFor, seedOpeningBooks } from "./economics.js";
 import type { JournalEntry, JeCounter } from "./ledger.js";
 import { createInitialState, type GameState, type CreateStateOptions } from "./state.js";
@@ -70,7 +71,7 @@ export function newGame(opts: NewGameOptions): GameState {
   const counter: JeCounter = { value: base.nextJe };
   seedOpeningBooks(ledger, counter, dateToSerial(date), mine, E);
 
-  return {
+  const state: GameState = {
     ...base,
     date,
     ownedClubId: opts.ownedClubId,
@@ -85,4 +86,13 @@ export function newGame(opts: NewGameOptions): GameState {
     ledger,
     nextJe: counter.value,
   };
+
+  // D100: a brand-new save starts with its first questions already on the
+  // desk, rather than with an empty desk until the first rollover a year
+  // away. Both raise nothing under Notify or Silent, so a player who
+  // delegated everything starts with a clean desk, correctly.
+  raiseDraftPolicyAsk(state);
+  raiseScoutingAsk(state);
+
+  return state;
 }

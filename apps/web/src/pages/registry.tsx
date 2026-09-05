@@ -25,6 +25,7 @@ import type { ComponentType } from "react";
 import OfficePage from "./OfficePage.js";
 import BooksPage from "./BooksPage.js";
 import DraftPage from "./DraftPage.js";
+import DelegationPage from "./DelegationPage.js";
 import DarkPage from "./DarkPage.js";
 
 export type PageGroup = "CLUB" | "LEAGUE" | "TALENT" | "MONEY" | "DESK";
@@ -63,6 +64,7 @@ export const PAGES: readonly PageDef[] = [
   { id: "gate", label: "Gate", group: "MONEY", icon: "gate", element: DarkPage, live: false, lightsAt: "the money-loop pass" },
   { id: "ownership", label: "Ownership", group: "MONEY", icon: "ownership", element: DarkPage, live: false, lightsAt: "the ownership-ladder pass" },
   // DESK
+  { id: "delegation", label: "Delegation", group: "DESK", icon: "settings", element: DelegationPage, live: true },
   { id: "settings", label: "Settings", group: "DESK", icon: "settings", element: DarkPage, live: false, lightsAt: "soon — shell/theme/density already work, this is just the screen for it" },
   { id: "save", label: "Save", group: "DESK", icon: "save", element: DarkPage, live: false, lightsAt: "a save-management UI pass — IndexedDB save/load itself already exists and runs on every new game and advance" },
 ] as const;

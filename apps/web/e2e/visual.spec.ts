@@ -193,3 +193,63 @@ test("the destructive path on the problem screen states its consequence before i
 
   await page.screenshot({ path: testInfo.outputPath("save-problem-confirm.png"), fullPage: true });
 });
+
+/**
+ * The owner's desk and the delegation dial (`DECISIONS.md` D100). The desk
+ * replaces the Office page's honestly-empty "Needs you" panel, so this also
+ * guards the claim that it is no longer empty.
+ */
+for (const shell of SHELLS) {
+  for (const theme of THEMES) {
+    test(`The desk has real questions on it — ${shell}/${theme}`, async ({ page }, testInfo) => {
+      const consoleErrors: string[] = [];
+      page.on("console", (msg) => msg.type() === "error" && consoleErrors.push(msg.text()));
+      page.on("pageerror", (err) => consoleErrors.push(err.message));
+
+      await startGame(page);
+      await setShellTheme(page, shell, theme);
+
+      // A fresh save opens with both questions already waiting.
+      await expect(page.getByText(/how should we draft this year/i)).toBeVisible();
+      await expect(page.getByText(/what are we spending on scouting/i)).toBeVisible();
+      // Every question states what silence costs, before it is ignored.
+      await expect(page.getByText(/if you never answer/i).first()).toBeVisible();
+
+      expect(await overflowPx(page)).toBeLessThanOrEqual(1);
+      assertClean(consoleErrors);
+      await page.screenshot({ path: testInfo.outputPath(`desk-${shell}-${theme}.png`), fullPage: true });
+    });
+
+    test(`The delegation dial renders clean — ${shell}/${theme}`, async ({ page }, testInfo) => {
+      const consoleErrors: string[] = [];
+      page.on("console", (msg) => msg.type() === "error" && consoleErrors.push(msg.text()));
+      page.on("pageerror", (err) => consoleErrors.push(err.message));
+
+      await startGame(page);
+      await page.goto("/#/p/delegation");
+      await page.getByText(/how much do you run yourself/i).waitFor();
+      await setShellTheme(page, shell, theme);
+
+      // Staff hiring is shown and is not a control — stating the rule
+      // rather than hiding it. `.first()` because the phrase deliberately
+      // appears twice: once as the badge, once inside the explanation.
+      await expect(page.getByText("always yours").first()).toBeVisible();
+      await expect(page.getByRole("button", { name: "Approve", exact: true }).first()).toBeDisabled();
+
+      expect(await overflowPx(page)).toBeLessThanOrEqual(1);
+      assertClean(consoleErrors);
+      await page.screenshot({ path: testInfo.outputPath(`dial-${shell}-${theme}.png`), fullPage: true });
+    });
+  }
+}
+
+test("answering a question is recorded and survives a reload", async ({ page }) => {
+  await startGame(page);
+  await page.getByRole("button", { name: /fill our needs/i }).click();
+  await expect(page.getByText(/your answer is recorded/i).first()).toBeVisible();
+
+  await page.reload();
+  await page.getByText(/needs you/i).waitFor({ timeout: 20000 });
+  // The answer lives in the save, not in React state.
+  await expect(page.getByRole("button", { name: /fill our needs/i })).toHaveAttribute("aria-pressed", "true");
+});

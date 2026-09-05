@@ -186,6 +186,25 @@ stamp since v2.9.0 and nothing read it, so the first schema change would have sh
 save. World configuration and the delegation dial are both schema changes; they are now safe to make.
 Remaining gap, disclosed: the pre-migration backup is written and readable but no UI restores from it.
 
+**6. ~~The delegation dial~~ — DONE, v2.17.0 (DECISIONS.md D100).** Step 1 of
+`proposals/OWNER-AND-STAFF.md`: the dial is real, three of eleven areas report through it, and the
+Office page's "Needs you" panel is a working desk. Two things it deliberately did NOT build, both
+recorded so they are not re-proposed blind: a desk queue with statuses/expiry/eviction (nothing in
+step 1 files an item that waits), and the month-end cash call (measured — every club at every level
+accumulates cash monotonically, so its trigger would never fire).
+
+**Next for the delegation model, in order:**
+
+1. **Make an owner-native money lever real.** `payrollBudget` and `ticketPrice` are both written at
+   `newGame` and read by nothing. They are the first two areas on the proposal's own list, they are
+   why the cash curve has no pressure in it, and until one of them spends, the four owner-native
+   dials have nothing to route. This now blocks more than it looks like it does.
+2. **Staff as people** (`proposals/OWNER-AND-STAFF.md` §3) — competence hidden behind scouting them,
+   philosophy that makes Approve a real choice rather than a rubber stamp, and a relationship that
+   constant overriding damages. The dial is meaningless without someone on the other end of it.
+3. **Reframe Lineup and Roster** per D96 — the Lineup page as designed has an owner setting a batting
+   order, which is a bench coach's job.
+
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
 plan.** Still directionally right once the game exists again; re-sequence it against passes 1-2 above
 rather than following its numbers literally.

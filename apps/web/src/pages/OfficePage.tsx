@@ -5,10 +5,9 @@
  * that revision), not from one big number.
  *
  * Real data once a save exists — no fabricated numbers (LAWS.md Law 12,
- * this project's whole culture on the point). Two panels stay honestly
- * empty even with a real save: "Needs you" (no decision-queue system
- * exists yet — nothing yet generates a lineup-not-set or an offer-expiring
- * entry) and "Wire" (no news system exists yet). The financial panel
+ * this project's whole culture on the point). "Needs you" is the owner's desk as
+ * of `DECISIONS.md` D100 — real questions and real notices, routed through
+ * the delegation dial. "Wire" stays honestly empty (no news system yet). The financial panel
  * shows the REAL ledger's this-month income statement — real gate revenue
  * (posted on the owned club's own home dates) and real monthly operating
  * costs (`economics.ts`'s `gateDay`/`postMonth`, wired into `advanceDay`),
@@ -16,8 +15,9 @@
  * 14-day pre-season before the first home date and the first month
  * crossing.
  */
-import { dateToSerial, formatShort, incomeStatement, money, toSerial, winPct } from "@bushleague/sim-kit";
+import { dateToSerial, formatShort, incomeStatement, money, toSerial, unreadCount, winPct } from "@bushleague/sim-kit";
 import { useGameStore } from "../store/gameStore.js";
+import Desk from "../components/Desk.js";
 import { divisionStandings, nextGameFor, ownedClub } from "../store/selectors.js";
 
 function Panel({ title, right, children }: { title: string; right?: React.ReactNode; children: React.ReactNode }) {
@@ -64,6 +64,7 @@ export default function OfficePage() {
   const myRow = standings.findIndex((r) => r.club.id === club?.id);
   const nearby = standings.slice(Math.max(0, myRow - 1), Math.max(0, myRow - 1) + 3);
 
+  const unread = unreadCount(state.log);
   const monthStart = toSerial(state.date.y, state.date.m, 1);
   const today = dateToSerial(state.date);
   const monthIS = incomeStatement(state.ledger, monthStart, today);
@@ -73,8 +74,8 @@ export default function OfficePage() {
 
   return (
     <div className="flex h-full flex-col overflow-y-auto">
-      <Panel title="Needs you">
-        <EmptyLine>Nothing waiting on you yet — the decision queue is a later pass.</EmptyLine>
+      <Panel title="Needs you" right={unread > 0 ? <span style={{ color: "var(--c-accent)" }}>{unread}</span> : undefined}>
+        <Desk />
       </Panel>
 
       <Panel title="Tonight">

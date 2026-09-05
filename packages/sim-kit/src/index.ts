@@ -27,3 +27,5 @@ export * from "./rollover.js";
 export * from "./newgame.js";
 export * from "./advance.js";
 export * from "./migrate.js";
+export * from "./delegation.js";
+export * from "./desk.js";

@@ -29,8 +29,16 @@ import type { Club } from "./world.js";
 import type { Player } from "./player.js";
 import type { PlayedGame } from "./season.js";
 import type { DraftPhilosophy, DraftPickResult } from "./draft.js";
+import type { DelegationSettings, DeskAsk, LogEntry } from "./delegation.js";
+import { defaultDelegation } from "./delegation.js";
 
-export const SCHEMA_VERSION = 1;
+/**
+ * Bumped to 2 by the delegation pass (`DECISIONS.md` D100), which adds
+ * `delegation`, `asks` and `nextAsk`, and gives `log` two new optional
+ * fields. `migrate.ts`'s registry carries the v1 → v2 step; a save written
+ * before this build loads, backfills and plays.
+ */
+export const SCHEMA_VERSION = 2;
 
 export type Mode = "bush" | "takeover";
 export type Difficulty = "normal" | "hard";
@@ -111,7 +119,26 @@ export interface GameState {
   wire: unknown[];
   needs: unknown[];
   form: unknown[];
-  log: { d: number; t: string; c: string }[];
+  /**
+   * The owner's permanent record (`delegation.ts`). Typed since v1 and
+   * written by nothing until D100; capped at `LOG_CAP`, since this pass is
+   * what starts filling it.
+   */
+  log: LogEntry[];
+  /**
+   * How much of the club the owner runs personally, per area (D96, D100).
+   * Never carries a `staff` key — that area is not delegable, and the type
+   * is what enforces it.
+   */
+  delegation: DelegationSettings;
+  /**
+   * Questions waiting for an answer. At most one per (area, tag), and each
+   * is consumed at the moment it would matter rather than expiring on a
+   * clock — so this array is short and never needs sweeping.
+   */
+  asks: DeskAsk[];
+  /** Monotonic source of ask ids. Never random (D97). */
+  nextAsk: number;
 }
 
 export interface CreateStateOptions {
@@ -167,6 +194,9 @@ export function createInitialState(opts: CreateStateOptions = {}): GameState {
     needs: [],
     form: [],
     log: [],
+    delegation: defaultDelegation(),
+    asks: [],
+    nextAsk: 1,
   };
 }
 

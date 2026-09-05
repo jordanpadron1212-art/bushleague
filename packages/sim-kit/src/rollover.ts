@@ -52,6 +52,14 @@ import { developPopulation } from "./development.js";
 import { churnWorld } from "./churn.js";
 import { runDraft } from "./draft.js";
 import type { GameState } from "./state.js";
+import {
+  expireScoutingAsk,
+  raiseDraftPolicyAsk,
+  raiseScoutingAsk,
+  reportDraft,
+  reportWinter,
+  resolveDraftPolicy,
+} from "./desk.js";
 
 /**
  * Rolls `state` from the end of one season into the start of the next, in
@@ -70,11 +78,30 @@ import type { GameState } from "./state.js";
  * file has no reason to make).
  */
 export function startNewSeason(state: GameState, r: Rng): void {
+  // D100: the owner's draft policy is settled BEFORE the draft reads it.
+  // This ordering is load-bearing, not incidental — resolving after would
+  // apply the answer to next year's draft, a year late and invisibly.
+  // Consumes no randomness, so the stream below is untouched.
+  resolveDraftPolicy(state);
+  expireScoutingAsk(state);
+
+  const orgBefore = state.ownedClubId ? countOrg(state, state.ownedClubId) : new Set<string>();
+
   const draft = runDraft(state.world.clubs, state.players, state.ownedClubId ?? undefined, state.draftPhilosophy, r, state.season.year);
   state.lastDraft = draft.picks.slice();
 
   developPopulation(state.players, r);
   state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r, state.season.year, draft.byOrg);
+
+  if (state.ownedClubId) {
+    const orgAfter = countOrg(state, state.ownedClubId);
+    let left = 0;
+    for (const id of orgBefore) if (!orgAfter.has(id)) left++;
+    let arrived = 0;
+    for (const id of orgAfter) if (!orgBefore.has(id)) arrived++;
+    reportWinter(state, left, arrived);
+    reportDraft(state, draft.picks.length, draft.picks.filter((p) => p.clubId === state.ownedClubId).length);
+  }
 
   for (const c of state.world.clubs) {
     c.w = 0;
@@ -92,9 +119,31 @@ export function startNewSeason(state: GameState, r: Rng): void {
   state.sp = 0;
   state.box = [];
 
+  // Next year's policy question goes on the desk now, so the owner has a
+  // whole season to answer it rather than being asked at the moment it is
+  // needed. Raised after the year advances, so its day is in the new season.
   const mine = state.ownedClubId ? state.world.clubs.find((c) => c.id === state.ownedClubId) : undefined;
   const [open, close] = mine ? seasonWindow(mine, year) : [state.season.open, state.season.close];
   const worldOpen = schedule.games[0]?.[0] ?? open;
   state.season = { ...state.season, year, gp: 0, phase: "offseason", open, close, worldOpen, dates: 0 };
   state.date = fromSerial(Math.min(open, worldOpen) - 14);
+
+  raiseDraftPolicyAsk(state);
+  raiseScoutingAsk(state);
+}
+
+/**
+ * Every player id in one organization — the MLB club plus its affiliates.
+ * Used only to count winter arrivals and departures for the desk; a Set of
+ * ids rather than a list of players, because the report is counts and the
+ * comparison is membership.
+ */
+function countOrg(state: GameState, orgId: string): Set<string> {
+  const own = new Set<string>();
+  for (const c of state.world.clubs) {
+    if (c.id === orgId || c.parent === orgId) own.add(c.id);
+  }
+  const ids = new Set<string>();
+  for (const p of state.players) if (p.cid && own.has(p.cid)) ids.add(p.id);
+  return ids;
 }

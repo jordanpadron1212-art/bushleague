@@ -1995,3 +1995,123 @@ it is one array that changes every day anyway); dropping `sched` and regeneratin
 save, and it would need the exact RNG state to reproduce); a Web Worker for the write (structured
 clone to the worker costs what the write costs); writing less often but unconditionally (the
 staleness cap already bounds the loss, and a fixed interval either loses more or coalesces less).
+
+## 2026-09-05 — The delegation dial is real, and two measurements decided what goes on the desk
+
+**D100 · `proposals/OWNER-AND-STAFF.md` step 1 — the dial with no staff behind it. Seven agents
+designed and critiqued it in parallel; two of their findings were verified independently and one
+of my own measurements overturned the critique's own headline recommendation.**
+
+### What the design work found, and what survived
+
+Four parallel designs, three adversarial critiques. The finding that dominated everything:
+**every emitter all four designs proposed fires at the rollover.** `startNewSeason` runs once a
+year and `advanceDay` runs ~190 times, so a desk fed only by the rollover is empty on 189 days out
+of 190 — an annual report, not a desk. The proposal's own fantasy is "you arrive and things are
+waiting"; once-a-year mail does not deliver it.
+
+Two claims were verified against the working tree rather than taken on trust, and both held
+exactly:
+
+- **The rollover moves the clock 186 days** (seed 5 / MLB_NYY: serial 20703 → 20889). Any
+  day-based expiry filed at a rollover would lapse before the owner could ever see it. This is why
+  asks here carry **no TTL at all** — each is consumed at the moment it would matter, which makes
+  "nothing blocks" structural rather than a policy enforced by a clock.
+- **An owner's answer already changes the whole world.** The same rollover consumes **310,466**
+  draws under BPA, **309,971** under NEED, **309,540** under UPSIDE — a different draftee reaches
+  a different affiliate, and `churnClub`'s jersey-number loop draws a variable number of values.
+  That killed a large apparatus in one design (precomputing both branches "so the quantity of RNG
+  consumed is invariant under the owner's answer" defends a property the engine has never had) and
+  a proposed law in another ("an owner decision may change selection, never draw count" is simply
+  false). The invariant that matters is weaker and free: **the dial's routing cannot move the
+  simulation; the owner's answer legitimately can.** The test asserts exactly that and no more.
+
+Two further critique findings were already closed by work done earlier the same day: `migrate.ts`
+(two designs proposed rebuilding it) and the `gameStore` fall-through that let a new game overwrite
+an unreadable save (D98's `SaveProblemPage`).
+
+### The measurement that overturned the recommendation
+
+The critique's own proposed centrepiece was a **month-end cash call** — borrow on the note, cut
+scouting, or ride it out when projected cash breaks a floor — with a caution to measure the cash
+curve first. **I measured it, and it kills the feature:**
+
+| club | start | trough | after 3 seasons |
+|---|---|---|---|
+| MLB (NYY) | $170.0M | $162.7M | **$334.9M** |
+| AAA | $0.82M | $0.66M | $10.67M |
+| Single-A | $0.82M | $0.68M | $2.63M |
+| INDY (ALPB) | $1.14M | $0.85M | $4.57M |
+
+**Every club at every level accumulates cash monotonically.** Nothing approaches trouble, because
+`payrollBudget` and `ticketPrice` are both inert (written at `newGame`, read by nothing) so there
+is no way to overspend, and there is no owner distribution or capex draining the balance. A
+cash-floor trigger would have been a mechanic that never fires — wallpaper, teaching the player
+that the desk is decorative, which is the precise failure the dial exists to avoid. **Not built,
+and the negative result is recorded here so nobody re-proposes it before the economy has a
+spending lever.**
+
+### What is on the desk instead
+
+- **The month-end close**, from `advance.ts`'s existing `postMonth` line: cash on hand and the
+  month's net, ~7 times a season, on ordinary days. A notice, never an ask — with nothing at stake
+  there is nothing to decide, and a decision with no stakes is worse than a clean report.
+- **The draft policy**, annual, consumed by `startNewSeason` *before* `runDraft` reads it. That
+  ordering is load-bearing: resolving after would apply the answer a year late and invisibly.
+- **The scouting budget**, annual, consumed at whichever month crossing follows the answer — so an
+  annual question still lands its effect in-season. The first draft raised it at every month
+  crossing, which meant answering in April asked again in May; the boost curve has nothing like
+  that resolution. Its options are anchored on `SCOUT_BOOST_SATURATE_AT`, past which more money
+  buys literally nothing, so no option is a bad deal dressed as a choice. **This also closes a gap
+  carried since v2.11.0: there has never been any owner-facing way to move the scouting budget.**
+
+### The four settings are four different behaviours
+
+| level | asks first? | recommends? | if you never answer | on the desk |
+|---|---|---|---|---|
+| Hands-on | yes | **no** | nothing changes | the ask |
+| Approve | yes | yes | the recommendation is taken | the ask |
+| Notify | no | — | already done | a notice |
+| Silent | no | — | already done | nothing |
+
+Hands-on deliberately gets **no** recommendation — you said you would decide, and there is nobody
+with an opinion yet anyway. It is also what makes Hands-on and Approve visibly different, which is
+the whole point of shipping the dial before the staff. Every level writes to the log, Silent
+included: **Silent costs you the notice, never the record.**
+
+`DelegableDomain` (10 areas) is a separate type from `DecisionDomain` (11), and
+`DelegationSettings` is keyed on the former — so **"staff hiring is never delegable" is a property
+of the save's shape**, not a rule to remember. A preset that tried to include it would not compile.
+The dial screen still *shows* staff, as a control you cannot move: hiding it would hide the rule.
+
+### Honesty about what is behind each dial
+
+Three of eleven areas are live (`draft`, `signings`, `scouting`). The other eight render with
+"not yet active" and a line saying what they are waiting for — the same convention `registry.tsx`
+already applies to dark pages. Shipping eleven identical working dials would let a player set
+ticket pricing to Hands-on and be asked nothing forever, which teaches them the mechanic is fake.
+
+### Verification
+
+- **A control test first.** `simFingerprint` is shown to detect a single extra RNG draw *before*
+  it is used to assert any equivalence — otherwise "these worlds are identical" is a sentence
+  rather than a measurement. It is also shown not to report a difference where there is none.
+- All four levels produce byte-identical worlds when the resulting policy is the same; and a
+  companion test asserts the fingerprint *does* differ when the policy differs, so the first test
+  cannot pass vacuously.
+- 33 delegation tests, plus the first real save migration (v1 → v2) exercised against a genuine
+  v1 save built by `newGame` with the new fields stripped.
+- Two defects were caught by reading screenshots, not by assertions: the dial labelled staff
+  hiring "not yet active" (conflating "permanently yours" with "system not built"), and an earlier
+  scouting emitter would have re-asked every month after being answered.
+
+**Impact: negligible at runtime** — the desk adds no RNG draws, no per-day work, and a few log
+lines a month against a 2.4 MB save. **Decisive on design:** the interaction model D96 defines is
+now testable by playing it, which is what step 1 existed to make possible.
+
+Rejected: a desk queue with statuses, expiry, a sweep and eviction (all four designs built one;
+nothing in step 1 files an item that waits, so it would be several hundred lines of machinery
+bounded to two items); per-player winter digests (~160 events a year for a five-club org — a
+firehose an owner does not read, so the report is counts and the Roster page has the names);
+gating the rollover on an unanswered Hands-on item (it would make the one Advance button refuse to
+work); the cash call (measured above).
