@@ -5,6 +5,40 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.18.0 · TICKET PRICING IS REAL — 2026-09-05
+
+The ticket price has been stored in every save since the state-wiring pass and read by nothing.
+Now it moves both how many people come and what they're worth.
+
+Ticket-price elasticity is published, so it wasn't invented. MLB ticket demand is price-inelastic
+at observed prices — replicated since 1974, and known in the literature as the inelastic pricing
+puzzle. The source used here models 23 MLB clubs across 1970–2003: most teams' long-run
+elasticities are well under 1, a couple below 0.5, a minority elastic. This uses 0.6, inside that
+range.
+
+The reason it fits this engine so exactly is the mechanism the same paper gives: teams price low
+because a fan in the park buys concessions and souvenirs. This game already tracks four separate
+per-fan lines, and for an MLB club 46% of what a fan is worth isn't the ticket. So the published
+finding didn't have to be coded in — it falls out of the engine's own revenue split once
+attendance responds to price.
+
+The obvious demand model was nearly shipped and is provably broken. Constant elasticity has no
+interior revenue optimum — its only stationary point is a minimum, so revenue dips and then climbs
+forever, and the model's advice becomes "charge $205 a ticket." An invented fan-loyalty decay term
+had already been written to stop the resulting dominant strategy. Checking the arithmetic before
+building killed both: the second invention only existed to cover the first mistake.
+
+Measured across real seasons, the shape is the finding. Net income peaks at 90% of face. Gate
+revenue keeps climbing to 140% of face — $94M against $89M at face — while net income drops from
+$53M to $40M. Chasing the ticket line leads you somewhere $13M worse. Double the price and a $52M
+profit becomes an $11.6M loss. Leave it alone and you give up about 1%.
+
+Ticket pricing is now the fourth live delegation area, and the first where Approve beats Hands-on
+for a real reason: your people recommend cutting the price. That sounds wrong and is right.
+
+Everything is opt-in at the function level, so every existing calibration test measures exactly
+what it measured before — asserted, not assumed. See `DECISIONS.md` D101 and `RESEARCH.md` §25.
+
 ## v2.17.0 · THE DELEGATION DIAL — 2026-09-05
 
 You own the club. You don't have to operate it. Every area of the business now has a setting —

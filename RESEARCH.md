@@ -2057,3 +2057,109 @@ Since 1998, **28 players** have used the NPB posting system (upper bound of a ra
 - The KBO "one posted player per club per offseason" limit and the KBO "9 years service = fee-free free agency" threshold (§24.1-24.2) could not be independently re-confirmed against a primary source this pass — treat both as plausible, not certain.
 
 **Recorded 2026-09-04.**
+
+## 25. Ticket-price elasticity, and why a real club prices below the revenue-maximising point — T1/T2
+
+**Why this section exists.** `state.ticketPrice` has been written at new-game and read by nothing
+since the state-wiring pass. Making it real means deciding what a price change actually *does* to
+attendance, and that is a published question with a well-replicated answer — not something to
+invent.
+
+### The finding
+
+**MLB ticket demand is price-INELASTIC at observed prices.** This is one of the most replicated
+results in sports economics, going back to Noll (1974) and Scully (1989), and it is known in the
+literature as the *inelastic pricing puzzle*: teams appear to set prices "too low" for a
+profit-maximising single-product firm.
+
+**Primary source used here — T1 on the qualitative finding, T2 on the magnitudes.**
+Lee & Chun, *Ticket Pricing Per Team: The Case of Major League Baseball* (NYU Stern hosted copy).
+Team-specific error-correction models, **23 MLB clubs, every year from 1970 to 2003**:
+
+| what the paper reports | value |
+|---|---|
+| Most teams' long-run price elasticities | **significantly less than 1 in absolute value** — i.e. inelastic |
+| The lowest reported | **TEX and PHI below 0.5** |
+| Teams with long-run *elastic* demand | KCR, MIL, OAK, SDP |
+| Sign of the long-run price elasticity | negative in every case **except** BAL, BOS, NYY |
+| Long-run income elasticity, average | **1.88** |
+
+The paper's own explanation of the BAL/BOS/NYY exceptions is worth keeping: BOS and NYY are
+"classic rivals with a large legion of loyal fans" playing in classic parks for the whole sample,
+and BAL was the first franchise into a new retro stadium — effects the specification does not fully
+control for. That is a caveat on those three estimates, not a finding about the sign of demand.
+
+### The mechanism, and why it matters to this engine specifically
+
+The paper states the reason directly: inelastic pricing is consistent with profit maximisation
+**"if these teams obtain appreciable offsetting revenue from the sales of concessions and
+souvenirs"** — the franchise owner "will rationally price tickets where marginal revenue is
+negative: in the inelastic portion of the demand curve," because a club is not a single-product
+firm. Krautmann & Berri (2007) make the same argument formally.
+
+**This engine already models exactly that split.** `Economy` carries four independent per-fan
+revenue lines, and for MLB they are `gate: 38`, `conc: 19`, `park: 6`, `merch: 8` — so **46% of
+per-fan revenue does not come from the ticket at all**. The inelastic-pricing result therefore does
+not need to be asserted anywhere in the code: it falls out of the engine's own sourced revenue
+split once attendance responds to price. A club that prices for maximum gate revenue empties its
+own concession stands.
+
+### What is adopted, and at what tier
+
+| quantity | value | tier | basis |
+|---|---|---|---|
+| Demand form | **linear** — `attendance ∝ 1 + k − k·(price / face)` | T3 | the paper estimates elasticities, which are local; it does not estimate a curve shape |
+| k (elasticity at the face price) | **0.6** | T2 | inside the reported distribution — below 1.0 like "most teams", above the 0.5 floor TEX/PHI show |
+| Realised gate per fan scales with the face price | yes | T3 | `E.gate` is realised revenue per attendee; moving the face without moving realised revenue would be incoherent |
+
+### The trap: constant-elasticity demand cannot be used here, and the reason is arithmetic
+
+The obvious functional form — `attendance ∝ (price / face)^−ε` — was written into an earlier draft
+of this section and is **wrong for this purpose**. Constant-elasticity demand has no interior
+revenue optimum. With per-fan revenue `g·x + c` (gate plus ancillary) and demand `x^−ε`:
+
+```
+R(x) = x^−ε (g·x + c)      R′(x) = x^−ε−1 [ g(1−ε)x − εc ]
+```
+
+The stationary point `x* = εc / (g(1−ε))` is a **minimum**, not a maximum (`R″(x*) > 0`), so for
+any ε < 1 revenue *falls* to that dip and then rises without bound. Computed against MLB's own
+per-fan lines (g = 38, c = 33, ε = 0.6), revenue indexes to **99.2 at 1.3× face and 119.6 at 5×
+face** — the model's advice is "charge $205 a ticket." A game shipped on that has one move.
+
+Linear demand, calibrated so the elasticity *at the face price* equals the sourced 0.6, behaves
+properly. Against the same per-fan lines:
+
+| price vs face | attendance | revenue index |
+|---|---|---|
+| 0.6× | 1.24 | 97.5 |
+| 0.8× | 1.12 | 100.0 |
+| **0.9×** | **1.06** | **100.3 ← optimum** |
+| 1.0× (face) | 1.00 | 100.0 |
+| 1.2× | 0.88 | 97.4 |
+| 1.6× | 0.64 | 84.6 |
+| 2.0× | 0.40 | 61.4 |
+
+**And the shape is the finding.** The optimum sits *below* the face price, the curve is almost flat
+across 0.8–1.0×, and it falls away sharply above it. That is the inelastic-pricing puzzle rendered
+as a decision: the counter-intuitive move (cut the price) is mildly right, the intuitive one (raise
+it) is quietly expensive, and neither is a free lunch. Note the general result that falls out —
+the face price is exactly optimal when `k = g / (g + c)`, i.e. **0.535** for MLB, the ticket's own
+share of per-fan revenue. The sourced 0.6 is a little above that, which is why the model says a real
+club is very slightly over-priced at its own face.
+
+**No long-run fan-base dynamic is modelled, and none is needed.** An earlier draft of this section
+proposed one — pricing above the market eroding next year's base — to stop "raise the price" being a
+dominant strategy. With linear demand there is no dominant strategy to stop, so the invented knob
+was dropped rather than kept for flavour. If a dynamic is ever wanted, the literature points at
+Chang, Potter & Sanders (2016) — the effect of the win-loss record on demand for FUTURE home games —
+and Kesenne (1996, 2000) on win maximisation under a profit constraint.
+
+**Sources:**
+- Lee & Chun, *Ticket Pricing Per Team: The Case of Major League Baseball* —
+  https://pages.stern.nyu.edu/~wgreene/entertainmentandmedia/JSM-Baseball-Elasticity.pdf
+- Fort, R. (2004). *Inelastic sports pricing.* Managerial and Decision Economics 25, 87–94.
+- Krautmann, A. & Berri, D. (2007) — concessions as the offsetting revenue.
+- Kesenne, S. (1996, 2000) — win maximisation under a profit constraint.
+- Chang, Potter & Sanders (2016) — dynamic effect on future home demand.
+- Noll (1974), Scully (1989) — the original inelastic findings.

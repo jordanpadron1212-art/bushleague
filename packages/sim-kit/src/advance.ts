@@ -40,7 +40,7 @@ import { econFor, gateDay, postMonth } from "./economics.js";
 import { refineScout, scoutBoostFor } from "./scouting.js";
 import type { JeCounter } from "./ledger.js";
 import type { GameState } from "./state.js";
-import { reportMonthClose, resolveScoutingBudget } from "./desk.js";
+import { reportMonthClose, resolveScoutingBudget, resolveTicketPrice } from "./desk.js";
 
 export interface AdvanceResult {
   /** Every game played across the whole world this day. */
@@ -89,7 +89,10 @@ export function advanceDay(state: GameState): AdvanceResult {
     const counter: JeCounter = { value: state.nextJe };
     for (const g of ownedGames) {
       if (g.homeClubId !== mine.id) continue;
-      gateDay(state.ledger, counter, day, { ...mine, w: recordBefore.w, l: recordBefore.l }, E, r);
+      // D101: the owner's own face price now moves both attendance and
+      // realised gate revenue. Passed here rather than read inside
+      // `gateDay` so the economics module stays state-agnostic.
+      gateDay(state.ledger, counter, day, { ...mine, w: recordBefore.w, l: recordBefore.l }, E, r, undefined, state.ticketPrice);
     }
     const monthCrossed = state.date.m !== prevDate.m || state.date.y !== prevDate.y;
     if (monthCrossed) {
@@ -102,6 +105,7 @@ export function advanceDay(state: GameState): AdvanceResult {
       // answered budget takes effect on the month it was answered for rather
       // than a month late. Consumes no randomness.
       resolveScoutingBudget(state);
+      resolveTicketPrice(state);
 
       postMonth(state.ledger, counter, newDay, mine, state.players, E, inSeason, state.scoutingBudget);
 

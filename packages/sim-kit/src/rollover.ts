@@ -54,8 +54,10 @@ import { runDraft } from "./draft.js";
 import type { GameState } from "./state.js";
 import {
   expireScoutingAsk,
+  expireTicketAsk,
   raiseDraftPolicyAsk,
   raiseScoutingAsk,
+  raiseTicketAsk,
   reportDraft,
   reportWinter,
   resolveDraftPolicy,
@@ -84,6 +86,7 @@ export function startNewSeason(state: GameState, r: Rng): void {
   // Consumes no randomness, so the stream below is untouched.
   resolveDraftPolicy(state);
   expireScoutingAsk(state);
+  expireTicketAsk(state);
 
   const orgBefore = state.ownedClubId ? countOrg(state, state.ownedClubId) : new Set<string>();
 
@@ -130,6 +133,7 @@ export function startNewSeason(state: GameState, r: Rng): void {
 
   raiseDraftPolicyAsk(state);
   raiseScoutingAsk(state);
+  raiseTicketAsk(state);
 }
 
 /**

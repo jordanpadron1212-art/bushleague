@@ -29,7 +29,7 @@ import { fromSerial, dateToSerial } from "./date.js";
 import { buildWorld } from "./world.js";
 import { buildRosters } from "./roster.js";
 import { buildFullSeasonSchedule, seasonWindow } from "./schedule.js";
-import { raiseDraftPolicyAsk, raiseScoutingAsk } from "./desk.js";
+import { raiseDraftPolicyAsk, raiseScoutingAsk, raiseTicketAsk } from "./desk.js";
 import { econFor, seedOpeningBooks } from "./economics.js";
 import type { JournalEntry, JeCounter } from "./ledger.js";
 import { createInitialState, type GameState, type CreateStateOptions } from "./state.js";
@@ -93,6 +93,7 @@ export function newGame(opts: NewGameOptions): GameState {
   // delegated everything starts with a clean desk, correctly.
   raiseDraftPolicyAsk(state);
   raiseScoutingAsk(state);
+  raiseTicketAsk(state);
 
   return state;
 }

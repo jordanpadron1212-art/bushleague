@@ -51,8 +51,10 @@ import {
 import {
   DRAFT_POLICY_TAG,
   SCOUTING_TAG,
+  TICKET_TAG,
   raiseDraftPolicyAsk,
   raiseScoutingAsk,
+  raiseTicketAsk,
   recommendedPhilosophy,
   resolveDraftPolicy,
 } from "../src/desk.js";
@@ -203,7 +205,7 @@ describe("the settings map", () => {
   it("every domain declares honestly whether anything stands behind it", () => {
     // Three are live today. If this number changes, it is because a system
     // was wired up or removed — not something to update to make a test pass.
-    expect(DOMAINS.filter((d) => d.live).map((d) => d.id).sort()).toEqual(["draft", "scouting", "signings"]);
+    expect(DOMAINS.filter((d) => d.live).map((d) => d.id).sort()).toEqual(["draft", "scouting", "signings", "ticketing"]);
     for (const d of DOMAINS) expect(d.note.length, d.id).toBeGreaterThan(10);
   });
 });
@@ -377,13 +379,14 @@ describe("the four levels are four different games — the point of shipping the
 
   it("a fresh save starts with its questions already on the desk — unless you delegated them away", () => {
     const asked = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
-    expect(asked.asks.map((a) => a.tag).sort()).toEqual([DRAFT_POLICY_TAG, SCOUTING_TAG].sort());
+    expect(asked.asks.map((a) => a.tag).sort()).toEqual([DRAFT_POLICY_TAG, SCOUTING_TAG, TICKET_TAG].sort());
 
     const delegated = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
     delegated.delegation = withLevels("silent");
     delegated.asks = [];
     raiseDraftPolicyAsk(delegated);
     raiseScoutingAsk(delegated);
+    raiseTicketAsk(delegated);
     expect(delegated.asks).toEqual([]);
   });
 
@@ -463,4 +466,62 @@ describe("the desk during a season — the reason it isn't just annual mail", ()
     expect(s.asks.filter((a) => a.tag === DRAFT_POLICY_TAG).length).toBeLessThanOrEqual(1);
     expect(s.log.some((l) => l.t === "scouting.budget.held")).toBe(true);
   }, 300_000);
+});
+
+describe("the ticket-price ask — the one where your people say charge less", () => {
+  it("recommends the CUT under Approve, which is the counter-intuitive and correct call", () => {
+    const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    const ask = s.asks.find((a) => a.tag === TICKET_TAG)!;
+    expect(ask).toBeDefined();
+    expect(ask.level).toBe("approve");
+    expect(ask.recommended).toBe("cut");
+    // Measured in `pricing.test.ts`: the cut really is worth more net income
+    // than either holding or raising. The staff opinion is not flavour.
+    expect(ask.facts["cut"]).toBeLessThan(ask.facts["hold"]!);
+    expect(ask.facts["raise"]).toBeGreaterThan(ask.facts["hold"]!);
+  });
+
+  it("offers no recommendation under Hands-on, and holding is always the cost of silence", () => {
+    const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    s.delegation = withLevels("hands-on");
+    s.asks = [];
+    raiseTicketAsk(s);
+    const ask = s.asks.find((a) => a.tag === TICKET_TAG)!;
+    expect(ask.recommended).toBeNull();
+    expect(ask.fallback).toBe("hold");
+  });
+
+  it("an answered price actually reaches state.ticketPrice, at the next month crossing", () => {
+    const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    const ask = s.asks.find((a) => a.tag === TICKET_TAG)!;
+    const target = ask.facts["cut"]!;
+    expect(target).not.toBe(s.ticketPrice);
+
+    s.asks = answerAsk(s.asks, ask.id, "cut");
+    playOut(s);
+
+    expect(s.ticketPrice).toBe(target);
+    expect(s.asks.find((a) => a.tag === TICKET_TAG)).toBeUndefined();
+    expect(s.log.some((l) => l.t === "ticketing.price.set")).toBe(true);
+  }, 120_000);
+
+  it("and a changed price actually changes the gate — the whole chain, not just the field", () => {
+    const cheap = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    const dear = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    cheap.ticketPrice = 21;
+    dear.ticketPrice = 82;
+    playOut(cheap);
+    playOut(dear);
+
+    // Concessions (account 4100) track bodies in the park, not the ticket
+    // price — so a doubled ticket price must visibly shrink them. Same seed,
+    // same schedule, same games; only the price differs.
+    const conc = (st: GameState) =>
+      st.ledger
+        .filter((e) => e.t === "gate")
+        .reduce((total, e) => total + e.l.filter(([acc]) => acc === 4100).reduce((sub, [, v]) => sub - v, 0), 0);
+
+    expect(conc(cheap)).toBeGreaterThan(0);
+    expect(conc(dear)).toBeLessThan(conc(cheap) * 0.6);
+  }, 180_000);
 });

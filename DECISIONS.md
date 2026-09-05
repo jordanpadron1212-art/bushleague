@@ -2115,3 +2115,89 @@ bounded to two items); per-player winter digests (~160 events a year for a five-
 firehose an owner does not read, so the report is counts and the Roster page has the names);
 gating the rollover on an unanswered Hands-on item (it would make the one Advance button refuse to
 work); the cash call (measured above).
+
+## 2026-09-05 — Ticket pricing is real, and the model that looked obviously right was provably broken
+
+**D101 · `state.ticketPrice` has been written at new-game and read by nothing since the
+state-wiring pass. Making it real needed a demand model, and the first one I chose — the standard,
+obvious one — would have shipped a game with exactly one move.**
+
+### The research
+
+Ticket-price elasticity is published, so it was not invented. **RESEARCH.md §25** records the
+sourcing: MLB ticket demand is price-**inelastic** at observed prices, a finding replicated since
+Noll (1974) and Scully (1989) and known as the *inelastic pricing puzzle*. The primary source used
+is Lee & Chun, *Ticket Pricing Per Team: The Case of Major League Baseball* — team-specific
+error-correction models, **23 MLB clubs, 1970–2003**: most teams' long-run price elasticities are
+"significantly less than 1 in absolute value," TEX and PHI are below 0.5, and a minority (KCR, MIL,
+OAK, SDP) are elastic. **0.6** is adopted — inside that distribution, at neither edge (T2).
+
+The paper also gives the *mechanism*, and it is the reason this fits this engine so exactly:
+inelastic pricing is rational **"if these teams obtain appreciable offsetting revenue from the
+sales of concessions and souvenirs."** `Economy` already carries four independent per-fan lines, and
+for MLB they are `gate: 38`, `conc: 19`, `park: 6`, `merch: 8` — **46% of per-fan revenue is not
+the ticket.** So the published finding does not have to be asserted anywhere in the code. It falls
+out of the engine's own sourced revenue split once attendance responds to price.
+
+### The model I nearly shipped, and why it is wrong
+
+The obvious form is constant elasticity, `attendance ∝ (price/face)^−ε`. It is wrong here, and the
+proof is arithmetic rather than aesthetic. With per-fan revenue `g·x + c`:
+
+```
+R(x) = x^−ε (g·x + c)     R′(x) = x^−ε−1 [ g(1−ε)x − εc ]
+```
+
+The stationary point is a **minimum** (`R″ > 0`), so for any ε below 1 revenue dips and then rises
+without bound. Computed against MLB's own numbers, that model indexes revenue at **99.2 at 1.3×
+face and 119.6 at 5× face** — its advice is "charge $205 a ticket." I had already written it into
+RESEARCH.md, together with an invented long-run fan-base-erosion term to stop the resulting
+dominant strategy. Checking the arithmetic before building killed both: **the second invention only
+existed to paper over the first mistake.**
+
+Linear demand, calibrated so the elasticity *at the face price* equals the sourced 0.6, behaves
+correctly and needs no invented dynamic at all.
+
+### Measured across real simulated seasons, not computed from the formula
+
+| price vs face | gate revenue | attendance-driven revenue | **net income** |
+|---|---|---|---|
+| 0.7× ($29) | $73.7M | $164.2M | $50.9M |
+| 0.9× ($37) | $84.7M | **$166.2M** | **$52.8M ← best** |
+| 1.0× ($41, face) | $88.6M | $165.6M | $52.3M |
+| 1.2× ($49) | $93.5M | $161.5M | $48.2M |
+| **1.4× ($57)** | **$94.4M ← gate peaks** | $153.3M | $40.0M |
+| 2.0× ($82) | $70.9M | $101.7M | **−$11.6M** |
+
+**The shape is the whole point.** Gate revenue keeps climbing to 1.4× while net income falls
+$12.8M — an owner optimising the ticket line alone is led somewhere materially worse than an owner
+optimising the club. The optimum sits slightly *below* face, the curve is nearly flat across
+0.8–1.0× (so a new owner who never touches it loses ~1%), and doubling the price turns a $52M
+profit into an $11.6M loss. That is the published puzzle rendered as a decision, with no dominant
+strategy in it.
+
+A general result worth recording: the face price is exactly optimal when `k = g/(g+c)` — the
+ticket's own share of per-fan revenue, **0.535** for MLB. The sourced 0.6 is a little above it,
+which is why the model says a real club is very slightly over-priced at its own face.
+
+### What is now live
+
+`ticketing` becomes the **fourth** live delegation domain, and it is the first ask where Approve is
+worth more than Hands-on for a reason other than convenience: **your staff recommend the price
+CUT**, which is counter-intuitive and correct. A new owner reading the gate line alone would do the
+opposite.
+
+Pricing is **opt-in at the function level** — `gateFor` and `gateDay` behave byte-identically when
+no price is supplied, and identically again when the price equals the face — so every existing
+calibration test measures exactly what it measured before. That is asserted directly rather than
+assumed. The owner is clamped to 0.5–2.0× face, because outside that band the model is
+extrapolating past anything the research covers.
+
+**Impact:** attendance and four revenue accounts now respond to an owner decision that previously
+did nothing; net income swings **$64M** across the legal price range on an MLB club. No measurable
+runtime cost — one multiply per home date.
+
+Rejected: constant-elasticity demand (above); a long-run fan-base erosion term (invented to fix a
+problem that only existed in the rejected model); letting the owner price outside 0.5–2.0×;
+scaling the concession, parking and merchandise lines with the ticket price (a fan's hot dog does
+not cost more because his seat did — and that asymmetry IS the mechanism).

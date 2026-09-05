@@ -262,7 +262,55 @@ const GATE_PRIOR = 40;
 const GATE_LAG = 0.45;
 const GATE_ELAS = 2.2;
 
-export function gateFor(club: Pick<Club, "lvl" | "lg" | "w" | "l" | "cap">, r: Rng, lastPct?: number): number {
+/**
+ * How hard attendance responds to the ticket price, measured AT the face
+ * price. RESEARCH.md §25 — T2: MLB long-run price elasticities are
+ * "significantly less than 1 in absolute value" for most clubs, with TEX
+ * and PHI below 0.5 (Lee & Chun, 23 clubs, 1970–2003). 0.6 sits inside that
+ * distribution rather than at either edge.
+ */
+export const PRICE_ELASTICITY = 0.6;
+
+/** The owner cannot price below half or above double the face. Outside this the model is extrapolating past anything the research covers. */
+export const PRICE_MIN_RATIO = 0.5;
+export const PRICE_MAX_RATIO = 2.0;
+
+/**
+ * Attendance response to a ticket price, as a multiplier on the club's
+ * baseline gate.
+ *
+ * **Linear, deliberately, and this is the one modelling choice in this file
+ * worth reading the comment for.** The obvious form — `(price/face)^-ε` —
+ * is wrong here, and provably so: constant-elasticity demand has no
+ * interior revenue optimum. Its only stationary point is a MINIMUM, so for
+ * any ε below 1 revenue dips and then climbs without bound, and the model's
+ * advice becomes "charge $205 a ticket." Measured against MLB's own per-fan
+ * lines that form indexes revenue at 99.2 for a 1.3x price and 119.6 for a
+ * 5x price. RESEARCH.md §25 records the derivation.
+ *
+ * Linear demand calibrated so the elasticity AT the face price equals the
+ * sourced 0.6 behaves correctly: an interior optimum just below face, a
+ * nearly flat curve across 0.8–1.0x, and a steep fall above it — the
+ * inelastic-pricing puzzle as a real decision rather than a free lunch.
+ */
+export function priceDemand(ticketPrice: number, face: number): number {
+  if (!(face > 0)) return 1;
+  const x = clamp(nz(ticketPrice) / face, PRICE_MIN_RATIO, PRICE_MAX_RATIO);
+  return Math.max(0, 1 + PRICE_ELASTICITY - PRICE_ELASTICITY * x);
+}
+
+/**
+ * `ticketPrice` is the owner's face price; passing it omitted (or 0) leaves
+ * attendance exactly as it was before D101, so every existing caller and
+ * every calibration test is unaffected unless it opts in.
+ */
+export function gateFor(
+  club: Pick<Club, "lvl" | "lg" | "w" | "l" | "cap">,
+  r: Rng,
+  lastPct?: number,
+  ticketPrice?: number,
+  face?: number,
+): number {
   const att = attFor(club.lvl, club.lg);
   const g = nz(club.w) + nz(club.l);
   const cur = (nz(club.w) + 0.5 * GATE_PRIOR) / (g + GATE_PRIOR);
@@ -270,7 +318,8 @@ export function gateFor(club: Pick<Club, "lvl" | "lg" | "w" | "l" | "cap">, r: R
   const blend = GATE_LAG * prev + (1 - GATE_LAG) * cur;
   const form = 1 + (blend - 0.5) * GATE_ELAS;
   const noise = 0.8 + r() * 0.42;
-  return Math.round(clamp(att * form * noise, 300, nz(club.cap) || att * 1.6));
+  const price = ticketPrice && face ? priceDemand(ticketPrice, face) : 1;
+  return Math.round(clamp(att * form * noise * price, 300, nz(club.cap) || att * 1.6));
 }
 
 /**
@@ -395,9 +444,24 @@ export function gateDay(
   E: Economy,
   r: Rng,
   lastPct?: number,
+  /**
+   * The owner's face price (`state.ticketPrice`). Omitted or 0 leaves this
+   * function byte-identical to its pre-D101 behaviour, so every existing
+   * calibration test measures exactly what it measured before.
+   */
+  ticketPrice?: number,
 ): GateDayResult {
-  const att = gateFor(club, r, lastPct);
-  const gateRev = round2(att * E.gate);
+  const priced = ticketPrice !== undefined && ticketPrice > 0 && E.ticketFace > 0;
+  const att = priced ? gateFor(club, r, lastPct, ticketPrice, E.ticketFace) : gateFor(club, r, lastPct);
+  // Realised gate per attendee moves with the face price; the ancillary
+  // lines do not, because a fan's hot dog does not cost more because his
+  // seat did. That asymmetry IS the inelastic-pricing mechanism
+  // (RESEARCH.md §25) — 46% of MLB per-fan revenue is not the ticket, so
+  // pricing for maximum gate empties your own concession stands.
+  const priceRatio = priced
+    ? clamp(ticketPrice / E.ticketFace, PRICE_MIN_RATIO, PRICE_MAX_RATIO)
+    : 1;
+  const gateRev = round2(att * E.gate * priceRatio);
   const concRev = round2(att * E.conc);
   const parkRev = round2(att * E.park);
   const merchRev = round2(att * E.merch);

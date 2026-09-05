@@ -193,12 +193,17 @@ recorded so they are not re-proposed blind: a desk queue with statuses/expiry/ev
 step 1 files an item that waits), and the month-end cash call (measured — every club at every level
 accumulates cash monotonically, so its trigger would never fire).
 
+**7. ~~Ticket pricing~~ — DONE, v2.18.0 (DECISIONS.md D101).** The first half of "make money real."
+`ticketPrice` now moves attendance and gate revenue against a sourced elasticity, and `ticketing` is
+the fourth live delegation area.
+
 **Next for the delegation model, in order:**
 
-1. **Make an owner-native money lever real.** `payrollBudget` and `ticketPrice` are both written at
-   `newGame` and read by nothing. They are the first two areas on the proposal's own list, they are
-   why the cash curve has no pressure in it, and until one of them spends, the four owner-native
-   dials have nothing to route. This now blocks more than it looks like it does.
+1. **`payrollBudget` — the other half of "make money real," and still inert.** `ticketPrice` is done
+   (D101); payroll is the remaining owner-native lever, and it is the one that would create actual
+   financial PRESSURE, since ticket pricing only ever adds revenue. Until something can drain the
+   balance, the cash curve stays monotonic (D100) and the insolvency fail state and the month-end
+   cash call both stay unbuildable.
 2. **Staff as people** (`proposals/OWNER-AND-STAFF.md` §3) — competence hidden behind scouting them,
    philosophy that makes Approve a real choice rather than a rubber stamp, and a relationship that
    constant overriding damages. The dial is meaningless without someone on the other end of it.

@@ -212,6 +212,12 @@ for (const shell of SHELLS) {
       // A fresh save opens with both questions already waiting.
       await expect(page.getByText(/how should we draft this year/i)).toBeVisible();
       await expect(page.getByText(/what are we spending on scouting/i)).toBeVisible();
+      await expect(page.getByText(/what are we charging at the gate/i)).toBeVisible();
+      // The staff pick on the gate question is the COUNTER-INTUITIVE one —
+      // dropping the price. If this ever flips to "push", the pricing model
+      // has changed and RESEARCH.md §25 needs re-measuring, not this test
+      // needs updating.
+      await expect(page.getByRole("button", { name: /^Drop to \$/ })).toBeVisible();
       // Every question states what silence costs, before it is ignored.
       await expect(page.getByText(/if you never answer/i).first()).toBeVisible();
 

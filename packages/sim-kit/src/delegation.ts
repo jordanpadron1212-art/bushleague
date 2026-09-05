@@ -112,17 +112,20 @@ export interface DomainDef {
  * The eleven areas from `proposals/OWNER-AND-STAFF.md` §2, with `live` set
  * by what the engine can actually emit today rather than by what is planned.
  *
- * Three are live. `draft` because `runDraft` already executes an owner
+ * Four are live. `draft` because `runDraft` already executes an owner
  * policy (D93 built this pattern before it had a name). `signings` because
  * `churnWorld` already runs the winter. `scouting` because the budget posts
- * monthly to account 5300 and feeds `scoutBoostFor` (D90) — and it is the
- * only one of the three that happens DURING a season, which is what makes
- * the desk something other than annual mail.
+ * monthly to account 5300 and feeds `scoutBoostFor` (D90). And `ticketing`
+ * as of D101 — the face price now moves both attendance and realised gate
+ * revenue, against a sourced elasticity (RESEARCH.md §25).
+ *
+ * The last two happen DURING a season, which is what makes the desk
+ * something other than annual mail.
  */
 export const DOMAINS: readonly DomainDef[] = [
   { id: "staff", label: "Staff hiring", group: "owner", live: false, note: "Never delegable — hiring is the one call that is always yours. No staff exist yet." },
   { id: "payroll", label: "Payroll budget", group: "owner", live: false, note: "Waiting on a payroll system — the budget is recorded but nothing spends against it yet." },
-  { id: "ticketing", label: "Ticket pricing", group: "owner", live: false, note: "Waiting on demand modelling — gate revenue currently uses the club's own baseline face price." },
+  { id: "ticketing", label: "Ticket pricing", group: "owner", live: true, note: "Live. Sets what you charge — and how many people come through the gate." },
   { id: "capex", label: "Facilities and capex", group: "owner", live: false, note: "Waiting on a facilities system." },
   { id: "scouting", label: "Scouting budget", group: "owner", live: true, note: "Live. Posts monthly and sets how reliable your own players' grades are." },
   { id: "financing", label: "Debt and financing", group: "owner", live: false, note: "Waiting on a financing system — every club currently carries its opening note and nothing else." },

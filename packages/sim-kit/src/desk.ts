@@ -307,3 +307,85 @@ export function levelFor(state: GameState, domain: DelegableDomain): DelegationL
 export function openAsks(state: GameState): readonly DeskAsk[] {
   return state.asks;
 }
+
+// ---- Ticket pricing: the one where your people tell you to charge LESS ----
+
+export const TICKET_TAG = "ticketing.price";
+
+/**
+ * Puts the ticket price on the desk, once a season.
+ *
+ * The options bracket the club's own face price, and the RECOMMENDATION is
+ * the cut — which is the interesting part. Measured across full seasons
+ * (RESEARCH.md §25, D101), a 10% price cut is worth slightly MORE net income
+ * than the face price, while the move that looks obviously right — raising
+ * the price — grows the gate line and shrinks the club. Your people know
+ * that; a new owner reading the gate line alone does not.
+ *
+ * So this is the first ask where Approve is worth more than Hands-on for a
+ * reason other than convenience: the staff opinion is genuinely
+ * counter-intuitive and genuinely correct.
+ */
+export function raiseTicketAsk(state: GameState): void {
+  const level = delegationFor(state.delegation, "ticketing");
+  if (!asksFirst(level)) return;
+  if (askFor(state.asks, "ticketing", TICKET_TAG)) return;
+
+  const mine = state.world.clubs.find((c) => c.id === state.ownedClubId);
+  if (!mine) return;
+  const face = econFor(mine).ticketFace;
+  if (!(face > 0)) return;
+
+  const cut = Math.max(1, Math.round(face * 0.9));
+  const hold = Math.round(face);
+  const raise = Math.round(face * 1.2);
+
+  const counter = { value: state.nextAsk };
+  const ask = raiseAsk(counter, {
+    domain: "ticketing",
+    tag: TICKET_TAG,
+    day: dateToSerial(state.date),
+    level,
+    options: [
+      { id: "cut", label: `Drop to $${cut}` },
+      { id: "hold", label: `Hold at $${hold}` },
+      { id: "raise", label: `Push to $${raise}` },
+    ],
+    // Doing nothing changes nothing — the same rule the scouting ask uses.
+    // A fallback that quietly repriced the whole park for an owner who never
+    // answered would be the worst kind of default.
+    fallback: "hold",
+    recommended: recommends(level) ? "cut" : null,
+    facts: { cut, hold, raise, current: Math.round(state.ticketPrice) },
+  });
+  state.nextAsk = counter.value;
+  state.asks = [...state.asks, ask];
+}
+
+/** Consumes the ticket ask into `state.ticketPrice`, at a month crossing. */
+export function resolveTicketPrice(state: GameState): void {
+  const ask = askFor(state.asks, "ticketing", TICKET_TAG);
+  if (!ask) return;
+  if (ask.chosen === null) return;
+
+  const day = dateToSerial(state.date);
+  const next = ask.facts[resolveAsk(ask)];
+  state.asks = clearAsk(state.asks, ask.id);
+  if (next === undefined) return;
+
+  const before = state.ticketPrice;
+  state.ticketPrice = next;
+  report(state, "ticketing", "ticketing.price.set", day,
+    next === before
+      ? `You held the ticket price at $${next}.`
+      : `You moved the ticket price from $${before} to $${next}.`);
+}
+
+/** Drops an unanswered ticket ask at the rollover rather than stacking one a year. */
+export function expireTicketAsk(state: GameState): void {
+  const ask = askFor(state.asks, "ticketing", TICKET_TAG);
+  if (!ask || ask.chosen !== null) return;
+  state.asks = clearAsk(state.asks, ask.id);
+  report(state, "ticketing", "ticketing.price.held", dateToSerial(state.date),
+    `You never revisited ticket prices, so they stayed at $${Math.round(state.ticketPrice)} all year.`);
+}

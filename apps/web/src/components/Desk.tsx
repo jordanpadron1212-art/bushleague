@@ -97,6 +97,7 @@ function AskCard({ ask }: { ask: DeskAsk }) {
 const TITLES: Record<string, string> = {
   "draft.policy": "How should we draft this year?",
   "scouting.budget": "What are we spending on scouting?",
+  "ticketing.price": "What are we charging at the gate?",
 };
 
 const BLURBS: Record<string, (a: DeskAsk) => string> = {
@@ -111,6 +112,14 @@ const BLURBS: Record<string, (a: DeskAsk) => string> = {
     return current === undefined
       ? "What you spend here sets how well you know your own players."
       : `You're at ${money(current)} a year. What you spend here sets how well you actually know your own players — spend nothing and the grades you see are guesses.`;
+  },
+  "ticketing.price": (a) => {
+    const current = a.facts["current"];
+    // The point of this one is that the obvious move is the wrong move, so
+    // the blurb says WHY rather than just quoting the number.
+    return current === undefined
+      ? "A cheaper seat is a fuller park, and a full park spends money on everything else."
+      : `You're at $${current} a seat. Remember that nearly half of what a fan is worth to us isn't the ticket — it's the beer, the parking and the cap. A fuller park at a lower price has beaten a thinner one at a higher price more often than not.`;
   },
 };
 
