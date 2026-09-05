@@ -257,6 +257,42 @@ test("answering a question is recorded and survives a reload", async ({ page }) 
   await page.getByRole("button", { name: /fill our needs/i }).click();
   await expect(page.getByText(/your answer is recorded/i).first()).toBeVisible();
 
+  // Wait for the answer to reach DISK, not just the screen.
+  //
+  // The store sets React state and then awaits the IndexedDB write, so the
+  // "recorded" line renders while the write is still in flight — ordinary
+  // optimistic UI. Reloading on the strength of that render is a race, and
+  // it is one this test lost in CI while passing locally every time: a
+  // slower runner had not finished the write when the reload discarded it.
+  // Polling the save itself is the only version of this assertion that is
+  // actually about persistence.
+  await expect
+    .poll(
+      () =>
+        page.evaluate(
+          () =>
+            new Promise<boolean>((resolve) => {
+              const open = indexedDB.open("bushleague", 1);
+              open.onerror = () => resolve(false);
+              open.onsuccess = () => {
+                const db = open.result;
+                const rq = db.transaction("saves", "readonly").objectStore("saves").get("current");
+                rq.onerror = () => {
+                  db.close();
+                  resolve(false);
+                };
+                rq.onsuccess = () => {
+                  const save = rq.result as { asks?: { tag: string; chosen: string | null }[] } | undefined;
+                  db.close();
+                  resolve(!!save?.asks?.some((a) => a.tag === "draft.policy" && a.chosen === "NEED"));
+                };
+              };
+            }),
+        ),
+      { timeout: 15000 },
+    )
+    .toBe(true);
+
   await page.reload();
   await page.getByText(/needs you/i).waitFor({ timeout: 20000 });
   // The answer lives in the save, not in React state.
