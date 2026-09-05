@@ -186,39 +186,50 @@ describe("economics — independent leagues, recalibrated against the sourced -$
     }
   });
 
-  it("lands within a bounded margin of revenue over a full calendar year for every independent league, not an order-of-magnitude miss", async () => {
-    // Measured on seeds this project's own solve did NOT train on (10-12,
-    // held out from the [1-4] seeds `INDY_OPEX_RECAL`/`opScale` were fit
-    // against — DECISIONS.md D86), exactly 365 days from each game's own
-    // opening day. D86 (v2.7.0): Frontier +0.8/+0.8/+3.0% (avg +1.5%),
-    // American Association +6.3/+13.5/+7.4% (avg +9.1%), Pioneer -5.1/+6.2/
-    // +3.9% (avg +1.7%), Atlantic -0.8/+4.0/-7.5% (avg -1.4%), Pecos +5.4/
-    // +4.3/+3.1% (avg +4.3%). RE-MEASURED this pass (v2.11.0, D90) after
-    // adding a real monthly scouting cost — $10K/year at the reference
-    // scale, scaled per league by the SAME `opScale` every other flat cost
-    // line already uses (`economics.ts`'s own header on why it's excluded
-    // from `INDY_OPEX_RECAL` specifically): Frontier +9.2/+3.5/+3.0% (avg
-    // +5.3%), American Association +5.5/+5.8/+7.7% (avg +6.3%), Pioneer
-    // -7.0/+7.2/+6.7% (avg +2.3%), Atlantic -4.3/+6.6/-2.3% (avg 0.0%),
-    // Pecos +12.3/+0.8/-0.9% (avg +4.1%) — every league still within about
-    // 14 points of revenue on its worst single seed, every average still
-    // comfortably under the 12-point bound below. The movement between the
-    // two measurements is NOT uniformly "more negative by the scouting
-    // cost's own dollar weight" (American Association's average actually
-    // IMPROVED, +9.1% to +6.3%±... i.e. moved toward zero) — the same
-    // real, disclosed pass-to-pass drift the MLB test above now documents,
-    // not a sign the mechanism broke. Bounds here are deliberately wide of
-    // either measured spread, for the same reason the MLB test above is:
-    // proving "close to zero, not broken," not re-asserting one specific
-    // run's own numbers.
-    const leagues: [id: string, seeds: number[], label: string][] = [
-      ["INDY_FRON_143", [10, 11, 12], "Frontier League"],
-      ["INDY_AAPB_131", [10, 11, 12], "American Association"],
-      ["INDY_PION_161", [10, 11, 12], "Pioneer League"],
-      ["INDY_ALPB_121", [10, 11, 12], "Atlantic League"],
-      ["INDY_PECO_173", [10, 11, 12], "Pecos League"],
-    ];
-    for (const [id, seeds, label] of leagues) {
+  // Measured on seeds this project's own solve did NOT train on (10-12,
+  // held out from the [1-4] seeds `INDY_OPEX_RECAL`/`opScale` were fit
+  // against — DECISIONS.md D86), exactly 365 days from each game's own
+  // opening day. D86 (v2.7.0): Frontier +0.8/+0.8/+3.0% (avg +1.5%),
+  // American Association +6.3/+13.5/+7.4% (avg +9.1%), Pioneer -5.1/+6.2/
+  // +3.9% (avg +1.7%), Atlantic -0.8/+4.0/-7.5% (avg -1.4%), Pecos +5.4/
+  // +4.3/+3.1% (avg +4.3%). RE-MEASURED this pass (v2.11.0, D90) after
+  // adding a real monthly scouting cost — $10K/year at the reference
+  // scale, scaled per league by the SAME `opScale` every other flat cost
+  // line already uses (`economics.ts`'s own header on why it's excluded
+  // from `INDY_OPEX_RECAL` specifically): Frontier +9.2/+3.5/+3.0% (avg
+  // +5.3%), American Association +5.5/+5.8/+7.7% (avg +6.3%), Pioneer
+  // -7.0/+7.2/+6.7% (avg +2.3%), Atlantic -4.3/+6.6/-2.3% (avg 0.0%),
+  // Pecos +12.3/+0.8/-0.9% (avg +4.1%) — every league still within about
+  // 14 points of revenue on its worst single seed, every average still
+  // comfortably under the 12-point bound below. The movement between the
+  // two measurements is NOT uniformly "more negative by the scouting
+  // cost's own dollar weight" (American Association's average actually
+  // IMPROVED, +9.1% to +6.3%±... i.e. moved toward zero) — the same
+  // real, disclosed pass-to-pass drift the MLB test above now documents,
+  // not a sign the mechanism broke. Bounds here are deliberately wide of
+  // either measured spread, for the same reason the MLB test above is:
+  // proving "close to zero, not broken," not re-asserting one specific
+  // run's own numbers.
+  //
+  // ONE TEST PER LEAGUE, not one test over five. The assertions, seeds and
+  // bounds are unchanged — this is a split, not a loosening. The reason is
+  // mechanical: a single test doing all five blocked its worker for ~120
+  // seconds of straight synchronous simulation, and a worker that cannot
+  // return to its event loop cannot answer the reporter's `onTaskUpdate`
+  // RPC. Vitest then reports "388 passed, 2 errors" and exits 1 — every
+  // test green, the run red. Five tests of ~24s each report between
+  // themselves and never trip it.
+  const LEAGUES: [id: string, seeds: number[], label: string][] = [
+    ["INDY_FRON_143", [10, 11, 12], "Frontier League"],
+    ["INDY_AAPB_131", [10, 11, 12], "American Association"],
+    ["INDY_PION_161", [10, 11, 12], "Pioneer League"],
+    ["INDY_ALPB_121", [10, 11, 12], "Atlantic League"],
+    ["INDY_PECO_173", [10, 11, 12], "Pecos League"],
+  ];
+
+  it.each(LEAGUES)(
+    "%s: a full calendar year lands within a bounded margin of revenue, not an order-of-magnitude miss",
+    async (id, seeds, label) => {
       const margins: number[] = [];
       for (const seed of seeds) {
         const margin = await oneYearMargin(id, seed);
@@ -227,6 +238,6 @@ describe("economics — independent leagues, recalibrated against the sourced -$
       }
       const avg = margins.reduce((t, m) => t + m, 0) / margins.length;
       expect(Math.abs(avg), label).toBeLessThan(0.12);
-    }
-  });
+    },
+  );
 });

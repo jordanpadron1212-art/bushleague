@@ -346,30 +346,42 @@ export function chartClub(clubPlayers: readonly Player[]): RosterChart {
   const pool = bats.length ? bats : clubPlayers.slice();
 
   for (const slot of FIELD_SLOTS) {
+    // Eligible men first; only a club with nobody who can do the job at all
+    // — no catcher anywhere on the roster — falls back to whoever is left,
+    // because a short roster still has to take the field.
+    //
+    // ONE PASS, NO ALLOCATION. The first version filtered `pool` into a new
+    // array for each of the nine slots, on every club, on every simulated
+    // day — nearly two thousand short-lived arrays a day across the world.
+    // Tracking the best eligible and the best ineligible together makes the
+    // identical choice (prefer eligible, else the best of the rest, same
+    // iteration order, same strict-greater tie-break) with none of the
+    // garbage.
     let best: Player | null = null;
     let bestScore = -Infinity;
-    // Eligible men first. Only if a club has nobody who can do the job at
-    // all — no catcher anywhere on the roster — does it fall back to
-    // whoever is left, because a short roster still has to take the field.
-    const eligible = pool.filter((p) => !taken.has(p.id) && eligibleAt(p, slot));
-    const candidates = eligible.length ? eligible : pool;
-    for (const p of candidates) {
+    let spare: Player | null = null;
+    let spareScore = -Infinity;
+    for (const p of pool) {
       if (taken.has(p.id)) continue;
-      // The bat counts everywhere; the glove counts only where he is
-      // standing, and `defAt` has already taken the spectrum's cut out of
-      // it. Defence is scaled into grade points so the two are commensurate.
+      // The bat counts everywhere; the glove only where he is standing.
       // `defFit`, not `defAt`: the UNCLAMPED figure, so a man who simply
       // cannot play the position scores arbitrarily badly there instead of
       // bottoming out level with someone who merely plays it poorly.
       const score = p.ovr + (slot === "DH" ? 0 : (defFit(p, slot) - 50) * DEF_WEIGHT);
-      if (score > bestScore) {
-        bestScore = score;
-        best = p;
+      if (eligibleAt(p, slot)) {
+        if (score > bestScore) {
+          bestScore = score;
+          best = p;
+        }
+      } else if (score > spareScore) {
+        spareScore = score;
+        spare = p;
       }
     }
-    if (!best) break;
-    field.set(slot, best.id);
-    taken.add(best.id);
+    const chosen = best ?? spare;
+    if (!chosen) break;
+    field.set(slot, chosen.id);
+    taken.add(chosen.id);
   }
 
   // The batting ORDER is still by bat — a manager writes the card in the
