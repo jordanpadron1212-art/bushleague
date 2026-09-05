@@ -581,3 +581,62 @@ export function postMonth(
   const interest = round2((noteBalance * E.apr) / 12);
   if (interest > 0) post(ledger, counter, day, "Interest expense", [[6100, interest], [1000, -interest]], "month");
 }
+
+// ---- Payroll: what the owner authorises, and what it actually buys (D102) ----
+
+/** The owner may authorise between half and double the league's norm. Outside that the calibration below is extrapolating. */
+export const PAYROLL_MIN_RATIO = 0.5;
+export const PAYROLL_MAX_RATIO = 2.0;
+
+/**
+ * Talent points bought per DOUBLING of payroll.
+ *
+ * Calibrated, not chosen. Two slopes were measured in this engine first:
+ *
+ *  - **+1 point of team talent is worth ~5.5 wins** over a 162-game season
+ *    (measured across 3 seeds: 83 W at parity, 94.3 W at +2, 70.7 W at −4).
+ *  - **Salaries rise ~8.3 talent points per payroll doubling** if talent is
+ *    simply bought at the rate `contractFor`'s own ovr→salary curve implies.
+ *
+ * Taken together those would mean doubling payroll buys **45 wins**, which
+ * is absurd. Real MLB spans roughly 62–100 wins across a ~4.5× payroll
+ * range (Ballpark Digest / Statista cost-per-win series: the Yankees averaged
+ * over $2.5M per win 2011–2023 against Tampa Bay's ~$825K) — about **17.5
+ * wins per doubling**, or 3.2 talent points at this engine's own win slope.
+ *
+ * So money buys talent at a much worse rate than naive self-consistency
+ * suggests, and that is not a fudge: an owner is bidding against 29 other
+ * clubs for the same players, and the premium is the market.
+ */
+export const PAYROLL_TALENT_PER_DOUBLING = 3.2;
+
+/**
+ * The exponent that makes the ledger honest. Talent bought at
+ * `PAYROLL_TALENT_PER_DOUBLING` would only raise contract costs to
+ * `f^0.385` of the norm (from the measured 8.3-points-per-doubling salary
+ * slope), so paying the authorised `f` means paying `f^0.615` per player
+ * above the market rate. `contractFor`'s `marketFactor` carries that, which
+ * keeps every contract a real number and the payroll expense equal to what
+ * the owner actually authorised — rather than posting a budget the roster's
+ * own contracts do not add up to.
+ */
+const PAYROLL_MARKET_EXPONENT = 0.615;
+
+/** The owner's authorised payroll as a multiple of the league norm, clamped to the calibrated range. */
+export function payrollRatio(budgetAnnual: number, E: Economy, months: number): number {
+  const norm = E.payroll * months;
+  if (!(norm > 0) || !(nz(budgetAnnual) > 0)) return 1;
+  return clamp(budgetAnnual / norm, PAYROLL_MIN_RATIO, PAYROLL_MAX_RATIO);
+}
+
+/** How much better (or worse) this club's intake is than the league's, in 20-80 points. */
+export function payrollTalentShift(ratio: number): number {
+  if (!(ratio > 0)) return 0;
+  return PAYROLL_TALENT_PER_DOUBLING * Math.log2(ratio);
+}
+
+/** What this club pays per player relative to the market, so the roster's contracts sum to the authorised budget. */
+export function payrollMarketFactor(ratio: number): number {
+  if (!(ratio > 0)) return 1;
+  return Math.pow(ratio, PAYROLL_MARKET_EXPONENT);
+}

@@ -52,15 +52,19 @@ import { developPopulation } from "./development.js";
 import { churnWorld } from "./churn.js";
 import { runDraft } from "./draft.js";
 import type { GameState } from "./state.js";
+import { econFor, payrollRatio } from "./economics.js";
+import { leagueMonths } from "./roster.js";
 import {
   expireScoutingAsk,
   expireTicketAsk,
   raiseDraftPolicyAsk,
+  raisePayrollAsk,
   raiseScoutingAsk,
   raiseTicketAsk,
   reportDraft,
   reportWinter,
   resolveDraftPolicy,
+  resolvePayrollBudget,
 } from "./desk.js";
 
 /**
@@ -85,6 +89,7 @@ export function startNewSeason(state: GameState, r: Rng): void {
   // apply the answer to next year's draft, a year late and invisibly.
   // Consumes no randomness, so the stream below is untouched.
   resolveDraftPolicy(state);
+  resolvePayrollBudget(state);
   expireScoutingAsk(state);
   expireTicketAsk(state);
 
@@ -94,7 +99,12 @@ export function startNewSeason(state: GameState, r: Rng): void {
   state.lastDraft = draft.picks.slice();
 
   developPopulation(state.players, r);
-  state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r, state.season.year, draft.byOrg);
+  // D102: what the owner authorised for payroll shapes what the org signs.
+  const mineNow = state.ownedClubId ? state.world.clubs.find((c) => c.id === state.ownedClubId) : undefined;
+  const payRatio = mineNow
+    ? payrollRatio(state.payrollBudget, econFor(mineNow), mineNow.lvl === "MLB" ? 12 : leagueMonths(mineNow))
+    : 1;
+  state.players = churnWorld(state.world.clubs, state.players, state.ownedClubId ?? undefined, r, state.season.year, draft.byOrg, payRatio);
 
   if (state.ownedClubId) {
     const orgAfter = countOrg(state, state.ownedClubId);
@@ -134,6 +144,7 @@ export function startNewSeason(state: GameState, r: Rng): void {
   raiseDraftPolicyAsk(state);
   raiseScoutingAsk(state);
   raiseTicketAsk(state);
+  raisePayrollAsk(state);
 }
 
 /**

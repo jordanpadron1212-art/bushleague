@@ -112,19 +112,21 @@ export interface DomainDef {
  * The eleven areas from `proposals/OWNER-AND-STAFF.md` §2, with `live` set
  * by what the engine can actually emit today rather than by what is planned.
  *
- * Four are live. `draft` because `runDraft` already executes an owner
+ * Five are live. `draft` because `runDraft` already executes an owner
  * policy (D93 built this pattern before it had a name). `signings` because
  * `churnWorld` already runs the winter. `scouting` because the budget posts
  * monthly to account 5300 and feeds `scoutBoostFor` (D90). And `ticketing`
  * as of D101 — the face price now moves both attendance and realised gate
- * revenue, against a sourced elasticity (RESEARCH.md §25).
+ * revenue, against a sourced elasticity (RESEARCH.md §25). And `payroll` as
+ * of D102 — the authorised budget sets both the talent the org signs and
+ * what it pays for it, calibrated against measured cost-per-win.
  *
  * The last two happen DURING a season, which is what makes the desk
  * something other than annual mail.
  */
 export const DOMAINS: readonly DomainDef[] = [
   { id: "staff", label: "Staff hiring", group: "owner", live: false, note: "Never delegable — hiring is the one call that is always yours. No staff exist yet." },
-  { id: "payroll", label: "Payroll budget", group: "owner", live: false, note: "Waiting on a payroll system — the budget is recorded but nothing spends against it yet." },
+  { id: "payroll", label: "Payroll budget", group: "owner", live: true, note: "Live. What you authorise sets the quality of who your org signs — and what they cost you." },
   { id: "ticketing", label: "Ticket pricing", group: "owner", live: true, note: "Live. Sets what you charge — and how many people come through the gate." },
   { id: "capex", label: "Facilities and capex", group: "owner", live: false, note: "Waiting on a facilities system." },
   { id: "scouting", label: "Scouting budget", group: "owner", live: true, note: "Live. Posts monthly and sets how reliable your own players' grades are." },

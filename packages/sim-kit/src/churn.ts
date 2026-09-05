@@ -61,6 +61,7 @@ import { LVL, ILVL } from "./levels.js";
 import { indyLeague } from "./world-data.js";
 import { refineScout } from "./scouting.js";
 import { rosterPlan, contractFor, intIn, SVC_EDGE, SVC_EDGE_CAP, ROSTER_N, OWNED_N } from "./roster.js";
+import { payrollMarketFactor, payrollTalentShift } from "./economics.js";
 import { clamp, nz } from "./util.js";
 
 /**
@@ -83,7 +84,7 @@ function entryAge(club: Pick<Club, "lvl">, r: Rng): number {
   return Math.round(clamp(club.lvl === "MLB" ? 23 + r() * 13 : 19 + r() * 9, 18, 42));
 }
 
-function freshPlayer(club: Club, role: Role, age: number, svc: number | undefined, spec: { c: number; s: number } | undefined, r: Rng, id: string): Player {
+function freshPlayer(club: Club, role: Role, age: number, svc: number | undefined, spec: { c: number; s: number } | undefined, r: Rng, id: string, marketFactor = 1): Player {
   const level = LVL[club.lvl];
   const p = makePlayer(r, level, role, age, { ...(spec ? { spec } : {}), id });
   p.cid = club.id;
@@ -93,7 +94,7 @@ function freshPlayer(club: Club, role: Role, age: number, svc: number | undefine
   // one place that actually assigns a real, collision-free jersey number
   // per club, for retained AND freshly generated players alike.
   refineScout(p);
-  contractFor(p, club, r);
+  contractFor(p, club, r, marketFactor);
   return p;
 }
 
@@ -113,7 +114,16 @@ function churnClub(
   /** The season this intake belongs to — part of every fresh player's id (D97). */
   year: number,
   orgDraftPool?: ReadonlyMap<string, Player[]>,
+  /** See `churnWorld`. 1 = the league's own norm, and the pre-D102 behaviour exactly. */
+  payRatio = 1,
 ): Player[] {
+  // D102: what the owner's authorised payroll buys, and what it costs.
+  // The talent shift moves this club's INTAKE only — you cannot buy a
+  // better version of a player already under contract — so the effect
+  // compounds over seasons rather than arriving the moment the dial moves.
+  const payTalent = payRatio === 1 ? 0 : payrollTalentShift(payRatio);
+  const payMarket = payRatio === 1 ? 1 : payrollMarketFactor(payRatio);
+
   // D97: (year, club, n) is unique by construction — churn runs once per
   // club per rollover, and `n` only ever increments within this call.
   let n = 0;
@@ -159,8 +169,8 @@ function churnClub(
       }
       const age = intIn(r, row.age[0], row.age[1]);
       const svc = intIn(r, row.svc[0], row.svc[1]);
-      const spec = { c: lvlBase.c + Math.min(SVC_EDGE_CAP, svc * SVC_EDGE), s: lvlBase.s };
-      claim(freshPlayer(club, role, age, svc, spec, r, mint()));
+      const spec = { c: lvlBase.c + Math.min(SVC_EDGE_CAP, svc * SVC_EDGE) + payTalent, s: lvlBase.s };
+      claim(freshPlayer(club, role, age, svc, spec, r, mint(), payMarket));
     }
   } else {
     // MLB/MiLB: no published composition rule to preserve — keep survivors
@@ -183,11 +193,17 @@ function churnClub(
         const [drafted] = draftees.splice(fitIdx, 1);
         drafted!.cid = club.id;
         drafted!.lvl = club.lvl;
-        contractFor(drafted!, club, r);
+        contractFor(drafted!, club, r, payMarket);
         claim(drafted!);
         continue;
       }
-      claim(freshPlayer(club, role, entryAge(club, r), undefined, undefined, r, mint()));
+      claim(
+        freshPlayer(
+          club, role, entryAge(club, r), undefined,
+          payTalent === 0 ? undefined : { c: lvlBase.c + payTalent, s: lvlBase.s },
+          r, mint(), payMarket,
+        ),
+      );
     }
   }
 
@@ -244,6 +260,14 @@ export function churnWorld(
   /** The season this intake belongs to — part of every fresh player's id (D97). */
   year: number,
   orgDraftPool?: ReadonlyMap<string, Player[]>,
+  /**
+   * The owner's authorised payroll as a multiple of the league norm
+   * (`economics.ts`'s `payrollRatio`, DECISIONS.md D102). Applies ONLY to
+   * the owned MLB club — an owner buys players for his own big-league
+   * roster, not for the whole league. Defaults to 1, which leaves this
+   * function byte-identical to its pre-D102 behaviour.
+   */
+  payRatio = 1,
 ): Player[] {
   const byClub = new Map<string, Player[]>();
   for (const p of players) {
@@ -254,7 +278,8 @@ export function churnWorld(
   }
   const next: Player[] = [];
   for (const c of clubs) {
-    const roster = churnClub(c, byClub.get(c.id) ?? [], ownedClubId, r, year, orgDraftPool);
+    const owned = c.id === ownedClubId && c.lvl === "MLB";
+    const roster = churnClub(c, byClub.get(c.id) ?? [], ownedClubId, r, year, orgDraftPool, owned ? payRatio : 1);
     next.push(...roster);
   }
   return next;

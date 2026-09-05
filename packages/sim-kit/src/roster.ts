@@ -119,9 +119,21 @@ const MILB_SALARY_SCALE: Record<string, number> = { AAA: 35800, AA: 30250, HIA: 
  * ~$217/month, not on a contract at all per the league's own rules,
  * RESEARCH.md T2); MiLB is the flat 2025 CBA minimum by level, T2.
  */
-export function contractFor(p: Player, club: Pick<Club, "lvl" | "lg">, r: Rng): void {
+export function contractFor(
+  p: Player,
+  club: Pick<Club, "lvl" | "lg">,
+  r: Rng,
+  /**
+   * What this club pays relative to the market for the same player
+   * (DECISIONS.md D102). 1 is the market rate and leaves every existing
+   * caller byte-identical. Above 1 is what an owner who has authorised a
+   * big payroll actually experiences: you do not get better players at the
+   * same price, you outbid 29 other clubs for them.
+   */
+  marketFactor = 1,
+): void {
   if (club.lvl === "MLB") {
-    const base = 760000 + Math.pow(clamp(p.ovr - 30, 0, 50) / 50, 2.6) * 31000000;
+    const base = (760000 + Math.pow(clamp(p.ovr - 30, 0, 50) / 50, 2.6) * 31000000) * marketFactor;
     p.sal = Math.round(base / 50000) * 50000;
     p.svc = round2(clamp((p.age - 22) * 0.9 + r() * 1.4, 0, 16));
     p.yrs = p.svc < 3 ? 1 : 1 + Math.floor(r() * 5);

@@ -5,6 +5,44 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.19.0 · PAYROLL IS REAL — AND THE OBVIOUS MODEL WOULD HAVE BOUGHT 45 WINS — 2026-09-05
+
+The last inert owner lever. What you authorise for payroll now sets both the quality of who your
+organisation signs and what those contracts cost — so it moves wins and, for the first time in this
+game, it can make a club poorer.
+
+Two slopes were measured separately, and measuring only one would have shipped a badly wrong model.
+A point of team talent is worth about 5.5 wins over a season. Buying talent at the salary curve the
+game already uses gives about 8.3 points per payroll doubling. Multiply them and doubling payroll
+buys 45 wins — a big-spending club winning 128 games. The self-consistent model, the one that needs
+no new constants at all, is the wrong one.
+
+Published cost-per-win data says the real spread is roughly 62 to 100 wins across a 4.5x payroll
+range. So money buys talent far more slowly than the engine's own pricing implies, and the gap
+isn't a fudge: you're bidding against 29 other clubs for the same players, and the premium is the
+market. It's modelled as a per-player premium, so every contract stays a real number and the
+payroll expense equals what you actually authorised.
+
+Verified across four rollovers plus a played season, so the budget has replaced the opening roster:
+$88M buys 61.5 wins, $175M buys 75.5, $350M buys about 95. That's $7.8M per marginal win against a
+$6.5M anchor. Contracts run about 10% under the authorisation because deals persist — a club that
+raises its budget carries older, cheaper contracts for a few years, which is right rather than an
+error.
+
+Two pre-existing defects surfaced. The payroll budget was stored monthly while the scouting budget
+beside it was stored annually — and the code comment claimed they matched. Harmless while nothing
+read it; the moment this pass did, every new save would have quietly started at the minimum. And an
+unanswered payroll question overwrote a budget set any other way, snapping it back to the league
+norm at the next rollover. A test that set the budget directly and watched it reset caught it.
+Silence must cost nothing, at every question.
+
+Payroll is the fifth live delegation area, and its question deliberately carries no staff
+recommendation at any setting. Ticket pricing has a right answer and your people give it. Payroll is
+a trade-off — win now or bank the money — and nothing in the engine knows which you want. A
+recommendation there would be inventing a preference you never stated.
+
+See `DECISIONS.md` D102 and `RESEARCH.md` §26.
+
 ## v2.18.0 · TICKET PRICING IS REAL — 2026-09-05
 
 The ticket price has been stored in every save since the state-wiring pass and read by nothing.

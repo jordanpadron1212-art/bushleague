@@ -50,9 +50,11 @@ import {
 } from "../src/delegation.js";
 import {
   DRAFT_POLICY_TAG,
+  PAYROLL_TAG,
   SCOUTING_TAG,
   TICKET_TAG,
   raiseDraftPolicyAsk,
+  raisePayrollAsk,
   raiseScoutingAsk,
   raiseTicketAsk,
   recommendedPhilosophy,
@@ -205,7 +207,7 @@ describe("the settings map", () => {
   it("every domain declares honestly whether anything stands behind it", () => {
     // Three are live today. If this number changes, it is because a system
     // was wired up or removed — not something to update to make a test pass.
-    expect(DOMAINS.filter((d) => d.live).map((d) => d.id).sort()).toEqual(["draft", "scouting", "signings", "ticketing"]);
+    expect(DOMAINS.filter((d) => d.live).map((d) => d.id).sort()).toEqual(["draft", "payroll", "scouting", "signings", "ticketing"]);
     for (const d of DOMAINS) expect(d.note.length, d.id).toBeGreaterThan(10);
   });
 });
@@ -379,7 +381,7 @@ describe("the four levels are four different games — the point of shipping the
 
   it("a fresh save starts with its questions already on the desk — unless you delegated them away", () => {
     const asked = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
-    expect(asked.asks.map((a) => a.tag).sort()).toEqual([DRAFT_POLICY_TAG, SCOUTING_TAG, TICKET_TAG].sort());
+    expect(asked.asks.map((a) => a.tag).sort()).toEqual([DRAFT_POLICY_TAG, PAYROLL_TAG, SCOUTING_TAG, TICKET_TAG].sort());
 
     const delegated = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
     delegated.delegation = withLevels("silent");
@@ -387,6 +389,7 @@ describe("the four levels are four different games — the point of shipping the
     raiseDraftPolicyAsk(delegated);
     raiseScoutingAsk(delegated);
     raiseTicketAsk(delegated);
+    raisePayrollAsk(delegated);
     expect(delegated.asks).toEqual([]);
   });
 
@@ -523,5 +526,39 @@ describe("the ticket-price ask — the one where your people say charge less", (
 
     expect(conc(cheap)).toBeGreaterThan(0);
     expect(conc(dear)).toBeLessThan(conc(cheap) * 0.6);
+  }, 180_000);
+});
+
+describe("the payroll ask — the one with no right answer", () => {
+  it("never recommends, at ANY level, because nothing in the engine knows if you want to win now", () => {
+    for (const level of DELEGATION_LEVELS) {
+      const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+      s.delegation = withLevels(level);
+      s.asks = [];
+      raisePayrollAsk(s);
+      const ask = s.asks.find((a) => a.tag === PAYROLL_TAG);
+      if (ask) expect(ask.recommended, level).toBeNull();
+    }
+  });
+
+  it("leaves the budget alone when ignored — silence never repriced the club", () => {
+    const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    const odd = 199_000_000; // not one of the three options
+    s.payrollBudget = odd;
+    playOut(s);
+    startNewSeason(s, mulberry32(4242));
+    expect(s.payrollBudget).toBe(odd);
+    expect(s.log.some((l) => l.t === "payroll.budget.held")).toBe(true);
+  }, 180_000);
+
+  it("an answered budget is taken, and reaches the intake at the next winter", () => {
+    const s = newGame({ ownedClubId: "MLB_NYY", seed: 5, year: 2026 });
+    const ask = s.asks.find((a) => a.tag === PAYROLL_TAG)!;
+    const target = ask.facts["push"]!;
+    s.asks = answerAsk(s.asks, ask.id, "push");
+    playOut(s);
+    startNewSeason(s, mulberry32(4242));
+    expect(s.payrollBudget).toBe(target);
+    expect(s.log.some((l) => l.t === "payroll.budget.set")).toBe(true);
   }, 180_000);
 });

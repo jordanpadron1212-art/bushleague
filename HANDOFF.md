@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 101 of them are already recorded, several against
+proposing anything that feels like a new idea — 102 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -56,7 +56,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D101. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D102. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -300,6 +300,9 @@ itself (D93) — are resolved, not carried forward. See ROADMAP.md's "Next, in o
 | a drafted player's landed club's `parent` exactly matches the pick record's own drafting club id | checked directly, not sampled | same file |
 | setting `draftPhilosophy` to `"UPSIDE"` before rollover works, and the world's total population size stays exactly constant across a rollover that includes a real draft | checked directly | same file |
 | a genuine, pre-existing `makePlayer` id-collision risk exists at this project's current scale | a temporary diagnostic measured one sampled year absorbing "101.5%" of its draftees onto real roster slots — only possible if two distinct `Player` objects shared an `id` | disclosed in `DECISIONS.md` D93, diagnostic deleted, not a fix inside this pass |
+| the engine's own talent->wins slope, and its talent->salary slope, measured SEPARATELY | ~5.5 wins per talent point (3 seeds/point); ~8.3 talent points per payroll doubling at the existing salary curve. Multiplied they give 45 wins per doubling — the naive self-consistent model is badly wrong | `DECISIONS.md` D102, `RESEARCH.md` §26 |
+| what payroll actually buys after the budget has replaced the roster | 4 rollovers + a played season: $88M -> 61.5 W, $175M -> 75.5 W, $350M -> ~95 W. $7.8M per marginal win against a ~$6.5M sourced anchor | `packages/sim-kit/test/payroll.test.ts` |
+| that an unanswered ask was overwriting the owner's own setting | a test set payrollBudget directly, rolled over, and watched it snap back to the league norm | fixed in D102 — silence changes nothing, at every ask |
 | the real revenue curve against ticket price, measured across whole simulated seasons (not computed from the formula) | net income peaks at 0.9x face ($52.8M); GATE revenue peaks at 1.4x ($94.4M) where net has fallen to $40.0M; 2.0x turns a $52M profit into a -$11.6M loss | `DECISIONS.md` D101, `RESEARCH.md` §25 |
 | that constant-elasticity demand CANNOT be used for pricing here | its only stationary point is a minimum, so revenue rises without bound — indexes 119.6 at 5x face. Caught by checking the arithmetic before building, after it had already been written into RESEARCH.md | rejected in D101; linear demand used instead |
 | whether a cash-flow decision is possible in this economy at all (it is NOT — this killed a designed feature) | month-by-month cash across 3 seasons, four club tiers: MLB $170.0M → $334.9M (trough $162.7M), AAA $0.82M → $10.67M, Single-A $0.82M → $2.63M, INDY $1.14M → $4.57M. Every club accumulates monotonically | `DECISIONS.md` D100 — the cash call was designed, measured, and not built |

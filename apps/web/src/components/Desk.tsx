@@ -98,6 +98,7 @@ const TITLES: Record<string, string> = {
   "draft.policy": "How should we draft this year?",
   "scouting.budget": "What are we spending on scouting?",
   "ticketing.price": "What are we charging at the gate?",
+  "payroll.budget": "What are we spending on players next year?",
 };
 
 const BLURBS: Record<string, (a: DeskAsk) => string> = {
@@ -112,6 +113,15 @@ const BLURBS: Record<string, (a: DeskAsk) => string> = {
     return current === undefined
       ? "What you spend here sets how well you know your own players."
       : `You're at ${money(current)} a year. What you spend here sets how well you actually know your own players — spend nothing and the grades you see are guesses.`;
+  },
+  "payroll.budget": (a) => {
+    const current = a.facts["current"];
+    // Deliberately no steer. Payroll is a trade-off, not a puzzle with a
+    // right answer, and the engine has no way to know whether this owner
+    // wants to win now or bank the money.
+    return current === undefined
+      ? "Nobody here will tell you what to spend. That one's yours."
+      : `You're at ${money(current)} a year. More money signs better players and costs you more for them — you're bidding against twenty-nine other clubs. It lands on next winter's signings, not on this roster.`;
   },
   "ticketing.price": (a) => {
     const current = a.facts["current"];

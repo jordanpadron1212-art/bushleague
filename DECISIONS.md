@@ -2201,3 +2201,68 @@ Rejected: constant-elasticity demand (above); a long-run fan-base erosion term (
 problem that only existed in the rejected model); letting the owner price outside 0.5–2.0×;
 scaling the concession, parking and merchandise lines with the ticket price (a fan's hot dog does
 not cost more because his seat did — and that asymmetry IS the mechanism).
+
+## 2026-09-05 — Payroll is real, and the naive model would have bought 45 wins for a doubling
+
+**D102 · The last inert owner lever. `state.payrollBudget` was written at new-game and read by
+nothing; it now sets both the talent an organization signs and what those contracts cost, so it
+moves wins AND drains cash — which no other lever in this game does.**
+
+### Two slopes, measured separately, and why that mattered
+
+`RESEARCH.md` §26 has the full working. The short version is that measuring **one** slope would
+have produced a badly wrong model:
+
+- **+1 point of team talent is worth ~5.5 wins** over 162 games (measured, 3 seeds per point).
+- **Buying talent at `contractFor`'s own ovr→salary curve gives ~8.3 points per payroll doubling.**
+
+Multiplied, those say doubling payroll buys **45 wins** — a 2× payroll club at ~128 wins. The
+"self-consistent" model, the one that falls out of the engine's existing curves with no new
+constants at all, is the wrong one. Published cost-per-win data says the real spread is about
+**62–100 wins across a ~4.5× payroll range** (~17.5 wins per doubling), so the adopted figure is
+**3.2 talent points per doubling** — money buys talent far more slowly than the engine's own
+pricing implies.
+
+That difference is not a fudge. **An owner is bidding against 29 other clubs for the same players,
+and the premium is the market.** It is modelled as a per-player `marketFactor` on `contractFor`, so
+every contract stays a real number and the payroll expense equals what the owner authorised —
+rather than posting a budget the roster's own contracts do not add up to.
+
+### Verified end to end, not just at the formula
+
+Four rollovers plus a played season, so the authorised budget has largely replaced the opening
+roster: **$88M → 61.5 wins, $175M → 75.5, $350M → ~95.** Implied cost per marginal win across the
+range: **$7.8M**, against a ~$6.5M anchor derived from the sourced "replacement wins a third of its
+games" convention. Actual contracts run ~10% under the authorisation because contracts persist,
+which is correct rather than an error.
+
+### Two defects this pass found, both pre-existing
+
+1. **`payrollBudget` was stored in the wrong unit.** `newGame` set it to `E.payroll`, which is a
+   MONTHLY figure, while `scoutingBudget` beside it holds an ANNUAL one — and `state.ts`'s own
+   comment claimed they used "the same convention." Harmless while nothing read the field;
+   the moment this pass did, the default budget would have read as 0.083× the norm and clamped to
+   the 0.5× floor, quietly making every new save a fire sale. Now stored annually.
+
+2. **An unanswered ask overwrote the owner's own setting.** The first version of
+   `resolvePayrollBudget` took the fallback unconditionally, so a budget set by any other route
+   snapped back to the league norm at the next rollover. **Caught by a test that set the budget
+   directly and watched it reset** — silence must cost nothing, at every ask, and now does.
+
+### The one ask with no recommendation
+
+`payroll` becomes the **fifth** live delegation domain, and its ask deliberately carries **no staff
+pick at any level**. Ticket pricing has a right answer and the staff give it (D101). Payroll is a
+*trade-off* — win now or bank the money — and nothing in the engine knows which the owner wants. A
+recommendation here would be inventing a preference they never stated.
+
+**Impact:** the first lever that can make a club poorer. Payroll swings **$77M → $306M** in actual
+contracts across the authorised range, against a club that was previously accumulating cash
+monotonically at every level (D100). The insolvency fail state and the month-end cash call — both
+measured as unbuildable in D100 — now have something to be about.
+
+Rejected: letting the naive self-consistent talent-per-dollar rate stand (45 wins a doubling);
+posting the authorised budget as the expense while contracts said otherwise (breaks double entry,
+and Books would show it); applying the talent shift to players already under contract (you cannot
+buy a better version of a man you already employ — it lands on the intake, so the decision
+compounds across seasons, which is the right timescale for an owner).

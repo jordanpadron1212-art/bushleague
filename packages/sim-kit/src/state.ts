@@ -97,7 +97,19 @@ export interface GameState {
   ownedClubId: string | null;
   /** Owner-set ticket face price — lived on the original's `G.club` snapshot (`ticket`); now a top-level owner setting since `Club` itself carries no per-owner configuration. Defaulted from `econFor(ownedClub).ticketFace` in `newGame()`. */
   ticketPrice: number;
-  /** Owner-set payroll budget — same story as `ticketPrice` (`G.club.payrollBudget` originally). Defaulted from `econFor(ownedClub).payroll` in `newGame()`. */
+  /**
+   * Owner-set payroll budget, an ANNUAL dollar figure (the same convention
+   * `scoutingBudget` uses). Defaulted in `newGame()` from
+   * `econFor(ownedClub).payroll` multiplied up to a year — that field is
+   * MONTHLY, and storing it raw here used to make this number mean something
+   * different from the one below it.
+   *
+   * REAL as of `DECISIONS.md` D102: what the owner authorises sets both the
+   * talent of what the organization signs and what those contracts cost, so
+   * it moves wins and drains cash. It applies to the INTAKE, so the effect
+   * compounds across seasons rather than landing the moment the dial moves —
+   * you cannot buy a better version of a player already under contract.
+   */
   payrollBudget: number;
   /** Owner-set scouting budget (DECISIONS.md D90) — an annual dollar figure, same convention as `payrollBudget`. Defaulted from `econFor(ownedClub).scouting` in `newGame()`, and unlike `ticketPrice`/`payrollBudget` it is REAL, not inert: `advance.ts` posts it to the ledger every month crossing (account 5300) and feeds it into `scoutBoostFor` to narrow the owned roster's own scouting reliability. No owner-facing control to move it off that default exists yet (a disclosed gap, not an oversight) — see CHANGELOG.md v2.11.0. */
   scoutingBudget: number;

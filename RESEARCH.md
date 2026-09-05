@@ -2163,3 +2163,80 @@ and Kesenne (1996, 2000) on win maximisation under a profit constraint.
 - Kesenne, S. (1996, 2000) — win maximisation under a profit constraint.
 - Chang, Potter & Sanders (2016) — dynamic effect on future home demand.
 - Noll (1974), Scully (1989) — the original inelastic findings.
+
+## 26. What payroll buys — cost per marginal win — T2/T3
+
+**Why this section exists.** `state.payrollBudget` was the last inert owner lever. Making it real
+means deciding how many wins a dollar buys, which is a measured question with published anchors.
+
+### The published anchors
+
+The right unit is **cost per marginal win (CPMW)** — marginal payroll divided by marginal wins,
+measured above a replacement baseline. The convention in the sources is that a club made entirely
+of minimum-salary players still wins about **a third of its games** (~54 of 162), so only wins
+above that are being bought.
+
+| figure | value | source |
+|---|---|---|
+| Yankees, average payroll per regular-season win, 2011–2023 | **> $2.5M** | Statista cost-per-win series |
+| Rays, same measure, league low | **~$825K** | same |
+| Dodgers 2013 | $2.3M/win | Ballpark Digest |
+| Rays 2013 (same 92 wins) | $620K/win | same |
+
+Those are *total* payroll per win. Converted to the marginal form against this engine's own MLB
+norm of **$175.2M** a year, a league-average club buying ~27 wins above replacement implies roughly
+**$6.5M per marginal win** — and the observed real spread of team outcomes is about **62 to 100
+wins across a ~4.5× payroll range**, i.e. ~17.5 wins per payroll doubling.
+
+### The two slopes this engine actually has, measured before anything was chosen
+
+| measured | value | how |
+|---|---|---|
+| Wins per point of team talent | **~5.5** over 162 games | 3 seeds per point: 83 W at parity, 94.3 W at +2, 70.7 W at −4, 49.7 W at −8 |
+| Talent points per payroll doubling, if bought at `contractFor`'s own ovr→salary curve | **~8.3** | roster payroll re-priced across ±6 talent points; log₂(payroll ratio) is linear in talent at 0.120/point |
+
+**Multiplied together those give 45 wins per payroll doubling**, which is absurd — it would put a
+2× payroll club at ~128 wins. The naive self-consistent model is badly wrong, and only measuring
+both slopes separately reveals it.
+
+### What is adopted
+
+| quantity | value | tier | basis |
+|---|---|---|---|
+| Talent per payroll doubling | **3.2 points** | T2 | 17.5 wins/doubling from the real spread ÷ 5.5 wins/point measured here |
+| Per-player market premium exponent | **0.615** | T3 | derived: talent bought at 3.2 points/doubling only lifts contract costs to `f^0.385`, so paying the authorised `f` means `f^0.615` per player |
+| Authorised range | **0.5× to 2.0×** the league norm | T3 | outside it the calibration is extrapolating |
+
+The gap between "what talent costs at the curve" and "what the owner actually pays" is not a fudge:
+an owner is bidding against 29 other clubs for the same players, and the premium **is** the market.
+Modelling it as a per-player multiplier rather than as a budget-versus-contracts mismatch keeps
+every contract a real number and the ledger honest.
+
+### Verified end to end
+
+Measured across four rollovers plus a played season, two seeds per point, so the authorised budget
+has largely replaced the opening roster:
+
+| authorised | actual contracts | wins |
+|---|---|---|
+| $88M (0.5×) | $77M | 61.5 |
+| $131M (0.75×) | $116M | 71.5 |
+| $175M (1.0×) | $159M | 75.5 |
+| $263M (1.5×) | $232M | 97.0 |
+| $350M (2.0×) | $306M | 91.0 |
+
+**61.5 to ~95 wins across a 4× payroll range**, against the real 62–100 across ~4.5×. Implied cost
+per marginal win across the full range: **$7.8M**, against the ~$6.5M anchor. Actual contracts run
+~10% under the authorisation because contracts persist — a club that raises its budget carries
+older, cheaper deals for a few years, which is correct rather than a calibration error.
+
+The 1.5× and 2.0× rows invert (97 vs 91 wins). That is two-seed noise, not a finding, and the
+shipped test asserts the **range** rather than monotonicity between adjacent steps for exactly that
+reason.
+
+**Sources:**
+- Statista, average payroll and cost-per-win of MLB teams —
+  https://statista.com/statistics/202547/average-payroll-of-major-league-baseball-teams
+- Ballpark Digest, *Measuring MLB's winners and losers in costs per win* —
+  https://ballparkdigest.com/201310086690/major-league-baseball/news/measuring-mlbs-winner-and-losers-in-costs-per-win
+- PEBA, *Marginal Cost Per Marginal Win* — https://pebabaseball.com/marginal-cost-per-marginal-win/

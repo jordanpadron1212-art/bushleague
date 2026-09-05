@@ -218,6 +218,9 @@ for (const shell of SHELLS) {
       // has changed and RESEARCH.md §25 needs re-measuring, not this test
       // needs updating.
       await expect(page.getByRole("button", { name: /^Drop to \$/ })).toBeVisible();
+      // Payroll is on the desk too, and deliberately carries NO staff pick —
+      // it is a trade-off, not a puzzle with a right answer.
+      await expect(page.getByText(/what are we spending on players/i)).toBeVisible();
       // Every question states what silence costs, before it is ignored.
       await expect(page.getByText(/if you never answer/i).first()).toBeVisible();
 

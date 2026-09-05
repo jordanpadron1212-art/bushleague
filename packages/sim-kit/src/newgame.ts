@@ -29,7 +29,8 @@ import { fromSerial, dateToSerial } from "./date.js";
 import { buildWorld } from "./world.js";
 import { buildRosters } from "./roster.js";
 import { buildFullSeasonSchedule, seasonWindow } from "./schedule.js";
-import { raiseDraftPolicyAsk, raiseScoutingAsk, raiseTicketAsk } from "./desk.js";
+import { raiseDraftPolicyAsk, raisePayrollAsk, raiseScoutingAsk, raiseTicketAsk } from "./desk.js";
+import { leagueMonths } from "./roster.js";
 import { econFor, seedOpeningBooks } from "./economics.js";
 import type { JournalEntry, JeCounter } from "./ledger.js";
 import { createInitialState, type GameState, type CreateStateOptions } from "./state.js";
@@ -76,7 +77,11 @@ export function newGame(opts: NewGameOptions): GameState {
     date,
     ownedClubId: opts.ownedClubId,
     ticketPrice: E.ticketFace,
-    payrollBudget: E.payroll,
+    // ANNUAL, matching `scoutingBudget`'s convention. `E.payroll` is a
+    // MONTHLY figure (`postMonth` posts it monthly), and storing it raw
+    // here made the field mean something different from the one beside it —
+    // harmless while nothing read it, wrong the moment D102 did.
+    payrollBudget: E.payroll * (mine.lvl === "MLB" ? 12 : leagueMonths(mine)),
     scoutingBudget: E.scouting,
     season: { ...base.season, year, open, close, worldOpen },
     world: { ...base.world, clubs },
@@ -94,6 +99,7 @@ export function newGame(opts: NewGameOptions): GameState {
   raiseDraftPolicyAsk(state);
   raiseScoutingAsk(state);
   raiseTicketAsk(state);
+  raisePayrollAsk(state);
 
   return state;
 }

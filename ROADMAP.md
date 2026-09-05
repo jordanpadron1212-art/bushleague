@@ -199,11 +199,12 @@ the fourth live delegation area.
 
 **Next for the delegation model, in order:**
 
-1. **`payrollBudget` — the other half of "make money real," and still inert.** `ticketPrice` is done
-   (D101); payroll is the remaining owner-native lever, and it is the one that would create actual
-   financial PRESSURE, since ticket pricing only ever adds revenue. Until something can drain the
-   balance, the cash curve stays monotonic (D100) and the insolvency fail state and the month-end
-   cash call both stay unbuildable.
+1. ~~**`payrollBudget`**~~ — **DONE, v2.19.0 (D102).** Both halves of "make money real" have landed.
+   Five of eleven delegation areas are now live. **What this unblocks, and what should be re-measured
+   first:** D100 measured every club accumulating cash monotonically and killed the month-end cash
+   call on that basis. Payroll can now drain a balance, so **re-run that cash-curve measurement**
+   before deciding whether the cash call and the optional insolvency fail state are buildable — the
+   answer may well have changed, and it should be measured rather than assumed either way.
 2. **Staff as people** (`proposals/OWNER-AND-STAFF.md` §3) — competence hidden behind scouting them,
    philosophy that makes Approve a real choice rather than a rubber stamp, and a relationship that
    constant overriding damages. The dial is meaningless without someone on the other end of it.

@@ -62,6 +62,7 @@ import { dateToSerial } from "./date.js";
 import { cash, incomeStatement } from "./ledger.js";
 import { econFor } from "./economics.js";
 import { NEED_TARGET_P_RATIO, pitcherRatioByOrg, type DraftPhilosophy } from "./draft.js";
+import { leagueMonths } from "./roster.js";
 import { SCOUT_BOOST_SATURATE_AT } from "./scouting.js";
 import { money } from "./format.js";
 
@@ -388,4 +389,92 @@ export function expireTicketAsk(state: GameState): void {
   state.asks = clearAsk(state.asks, ask.id);
   report(state, "ticketing", "ticketing.price.held", dateToSerial(state.date),
     `You never revisited ticket prices, so they stayed at $${Math.round(state.ticketPrice)} all year.`);
+}
+
+// ---- Payroll: the only lever that can actually drain the balance ----
+
+export const PAYROLL_TAG = "payroll.budget";
+
+/**
+ * Puts next year's payroll on the desk, once a season.
+ *
+ * Unlike scouting or ticketing, this one has **no recommended answer**, at
+ * any level — and that is the honest position rather than a gap. What a club
+ * should spend depends on whether the owner wants to win now or bank money,
+ * and nothing in the engine knows which. Ticket pricing has a right answer
+ * (RESEARCH.md §25 measured it); payroll has a *trade-off*, and a staff
+ * member who claimed otherwise would be inventing a preference the owner
+ * never stated.
+ *
+ * Raised at the rollover and consumed by the NEXT one, because payroll acts
+ * on the org's intake — you cannot buy a better version of a player already
+ * under contract, so the effect compounds over seasons.
+ */
+export function raisePayrollAsk(state: GameState): void {
+  const level = delegationFor(state.delegation, "payroll");
+  if (!asksFirst(level)) return;
+  if (askFor(state.asks, "payroll", PAYROLL_TAG)) return;
+
+  const mine = state.world.clubs.find((c) => c.id === state.ownedClubId);
+  if (!mine) return;
+  const months = mine.lvl === "MLB" ? 12 : leagueMonths(mine);
+  const norm = econFor(mine).payroll * months;
+  if (!(norm > 0)) return;
+
+  const lean = Math.round(norm * 0.75);
+  const hold = Math.round(norm);
+  const push = Math.round(norm * 1.5);
+
+  const counter = { value: state.nextAsk };
+  const ask = raiseAsk(counter, {
+    domain: "payroll",
+    tag: PAYROLL_TAG,
+    day: dateToSerial(state.date),
+    level,
+    options: [
+      { id: "lean", label: `Run lean — ${money(lean)}` },
+      { id: "hold", label: `Match the league — ${money(hold)}` },
+      { id: "push", label: `Spend to win — ${money(push)}` },
+    ],
+    fallback: "hold",
+    // No recommendation, ever. See this function's own note.
+    recommended: null,
+    facts: { lean, hold, push, current: Math.round(state.payrollBudget) },
+  });
+  state.nextAsk = counter.value;
+  state.asks = [...state.asks, ask];
+}
+
+/**
+ * Consumes the payroll ask. Called at the START of a rollover, before churn
+ * signs anybody — the same load-bearing ordering the draft policy has.
+ */
+export function resolvePayrollBudget(state: GameState): void {
+  const ask = askFor(state.asks, "payroll", PAYROLL_TAG);
+  if (!ask) return;
+
+  const day = dateToSerial(state.date);
+
+  // Unanswered means UNCHANGED — not "reset to the league norm". The first
+  // version of this took the fallback unconditionally, which silently
+  // overwrote a budget the owner had set by any other route the moment a
+  // season rolled over. Caught by a test that set the budget directly and
+  // watched it snap back. Silence must cost nothing, at every ask.
+  if (ask.chosen === null) {
+    state.asks = clearAsk(state.asks, ask.id);
+    report(state, "payroll", "payroll.budget.held", day,
+      `You didn't revisit payroll, so it stays at ${money(state.payrollBudget)}.`);
+    return;
+  }
+
+  const next = ask.facts[resolveAsk(ask)];
+  state.asks = clearAsk(state.asks, ask.id);
+  if (next === undefined) return;
+
+  const before = state.payrollBudget;
+  state.payrollBudget = next;
+  report(state, "payroll", "payroll.budget.set", day,
+    next === before
+      ? `You held payroll at ${money(next)} for next season.`
+      : `You set next season's payroll to ${money(next)}, from ${money(before)}.`);
 }
