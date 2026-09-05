@@ -9,7 +9,7 @@
     "preview": "vite preview",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "test:visual": "playwright test"
+    "test:visual": "vite build && playwright test"
   },
   "dependencies": {
     "@bushleague/sim-kit": "workspace:*",

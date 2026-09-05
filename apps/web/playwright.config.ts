@@ -40,6 +40,12 @@ export default defineConfig({
     trace: "retain-on-failure",
   },
   webServer: {
+    // `vite preview` serves dist/ — it does NOT build. Running the suite
+    // without building first tests the PREVIOUS bundle, silently: the code
+    // under test looks wrong and the source looks right. The `test:visual`
+    // script builds first for exactly this reason (it cost a full red run to
+    // find). CI builds separately too; the second build is a few seconds and
+    // buys certainty that what is under test is what is on disk.
     command: "pnpm exec vite preview --port 4173 --strictPort",
     url: "http://localhost:4173",
     reuseExistingServer: !process.env.CI,
