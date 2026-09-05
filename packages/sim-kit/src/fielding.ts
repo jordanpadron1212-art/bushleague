@@ -103,8 +103,8 @@ export const BIP_PER_SEASON = 4000;
  */
 export const NEUTRAL_TEAM_RUNS = 10;
 
-/** The same zero point expressed as a mean fielded grade, for the error rate. */
-export const NEUTRAL_MEAN_DEF = 52;
+/** The same selection effect as a grade offset above the level's centre, for the error rate. */
+export const NEUTRAL_MEAN_OFFSET = 2;
 
 /**
  * Position is a KIND as well as a difficulty, and the first version of this
@@ -222,10 +222,21 @@ export function naturalSlot(p: Pick<Player, "pos">): FieldSlot {
   return (FIELD_SLOTS as readonly string[]).includes(pos) ? (pos as FieldSlot) : "DH";
 }
 
-/** One fielder's Def runs over a full season at a slot, before the positional adjustment. */
-export function defRunsAt(p: Pick<Player, "pos" | "tru">, slot: FieldSlot): number {
+/**
+ * One fielder's Def runs at a slot, RELATIVE TO HIS OWN LEVEL.
+ *
+ * `centre` is the level's talent centre (`levels.ts`: MLB 50, AAA 44, AA
+ * 40, High-A 36, Single-A 33). Measuring against a flat 50 was a real bug
+ * and the calibration caught it: a Single-A shortstop grading 33 is AVERAGE
+ * FOR SINGLE-A, but scored against 50 he came out at −12 runs, and eight of
+ * him made a −96-run defence. Every minor-league club therefore looked
+ * catastrophic, BABIP rose across the board, and A-level HR/9 drifted from
+ * 0.60 to 0.65 against a published 0.56. Defence is a comparison with the
+ * league you are in, not with the majors.
+ */
+export function defRunsAt(p: Pick<Player, "pos" | "tru">, slot: FieldSlot, centre = 50): number {
   if (slot === "DH") return 0;
-  return (defAt(p, slot) - 50) * RUNS_PER_GRADE;
+  return (defAt(p, slot) - centre) * RUNS_PER_GRADE;
 }
 
 export interface TeamDefense {
@@ -259,7 +270,7 @@ const EMPTY_DEFENSE: TeamDefense = {
  * now produces. A club with nobody at a slot is simply weaker there, rather
  * than throwing: a short roster still has to take the field.
  */
-export function teamDefense(assignment: ReadonlyMap<FieldSlot, Player>): TeamDefense {
+export function teamDefense(assignment: ReadonlyMap<FieldSlot, Player>, centre = 50): TeamDefense {
   if (assignment.size === 0) return EMPTY_DEFENSE;
 
   let runs = 0;
@@ -267,7 +278,7 @@ export function teamDefense(assignment: ReadonlyMap<FieldSlot, Player>): TeamDef
   for (const slot of FIELD_SLOTS) {
     const p = assignment.get(slot);
     if (!p || slot === "DH") continue;
-    const r = defRunsAt(p, slot);
+    const r = defRunsAt(p, slot, centre);
     runs += r;
     outs += r / (OUTFIELD.has(slot) ? RUN_PER_OUT_OF : RUN_PER_OUT_IF);
   }
@@ -289,13 +300,14 @@ export function teamDefense(assignment: ReadonlyMap<FieldSlot, Player>): TeamDef
   // Sure hands make fewer errors. Anchored to the same grade scale rather
   // than a second invented constant: a full 30 points of team-average
   // defence moves the error rate by 30%.
+  // Error rate too: relative to the level, plus the same selection offset.
   const meanDef = teamMeanDef(assignment);
-  const errFactor = clamp(1 - (meanDef - NEUTRAL_MEAN_DEF) / 100, 0.55, 1.6);
+  const errFactor = clamp(1 - (meanDef - (centre + NEUTRAL_MEAN_OFFSET)) / 100, 0.55, 1.6);
 
   // Framing, driven off the catcher's own grade and modelled in STRIKES
   // rather than runs — see FRAMING_STRIKES_PER_GRADE for why.
   const c = assignment.get("C");
-  const framingStrikes = c ? (nz(c.tru.def) - 50) * FRAMING_STRIKES_PER_GRADE : 0;
+  const framingStrikes = c ? (nz(c.tru.def) - centre) * FRAMING_STRIKES_PER_GRADE : 0;
   const framingRuns = framingStrikes * RUN_PER_FRAMED_STRIKE;
   const framingStrikeShift = framingStrikes / PITCHES_PER_SEASON;
 

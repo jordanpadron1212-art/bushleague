@@ -42,6 +42,7 @@
  */
 import type { Rng } from "./rng.js";
 import type { LevelEnv } from "./levels.js";
+import { LVL } from "./levels.js";
 import type { Player } from "./player.js";
 import type { Club } from "./world.js";
 import type { BatterRates, PitcherRates, Rates } from "./rates.js";
@@ -126,7 +127,10 @@ function makeSide(
       if (p) assignment.set(slot, p);
     }
   }
-  const def = assignment.size ? teamDefense(assignment) : undefined;
+  // The level's own talent centre — defence is a comparison with the
+  // league you play in, not with the majors.
+  const centre = (LVL[team.club.lvl as keyof typeof LVL] ?? LVL.INDY).c;
+  const def = assignment.size ? teamDefense(assignment, centre) : undefined;
   const pstat = new Map<string, PitcherLine>();
   pstat.set(cur, { o: 0, er: 0, ra: 0 });
   return {

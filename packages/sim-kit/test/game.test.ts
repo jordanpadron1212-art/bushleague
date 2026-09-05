@@ -31,7 +31,13 @@ function simulateSeason(clubs: readonly Club[], games: number, r: Rng) {
 
   const rosterFor = (c: Club): GameRoster => {
     const chart = charts.get(c.id)!;
-    return { club: c, lineup: chart.lineup, rot: chart.rot, pen: chart.pen };
+    // `field` MUST be here. Without it this whole calibration suite runs
+    // with NO DEFENCE — `resolvePA` falls back to league-average behaviour
+    // and the gate silently measures a different engine from the one that
+    // ships. Found while chasing an A-level HR/9 drift that turned out not
+    // to be the defence model at all, because the defence model was not
+    // running.
+    return { club: c, lineup: chart.lineup, rot: chart.rot, pen: chart.pen, field: chart.field };
   };
 
   const results: GameResult[] = [];
