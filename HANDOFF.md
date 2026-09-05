@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 97 of them are already recorded, several against
+proposing anything that feels like a new idea — 98 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -56,7 +56,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D97. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D98. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -300,6 +300,9 @@ itself (D93) — are resolved, not carried forward. See ROADMAP.md's "Next, in o
 | a drafted player's landed club's `parent` exactly matches the pick record's own drafting club id | checked directly, not sampled | same file |
 | setting `draftPhilosophy` to `"UPSIDE"` before rollover works, and the world's total population size stays exactly constant across a rollover that includes a real draft | checked directly | same file |
 | a genuine, pre-existing `makePlayer` id-collision risk exists at this project's current scale | a temporary diagnostic measured one sampled year absorbing "101.5%" of its draftees onto real roster slots — only possible if two distinct `Player` objects shared an `id` | disclosed in `DECISIONS.md` D93, diagnostic deleted, not a fix inside this pass |
+| a save the app can't read produced a crash, not a refusal — and then invited the player to overwrite it | planted a "newer build" save and ran it against the pre-fix bundle in a real browser: `Unexpected Application Error! l is not iterable`, ten frames into a minified router callback, then a fallthrough to the club picker whose next click calls `startNewGame` | fixed in `DECISIONS.md` D98; guards are `packages/sim-kit/test/migrate.test.ts`, `apps/web/test/save.test.ts`, and 10 new Playwright checks |
+| the migration chain, its failure modes, and the backup-before-overwrite sequence — none of which the empty real registry can exercise | 35 engine tests driving synthetic chains through the real code via two documented test-only seams (`loadStateWith`, `loadGame(read)`) | same files |
+| the save-problem screen said the same thing twice, one line under the other | read the screenshot; the engine's `detail` and the screen's guidance line both explained "made by a newer build / update the game" | fixed — the engine states the problem, the UI states the remedy |
 | the collision rate itself, directly — confirming the risk was real and quantifying it | 10,000 players collide 0 times, 50,000 collide once, 100,000 collide four times, matching the birthday-paradox prediction (~1.25, ~5.00); a save mints ~1,600/year, so ~160,000 by season 100 | fixed in `DECISIONS.md` D97; guard is `packages/sim-kit/test/identity.test.ts` |
 | the guard actually fails when it should | removing the id from one creation site makes `identity.test.ts` fail immediately and by name — verified, then reverted | same file |
 | supplying an explicit id does not shift the seeded RNG stream (save-reproducibility, D85) | the two streams checked in lockstep after a supplied-id and a fallback-id generation | same file |

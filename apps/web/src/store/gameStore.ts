@@ -28,13 +28,35 @@ import {
 } from "@bushleague/sim-kit";
 import { saveGame, loadGame } from "../save.js";
 
+/**
+ * A save that exists on disk but could not be read. Kept separate from
+ * `error` deliberately: `error` is a transient "that didn't work" message
+ * shown alongside a working screen, whereas this one BLOCKS the app —
+ * falling through to the new-game screen would invite the player to start
+ * a game that silently overwrites the save we just failed to understand.
+ */
+export interface SaveProblem {
+  reason: string;
+  /** Written for a player to read (`sim-kit`'s migrate.ts), not a stack trace. */
+  detail: string;
+}
+
 interface GameStore {
   state: GameState | null;
   /** True while IndexedDB is being read or a new game is being generated — not while advancing (that's synchronous and fast; see advance.ts's own note on cost). */
   loading: boolean;
   error: string | null;
+  /** Set when a save exists but can't be loaded — see `SaveProblem`. Blocks the app until resolved. */
+  saveProblem: SaveProblem | null;
   lastResult: AdvanceResult | null;
   loadFromDisk: () => Promise<void>;
+  /**
+   * Abandons an unreadable save and returns to the new-game screen. Does
+   * NOT delete anything — the bytes stay on disk until a new game actually
+   * overwrites them, so a player who clears this by mistake has lost
+   * nothing yet.
+   */
+  dismissSaveProblem: () => void;
   startNewGame: (opts: NewGameOptions) => Promise<void>;
   advance: () => Promise<void>;
   /** Rolls the save into the next year — `rollover.ts`'s `startNewSeason`, real and tested in `sim-kit` since DECISIONS.md D87 but never callable from the app until now. Only meaningful once `state.sp >= state.sched.length` (the same condition `advanceDay`'s own `seasonOver` already reports) — `ActionBar.tsx` is what decides when to show it. */
@@ -47,20 +69,42 @@ export const useGameStore = create<GameStore>((set, get) => ({
   state: null,
   loading: true,
   error: null,
+  saveProblem: null,
   lastResult: null,
 
   loadFromDisk: async () => {
-    set({ loading: true, error: null });
+    set({ loading: true, error: null, saveProblem: null });
     try {
-      const loaded = await loadGame();
-      set({ state: loaded ?? null, loading: false });
+      const result = await loadGame();
+
+      // Three outcomes, and collapsing any two of them is a real bug.
+      // `null` means no save exists — the new-game screen, not an error.
+      if (result === null) {
+        set({ state: null, loading: false });
+        return;
+      }
+
+      // A save that exists but can't be read. `state` stays null so the app
+      // never renders against a half-valid world, and NOTHING is written
+      // back — overwriting a save we failed to understand is how a
+      // recoverable problem becomes a permanent one. `result.detail` is
+      // written for a player to read (`sim-kit`'s migrate.ts), so it is
+      // shown as-is rather than wrapped in a second layer of apology.
+      if (!result.ok) {
+        set({ state: null, loading: false, saveProblem: { reason: result.reason, detail: result.detail } });
+        return;
+      }
+
+      set({ state: result.state, loading: false });
     } catch (err) {
       set({ loading: false, error: `Couldn't read your save — ${String(err)}` });
     }
   },
 
+  dismissSaveProblem: () => set({ saveProblem: null }),
+
   startNewGame: async (opts) => {
-    set({ loading: true, error: null });
+    set({ loading: true, error: null, saveProblem: null });
     try {
       const state = newGame(opts);
       await saveGame(state);

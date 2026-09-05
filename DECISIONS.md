@@ -1808,3 +1808,105 @@ structure already gives for free); a global monotonic counter (it would have to 
 and be threaded through every creation site, and a desynced counter reintroduces the bug); leaving
 the disclosure standing and fixing it "when it bites" (it bites silently, so it would never
 visibly bite).
+
+## 2026-09-05 — The save has carried a version stamp since day one and nothing ever read it
+
+**D98 · Two schema changes are designed and queued — `worldConfig`
+(`proposals/WORLD-CONFIGURATION.md` §7) and the delegation dial
+(`proposals/OWNER-AND-STAFF.md`). Neither can land safely, because the app had no way
+to open a save written by a different build. This lands the mechanism first.**
+
+`createInitialState` has written `v: SCHEMA_VERSION` into every save since v2.9.0. `loadGame`
+handed the raw IndexedDB blob straight to the app and never looked at it. That is harmless while
+the schema has never changed and catastrophic the first time it does.
+
+**What that actually looks like was not theorised — it was witnessed.** A Playwright check written
+this pass planted a save from a "newer build" and ran it against a stale bundle from before the
+fix. The app didn't refuse it, and it didn't crash cleanly either. It rendered
+`Unexpected Application Error! l is not iterable`, ten frames deep in a minified router callback,
+with nothing anywhere on screen or in the stack mentioning saves, versions or schemas. That screen
+is what every future schema change would have shipped.
+
+**Worse than the crash: what came next.** A failed load left `state` null, and `App.tsx` treats
+null as "no save" and renders the club picker. So the player would be shown a friendly *Choose the
+club you'll own* — and the moment they picked one, `startNewGame` wrote over the save that had just
+failed to open. A recoverable problem became permanent in one click, with no warning and no
+confirmation. **Refusing to load a damaged save is only half a safeguard; refusing to let the next
+screen destroy it is the other half**, and the second half is the one that was missing.
+
+### The design, and the one rule that carries it
+
+`packages/sim-kit/src/migrate.ts` — a registry of `{from, to, name, migrate}` migrations, a chain
+walker, a shape check, and a `loadState` returning a discriminated result that callers cannot
+ignore without a type error.
+
+**A migration operates on plain JSON, never on `GameState`.** This is the mistake almost every
+codebase makes here and it is invisible until it bites. A migration typed
+`(s: GameState) => GameState` compiles against whatever `GameState` means *today*; add a field in
+six months and that same migration — whose entire job is to handle saves written before the field
+existed — silently begins asserting its input already has it. The types agree. The data doesn't.
+So every migration takes and returns `Record<string, unknown>`: unpleasant to write, correct
+forever.
+
+Six refusals, each distinct because each needs different advice: `not-a-save`, `no-version`,
+`from-the-future`, `no-path`, `migration-failed`, `invalid-result`. **A save from a NEWER build is
+refused outright rather than attempted** — a down-migration would have to invent the removal of
+data it cannot see, so guessing is worse than stopping. Malformed *registries* are refused as
+carefully as malformed saves: a gap in the chain, two migrations claiming the same version, or one
+whose `to` isn't greater than its `from` all report rather than loop or silently pick.
+
+The framework stamps the new version itself after each step, so a migration that forgets to set
+`v` — or sets it wrong — still lands correctly. One less thing every future migration must get
+right.
+
+### Testing something that has nothing to migrate yet
+
+`SCHEMA_VERSION` is still 1 and `MIGRATIONS` is legitimately empty, so testing only what runs today
+would prove almost nothing and the whole mechanism would ship unexercised until the exact moment it
+first mattered. Two seams solve it, and both are documented as test-only rather than dressed up as
+flexibility: `loadStateWith(raw, target, migrations)` drives synthetic chains through the real
+code, and `loadGame(read)` drives the persistence side.
+
+**The most valuable test in the file is the smallest:** for every version 1..`SCHEMA_VERSION`, a
+migration path to the current version must exist. That is the test that fires when someone bumps
+the version and forgets the migration — the failure that actually happens.
+
+### Nothing is overwritten without a copy first
+
+When a migration runs, the pre-migration blob is copied to a backup slot **before** the upgraded
+save is written, in that order, so a failure between the two leaves the original intact rather than
+nothing at all. A migration is code and code has bugs; the one outcome this design refuses is a bad
+upgrade quietly destroying a save with nothing left to recover. **Disclosed gap: no UI reads the
+backup yet.** `readBackup()` exists and the data is kept, which is the part that cannot be added
+retroactively; a restore flow can be.
+
+A failed load writes nothing at all — asserted directly, by reading the raw bytes back after a
+refusal.
+
+### The screen, and what looking at it caught
+
+`SaveProblemPage.tsx` blocks the app on an unreadable save: what happened, in the engine's own
+player-facing words; **"Nothing has been deleted"**, which is true and is the most useful sentence
+on the screen; and starting over as a two-step, explicitly-destructive path that names its
+consequence before it can be taken.
+
+Reading the screenshot caught what no assertion did: the engine's `detail` and the screen's own
+guidance line **said the same thing twice**, one under the other, in slightly different words.
+Fixed by making the split strict — the engine states the problem and the version numbers, the UI
+states the remedy, neither says the other's half — and the engine's sentences were capitalized,
+since they now begin a paragraph instead of following a label.
+
+One thing I got wrong and corrected by measuring rather than by staring: I read that paragraph as
+rendering in a stray blue and started hunting a CSS bug. Its computed colour is
+`rgb(232, 232, 234)` — identical to the heading. There was nothing to fix.
+
+**Impact: negligible at runtime** — one version comparison and ten field checks per load, once per
+app start, against a load that already deserialises a multi-megabyte world. **Decisive on
+capability:** the two queued schema changes are now safe to make, which they were not this morning.
+
+Rejected: a full per-field schema validator (a different tool with a different cost; `checkShape`
+answers the narrow question "will this survive first render" and says so rather than pretending to
+be more); versioning by feature-detection instead of a stamp (the stamp already exists and is
+already written); attempting a best-effort load of a future save (it produces exactly the
+`l is not iterable` screen this decision exists to eliminate); deleting an unreadable save to get
+the player to a clean state (the bytes are the only copy — refusing to touch them is the point).

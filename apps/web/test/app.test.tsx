@@ -54,6 +54,54 @@ describe("<App />", () => {
     expect(screen.queryByText(/choose the club you.ll own/i)).not.toBeInTheDocument();
   });
 
+  it("a save that CAN'T be read shows the problem screen — never the club picker, which would overwrite it", async () => {
+    // The regression this whole safeguard exists for (DECISIONS.md D98):
+    // before it, a damaged save fell through to the club picker and the
+    // very next click destroyed it. Written raw, because a save the app
+    // can't parse is by definition not something `saveGame` can produce.
+    const { openDB } = await import("idb");
+    const { SCHEMA_VERSION } = await import("@bushleague/sim-kit");
+    const d = await openDB("bushleague", 1, {
+      upgrade(database) {
+        if (!database.objectStoreNames.contains("saves")) database.createObjectStore("saves");
+      },
+    });
+    await d.put("saves", { v: SCHEMA_VERSION + 1, seed: 1 }, "current");
+    d.close();
+
+    render(<App />);
+    expect(await screen.findByText(/save couldn.t be opened/i)).toBeInTheDocument();
+    expect(screen.queryByText(/choose the club you.ll own/i)).not.toBeInTheDocument();
+    // The reassurance is load-bearing, not decoration — it's the difference
+    // between a player deleting their save in a panic and waiting for a fix.
+    expect(screen.getByText(/nothing has been deleted/i)).toBeInTheDocument();
+  });
+
+  it("starting over from the problem screen takes TWO deliberate steps, not one", async () => {
+    const user = userEvent.setup();
+    const { openDB } = await import("idb");
+    const { SCHEMA_VERSION } = await import("@bushleague/sim-kit");
+    const d = await openDB("bushleague", 1, {
+      upgrade(database) {
+        if (!database.objectStoreNames.contains("saves")) database.createObjectStore("saves");
+      },
+    });
+    await d.put("saves", { v: SCHEMA_VERSION + 1, seed: 1 }, "current");
+    d.close();
+
+    render(<App />);
+    await screen.findByText(/save couldn.t be opened/i);
+
+    // First click only reveals the consequence — it must NOT reach the picker.
+    await user.click(screen.getByText(/start a new game instead/i));
+    expect(screen.getByText(/overwrite this save/i)).toBeInTheDocument();
+    expect(screen.queryByText(/choose the club you.ll own/i)).not.toBeInTheDocument();
+
+    // Second, explicit click is what actually moves on.
+    await user.click(screen.getByText(/i understand/i));
+    expect(await screen.findByText(/choose the club you.ll own/i)).toBeInTheDocument();
+  }, 15000);
+
   it("once a season is exhausted, the action bar offers to start the next one — and doing so produces a real, playable new season", async () => {
     // Fast-forwards a real sim-kit state to seasonOver directly (not by
     // clicking Advance hundreds of times through the DOM) — the same

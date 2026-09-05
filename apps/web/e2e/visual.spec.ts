@@ -115,3 +115,81 @@ for (const shell of SHELLS) {
     });
   }
 }
+
+/**
+ * The save-problem screen (`DECISIONS.md` D98). A real app state, reached
+ * by planting a save this build can't read directly into IndexedDB before
+ * the app boots — the same thing a version downgrade would do to a real
+ * player. Checked in every shell/theme like any other lit screen: this is
+ * the one screen a player only ever sees on a bad day, which makes it the
+ * one most likely to ship broken and never be looked at.
+ */
+async function plantUnreadableSave(page: Page) {
+  // Loaded once first so the app itself creates the database and object
+  // store; writing from an init script instead races the app's own read and
+  // wins only sometimes, which is worse than failing — it produces a test
+  // that passes locally and flakes in CI.
+  await page.goto("/");
+  await page.getByText("Choose the club").waitFor();
+
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve, reject) => {
+        const open = indexedDB.open("bushleague", 1);
+        open.onupgradeneeded = () => {
+          if (!open.result.objectStoreNames.contains("saves")) open.result.createObjectStore("saves");
+        };
+        open.onerror = () => reject(open.error);
+        open.onsuccess = () => {
+          const db = open.result;
+          const tx = db.transaction("saves", "readwrite");
+          // A version far ahead of anything this build could ever write.
+          tx.objectStore("saves").put({ v: 9999, seed: 1 }, "current");
+          tx.oncomplete = () => {
+            db.close();
+            resolve();
+          };
+          tx.onerror = () => reject(tx.error);
+        };
+      }),
+  );
+
+  await page.reload();
+}
+
+for (const shell of SHELLS) {
+  for (const theme of THEMES) {
+    test(`Unreadable save shows the problem screen — ${shell}/${theme}`, async ({ page }, testInfo) => {
+      const consoleErrors: string[] = [];
+      page.on("console", (msg) => msg.type() === "error" && consoleErrors.push(msg.text()));
+      page.on("pageerror", (err) => consoleErrors.push(err.message));
+
+      await plantUnreadableSave(page);
+      await page.getByText(/save couldn.t be opened/i).waitFor();
+      await setShellTheme(page, shell, theme);
+
+      // The safeguard itself, checked in a real browser: the club picker —
+      // the screen whose next click overwrites the save — must not be here.
+      await expect(page.getByText(/choose the club/i)).toHaveCount(0);
+      await expect(page.getByText(/nothing has been deleted/i)).toBeVisible();
+
+      expect(await overflowPx(page)).toBeLessThanOrEqual(1);
+      assertClean(consoleErrors);
+
+      await page.screenshot({ path: testInfo.outputPath(`save-problem-${shell}-${theme}.png`), fullPage: true });
+    });
+  }
+}
+
+test("the destructive path on the problem screen states its consequence before it can be taken", async ({
+  page,
+}, testInfo) => {
+  await plantUnreadableSave(page);
+  await page.getByText(/save couldn.t be opened/i).waitFor();
+
+  await page.getByText(/start a new game instead/i).click();
+  await expect(page.getByText(/overwrite this save/i)).toBeVisible();
+  await expect(page.getByText(/choose the club/i)).toHaveCount(0);
+
+  await page.screenshot({ path: testInfo.outputPath("save-problem-confirm.png"), fullPage: true });
+});

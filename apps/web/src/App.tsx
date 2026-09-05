@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { createHashRouter, Navigate, RouterProvider } from "react-router-dom";
 import AppShell from "./components/AppShell.js";
 import NewGamePage from "./pages/NewGamePage.js";
+import SaveProblemPage from "./pages/SaveProblemPage.js";
 import { PAGES, findPage } from "./pages/registry.js";
 import { useGameStore } from "./store/gameStore.js";
 
@@ -34,6 +35,7 @@ const router = createHashRouter([
 export default function App() {
   const state = useGameStore((s) => s.state);
   const loading = useGameStore((s) => s.loading);
+  const saveProblem = useGameStore((s) => s.saveProblem);
   const loadFromDisk = useGameStore((s) => s.loadFromDisk);
 
   useEffect(() => {
@@ -51,6 +53,11 @@ export default function App() {
       </div>
     );
   }
+
+  // Checked BEFORE the new-game fallthrough, and that order is the whole
+  // point: a save that failed to load must never quietly present the club
+  // picker, because choosing a club is what overwrites it (D98).
+  if (saveProblem) return <SaveProblemPage />;
 
   if (!state) return <NewGamePage />;
 

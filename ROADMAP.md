@@ -179,6 +179,13 @@ keyspace: every real creation site now mints an id unique by construction. This 
 position here suggested — the world-configuration work below roughly doubles annual player intake, and
 collisions grow with the square of the population.
 
+**5. ~~A save-migration framework~~ — DONE, v2.16.0 (DECISIONS.md D98).** Listed because it was a
+silent prerequisite for the two items above it, not a nice-to-have: every save has carried a version
+stamp since v2.9.0 and nothing read it, so the first schema change would have shipped an
+`l is not iterable` crash — and then offered the player a club picker whose next click overwrote the
+save. World configuration and the delegation dial are both schema changes; they are now safe to make.
+Remaining gap, disclosed: the pre-migration backup is written and readable but no UI restores from it.
+
 **Everything from "Next, in order — re-ordered by what v0.9 measured" onward, below, is the pre-rewrite
 plan.** Still directionally right once the game exists again; re-sequence it against passes 1-2 above
 rather than following its numbers literally.

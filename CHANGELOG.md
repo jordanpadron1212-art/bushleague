@@ -5,6 +5,55 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.16.0 · SAVES CAN NOW SURVIVE A SCHEMA CHANGE — 2026-09-05
+
+Every save has carried a version stamp since v2.9.0. Nothing ever read it. That's fine while the
+schema has never changed and catastrophic the first time it does — and two schema changes are
+already designed and waiting (world configuration, and the delegation dial).
+
+What the old behaviour actually looked like was witnessed rather than imagined: a check written
+this pass planted a save from a "newer build" and ran it against the previous bundle. The app
+didn't refuse it and didn't crash cleanly either — it rendered `Unexpected Application Error!
+l is not iterable`, ten frames deep in a minified router callback, with nothing on screen
+mentioning saves or versions.
+
+Worse was what came next. A failed load left the app thinking there was no save at all, so it
+showed the club picker — and picking a club overwrote the save that had just failed to open. A
+recoverable problem became permanent in one click. Refusing to load a damaged save is only half a
+safeguard; refusing to let the next screen destroy it is the other half.
+
+Now: a migration registry, a chain walker, and a load that returns either a state or a clear
+refusal callers can't ignore. Six distinct refusals, because each needs different advice. A save
+from a newer build is refused outright rather than guessed at. Malformed migration *registries* —
+a gap in the chain, two migrations claiming the same version, one that doesn't move forward — are
+caught as carefully as malformed saves.
+
+The rule the whole thing rests on: a migration operates on plain JSON, never on the current
+`GameState` type. A migration typed against today's state silently starts claiming that saves
+written before a field existed already have it. The types agree; the data doesn't.
+
+When a migration runs, the original save is copied to a backup slot before anything is
+overwritten. When a load fails, nothing is written at all — verified by reading the raw bytes back
+after a refusal. No UI reads the backup yet; that gap is disclosed, and the data is kept, which is
+the part that can't be added later.
+
+A new screen replaces the silent fallthrough: what happened, in plain words; "Nothing has been
+deleted," which is true and is the most useful sentence on it; and starting over as a two-step
+path that names its consequence before it can be taken.
+
+Reading a screenshot of that screen caught what no assertion did — the engine's message and the
+screen's guidance said the same thing twice, one under the other. The split is now strict: the
+engine states the problem, the UI states the remedy.
+
+Testing a migration framework with nothing yet to migrate needed two documented test-only seams,
+so the mechanism isn't exercised for the first time on the day it first matters. The most valuable
+test is the smallest: every version must have a path to the current one — the test that fires when
+someone bumps the schema and forgets the migration.
+
+Impact: negligible at runtime (one version check and ten field checks per app start). Decisive on
+capability — the two queued schema changes are now safe to make. 321 engine tests, 18 app tests,
+42 browser checks. See `DECISIONS.md` D98.
+
 ## v2.15.1 · PLAYER IDS WERE A TIME BOMB — 2026-09-05
 
 v2.14.0 disclosed a suspected id-collision risk instead of fixing it. This pass measured it, found

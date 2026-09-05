@@ -26,3 +26,4 @@ export * from "./churn.js";
 export * from "./rollover.js";
 export * from "./newgame.js";
 export * from "./advance.js";
+export * from "./migrate.js";
