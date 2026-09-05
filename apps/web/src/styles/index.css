@@ -1,6 +1,12 @@
 @import "tailwindcss";
 @import "./tokens.css";
 
+/**
+ * Global rules for the War Room design system (`design/DESIGN-SYSTEM.md`,
+ * `DECISIONS.md` D104). Everything here is a system-wide rule the spec calls
+ * non-negotiable; anything screen-specific belongs in the screen.
+ */
+
 * {
   box-sizing: border-box;
 }
@@ -18,14 +24,38 @@ body {
   font-family: var(--shell-font-prose);
   font-size: var(--fs-base);
   -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
   overscroll-behavior-y: none;
 }
 
-/* Tabular numerals everywhere a number lives (Law 6). */
+/* §3, stated as non-negotiable: a column of stats must never jitter. Applied
+   to every number, not only to `.num`, because a figure typed inline in prose
+   still sits above or below one in a column. */
+.num,
+[class*="num"],
+table,
+td,
+th,
+time,
+output {
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
 .num {
   font-family: var(--shell-font-num);
-  font-variant-numeric: tabular-nums;
-  font-feature-settings: "tnum" 1, "lnum" 1;
+}
+
+/* §3 — prose avoids orphans, headings balance. Both degrade silently where
+   unsupported, so neither needs a feature query. */
+p {
+  text-wrap: pretty;
+}
+h1,
+h2,
+h3 {
+  text-wrap: balance;
 }
 
 a {
@@ -35,4 +65,80 @@ a {
 button {
   font: inherit;
   color: inherit;
+}
+
+/**
+ * §4 — the asymmetry IS the point, and it is nearly free: hover-in is
+ * instant, hover-out eases. Transitioning both directions at one duration is
+ * what makes an interface feel a beat behind the cursor. Interactive
+ * surfaces get the base `--out`; `:hover` overrides to `--in`.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  a,
+  button,
+  [role="button"],
+  li,
+  section {
+    transition-property: background-color, border-color, color, opacity;
+    transition-duration: var(--out);
+    transition-timing-function: var(--ease-out-quart);
+  }
+  a:hover,
+  button:hover,
+  [role="button"]:hover,
+  li:hover,
+  section:hover {
+    transition-duration: var(--in);
+  }
+}
+
+/**
+ * §6 — double-ring focus. A single ring cannot clear 3:1 against BOTH a
+ * near-black page and a lit card, which is exactly the case a themed
+ * interface creates. Bright inner ring, dark outer ring, about 9:1 apart.
+ */
+:focus-visible {
+  outline: 2px solid #f2f4f6;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px rgba(4, 5, 7, 0.92);
+}
+
+/* §6 — a heavily themed page is precisely the case that breaks High
+   Contrast, so the decoration is demolished rather than approximated. */
+@media (forced-colors: active) {
+  :focus-visible {
+    outline: 2px solid CanvasText;
+    box-shadow: none;
+  }
+}
+
+/**
+ * §3 — the display face, for THE ONE figure a screen wants you to see
+ * first. Space Grotesk is loaded for this and nothing else; if a screen
+ * ever carries two of these, one of them is not the headline.
+ */
+.display {
+  font-family: var(--font-display);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/**
+ * §1 rule 5 — depth comes from elevation tint and hairlines, not shadows.
+ * The radius is the shell's, so `desk` stays a touch squarer than `ootp`,
+ * which is the one thing D9 lets a shell decide.
+ */
+button,
+[role="button"] {
+  border-radius: var(--shell-radius);
+}
+
+/**
+ * §5's data row: a 2px accent left-edge marks the row that is YOURS. Opt-in
+ * via the class so it stays rationed — rule 2 says the accent touches data
+ * and action only, and a page where every row is marked has marked nothing.
+ */
+.is-mine {
+  box-shadow: inset 2px 0 0 var(--c-accent);
 }

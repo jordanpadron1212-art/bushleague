@@ -203,18 +203,47 @@ Reusable, and each already solved once — port rather than reinvent.
 
 ---
 
-## 7. Applying this to the app
+## 7. Applying this to the app — DONE, v2.21.0 (`DECISIONS.md` D104)
 
-Not yet done. The app still ships the original tokens. The order that keeps risk low:
+Applied. `apps/web/src/styles/tokens.css` carries the two-dial palette, `styles/fonts.css` the
+three faces, and `styles/index.css` the global type, motion and focus rules. Components that
+already read role tokens needed no edits, which is what the palette → role → shell → component
+structure was for.
 
-1. Replace palette + type stack in `apps/web/src/styles/tokens.css`. Components that already
-   read tokens need no changes.
-2. Global `tabular-nums`, font smoothing, `text-wrap`.
-3. Elevation + hairline pass on rows and cards.
-4. Port the shared components above as real React components.
-5. Re-solve the **light theme** against the new palette to D18's rule, and record the
-   worst-case ratios in the token file header as that file already does.
-6. Roll out per screen, screenshotting at 360px in both themes before each ships.
+### Five deviations from the reference render, every one forced by D18
 
-The Playwright visual gate (`apps/web/e2e/visual.spec.ts`) is the guard — it already checks
-both shells, both themes, 360px and 1440px, zero console errors, zero horizontal overflow.
+The render is a dark-only artefact and was never contrast-solved for the app's four surfaces, two
+themes, and a **user-customizable accent that must hold across the whole hue circle**. Solving it
+produced five changes, all measured:
+
+| # | what | render | shipped | why |
+|---|---|---|---|---|
+| 1 | `--text-dim2` | `#6b7178` | `#878d94` | render measures **3.28** on surface-3 |
+| 2 | HSL fallback accent lightness | 58% | 72% | render bottoms out at **2.54** on blue (H=240) |
+| 3 | HSL fallback live lightness | 73% | 72% | unified with the accent |
+| 4 | `--pos`/`--neg` in light | "fixed, never themed" | themed | `#3ecf7a` measures **1.56** on white |
+| 5 | light accent/live lightness | unspecified | oklch 45% / hsl 22% | §2 leaves light to the app |
+
+Deviation 1 also fixed a **pre-existing** violation: the app's previous `--c-dim2` measured
+**2.65**, and the token file's compliance header had simply never listed that token.
+
+Deviation 4 contradicts §1's rule 4 ("positive/negative are direction, never brand, never
+customizable"). That rule was written for a dark render; D18 outranks it on a light ground. The
+*hues* are preserved, so green still reads as green.
+
+### It is now enforced, not asserted
+
+`apps/web/e2e/visual.spec.ts` measures contrast **in a real browser**, by painting each token to a
+1×1 canvas and sampling the pixel — the accent is an `oklch()` expression only a browser resolves,
+and Chromium returns it as `oklch(...)` rather than `rgb(...)`, which a naive string parse gets
+catastrophically wrong. Every text token is checked against all four surfaces in both themes, and
+the accent and live hues are swept the whole circle in 15° steps. Verified to fail on a
+regression, not merely to pass today.
+
+### Not done, and deliberately
+
+Only the token, type, motion and focus layers plus the two headline figures are in. The signature
+COMPONENTS of §5 — split-flap digits, the waterfall, the radial gauge, the live conic border,
+drag-to-compare, the aurora and grain — are not ported. They belong to screens that mostly do not
+exist yet (Standings, Schedule, Leaders, Gate), and porting a gauge before there is a number worth
+gauging would be decoration. The tokens they need are all present.

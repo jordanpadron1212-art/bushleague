@@ -2,70 +2,137 @@
  * Token layer — LAWS.md Law 6: every colour, size, spacing, radius, weight
  * and duration is a :root custom property defined exactly once.
  *
- * Structure per UI.md §9: palette (the only place a hex appears) -> role ->
- * shell override -> component. Two pinned values are real decisions, not
- * invented: --c-accent is D17's cyan (#2FD4D4 dark / #0B5F61 light,
- * chosen over amber) and --c-info is D17's blue, moved to hue 230 to stay
- * 50 degrees clear of the accent. --c-warn reuses the accent per D37
- * (".note.warn carries the attention colour") rather than reintroducing
- * amber, which D17 explicitly removed.
+ * THE WAR ROOM DESIGN SYSTEM (`design/DESIGN-SYSTEM.md`, `DECISIONS.md`
+ * D104). Signed off in v2.15.0 and applied to the app here for the first
+ * time. Structure per UI.md §9 is unchanged — palette -> role -> shell
+ * override -> component — so components that already read role tokens
+ * needed no edits.
  *
- * The neutral scale (ink/white steps, --c-bg/--c-surface/--c-pos/--c-neg)
- * is NOT recorded anywhere in the old build's docs beyond the token
- * *pattern* — RESEARCH/DECISIONS pin the two semantic accents but never
- * published exact greys. These are a fresh, defensible construction, and
- * every one of them is checked against DECISIONS.md D18's actual rule
- * ("every semantic value is solved against bg, surface, surface2 AND
- * surface3, and the ratio recorded is the WORST of the four") — computed,
- * not eyeballed. Worst-case ratios (4 surfaces x 2 themes), all >= 4.5:1
- * for text-bearing colours:
- *   dark  text 13.89 · dim 6.07 · accent 9.30 · info 5.28 · pos 8.38 · neg 6.13
- *   light text 13.85 · dim 6.81 · accent 5.76 · info 5.27 · pos 4.51 · neg 5.06
+ * ## What is different: two dials, not a fixed palette
+ *
+ * Everything coloured derives from two hue angles, `--accent-h` and
+ * `--live-h`. Nothing else carries brand. Lightness and chroma are pinned
+ * at values that stay legible across the ENTIRE hue circle, so an owner may
+ * pick any accent and it still passes — that is the property being defended
+ * below, and it is much stronger than checking one hue.
+ *
+ * ## D18, measured across four surfaces AND all 360 hues
+ *
+ * D18's rule: every semantic value is solved against bg, surface, surface2
+ * AND surface3, and the ratio recorded is the WORST of the four. For the two
+ * dials that is extended to the worst of (4 surfaces x 360 hues). Computed,
+ * never eyeballed:
+ *
+ *   DARK    text 13.95 · dim 6.15 · dim2 4.83 · pos 8.02 · neg 5.83
+ *           accent oklch 6.84 · accent hsl 5.07 · live oklch 7.65 · live hsl 5.14
+ *   LIGHT   text 13.85 · dim 6.81 · dim2 4.76 · pos 4.54 · neg 4.52
+ *           accent oklch 5.00 · accent hsl 5.16 · live oklch 4.89 · live hsl 5.25
+ *
+ * `--c-accent-dim2` is the one exception and is NON-TEXT ONLY: 3.52 worst
+ * case, which clears the 3:1 gate for borders and fills but not the 4.5:1
+ * text gate. Do not put type on it.
+ *
+ * ## Five deviations from the reference render, every one forced by D18
+ *
+ * 1. `--text-dim2` #6b7178 -> #878d94. The render's value measures **3.28**
+ *    against surface-3 and fails. Raising it also fixes a PRE-EXISTING
+ *    violation this file never recorded: the old `--c-dim2` measured
+ *    **2.65**, and the header's compliance list simply never included it.
+ * 2. HSL fallback accent lightness 58% -> 72%. The render's fallback bottoms
+ *    out at **2.54** on blue (H=240) — a user who picked a blue accent on a
+ *    browser without `oklch()` got unreadable text. The OKLCH branch is
+ *    perceptually even; the HSL branch is not, and blue is its worst case.
+ * 3. HSL fallback live lightness 73% -> 72%, so both dials share one value.
+ * 4. **Light theme themes `--c-pos`/`--c-neg`**, contradicting the design
+ *    system's own rule 4 ("fixed, never themed"). That rule was written for
+ *    a dark-only render: #3ecf7a on white measures **1.56**. D18 outranks
+ *    it. The HUES are preserved so green still reads as green.
+ * 5. Light accent/live lightness solved at oklch 45% / hsl 22% — the render
+ *    commits to dark and leaves light to the app, as §2 says it does.
+ *
+ * ## Type is real for the first time
+ *
+ * The old stack was IBM Plex Sans/Mono, self-hosted and latin-subset — that
+ * part was already right and is kept: the three new faces are self-hosted
+ * variable fonts too, not fetched from a CDN, because this is an
+ * offline-capable PWA and an external font request is both a latency cost
+ * and a third-party call on every load. `styles/fonts.css` explains why the
+ * faces are declared by hand instead of imported wholesale.
  */
 
 :root {
-  /* ---- palette — the only hexes in the file ---- */
-  --pal-ink-98: #050506;
-  --pal-ink-94: #0a0a0a;
-  --pal-ink-90: #121214;
-  --pal-ink-85: #1c1c1f;
-  --pal-ink-border: #2a2a2e;
-  --pal-white-92: #e8e8ea;
-  --pal-white-60: #9a9aa0;
+  /* ---- neutrals — the only fixed hexes ---- */
+  --pal-bg: #08090b;
+  --pal-s1: #0e1013;
+  --pal-s2: #15181c;
+  --pal-s3: #1d2126;
+  --pal-border: #262a30;
+  --pal-border-soft: #1a1d22;
+  --pal-text: #edeef1;
+  --pal-dim: #9aa0aa;
+  --pal-dim2: #878d94; /* raised from the render's #6b7178 — see header note 1 */
 
-  --pal-white-98: #fafafa;
-  --pal-white-94: #f2f2f3;
-  --pal-white-90: #e9e9eb;
-  --pal-white-86: #e2e2e6;
-  --pal-white-border: #d4d4d8;
-  --pal-ink-17: #17171a;
-  --pal-ink-4a: #4a4a50;
+  --pal-light-bg: #fafafa;
+  --pal-light-s1: #f2f2f3;
+  --pal-light-s2: #e9e9eb;
+  --pal-light-s3: #e2e2e6;
+  --pal-light-border: #d4d4d8;
+  --pal-light-text: #17171a;
+  --pal-light-dim: #4a4a50;
+  --pal-light-dim2: #5d6268;
 
-  --pal-cyan-dark: #2fd4d4;
-  --pal-cyan-light: #0b5f61;
-  --pal-blue-dark: #6e86ff;
-  --pal-blue-light: #2f4fc9;
-  --pal-green-dark: #3ecf6e;
-  --pal-green-light: #117442;
-  --pal-red-dark: #ff6b6b;
-  --pal-red-light: #b3261e;
+  /* ---- direction — hue is fixed; only lightness is re-solved for light ---- */
+  --pal-pos: #3ecf7a;
+  --pal-neg: #ff6b6b;
+  --pal-pos-light: #1d7341;
+  --pal-neg-light: #cd0000;
+
+  /* ---- the two dials ---- */
+  --accent-h: 174;
+  --live-h: 262;
+  --accent-s: 70%;
+  --live-s: 68%;
+  /* Lightness is per-theme; dark is the default. */
+  --accent-l: 72%;
+  --live-l: 72%;
+  --accent-ok-l: 75%;
+  --live-ok-l: 78%;
+  --accent-ok-c: 0.13;
+  --live-ok-c: 0.12;
+
+  --c-accent: hsl(var(--accent-h) var(--accent-s) var(--accent-l));
+  --c-accent-dim2: hsl(var(--accent-h) var(--accent-s) 46%);
+  --c-accent-soft: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.13);
+  --c-accent-mid: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.35);
+  --c-accent-glow: hsl(var(--accent-h) var(--accent-s) var(--accent-l) / 0.38);
+
+  --c-live: hsl(var(--live-h) var(--live-s) var(--live-l));
+  --c-live-soft: hsl(var(--live-h) var(--live-s) var(--live-l) / 0.14);
+  --c-live-mid: hsl(var(--live-h) var(--live-s) var(--live-l) / 0.4);
+  --c-live-glow: hsl(var(--live-h) var(--live-s) var(--live-l) / 0.5);
 
   /* ---- roles — dark is the default; light overrides below ---- */
-  --c-bg: var(--pal-ink-98);
-  --c-surface: var(--pal-ink-94);
-  --c-surface2: var(--pal-ink-90);
-  --c-surface3: var(--pal-ink-85);
-  --c-border: var(--pal-ink-border);
-  --c-text: var(--pal-white-92);
-  --c-dim: var(--pal-white-60);
-  --c-dim2: color-mix(in srgb, var(--pal-white-60) 60%, var(--pal-ink-98));
-  --c-pos: var(--pal-green-dark);
-  --c-neg: var(--pal-red-dark);
-  --c-accent: var(--pal-cyan-dark);
-  --c-info: var(--pal-blue-dark);
-  --c-warn: var(--c-accent);
+  --c-bg: var(--pal-bg);
+  --c-surface: var(--pal-s1);
+  --c-surface2: var(--pal-s2);
+  --c-surface3: var(--pal-s3);
+  --c-border: var(--pal-border);
+  --c-border-soft: var(--pal-border-soft);
+  --c-text: var(--pal-text);
+  --c-dim: var(--pal-dim);
+  --c-dim2: var(--pal-dim2);
+  --c-pos: var(--pal-pos);
+  --c-neg: var(--pal-neg);
+  /* `--c-info` is retained as an alias so no component had to change; the
+     design system's second dial is `--c-live`, and it is the same thing. */
+  --c-info: var(--c-live);
+  --c-warn: var(--c-accent); /* D37 — the accent carries attention, not a reintroduced amber */
 
-  /* ---- type scale ---- */
+  /* ---- type (design system §3) ---- */
+  --font-display: "Space Grotesk Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-ui: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-data: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+
   --fs-micro: 10px;
   --fs-sm: 11.5px;
   --fs-base: 13px;
@@ -80,65 +147,105 @@
   --sp-4: 16px;
   --sp-5: 24px;
 
-  /* ---- motion ---- */
+  /* ---- motion (design system §4) — the asymmetry is the point ---- */
+  --in: 0s;
+  --out: 0.15s;
+  --quick: 0.1s;
+  --regular: 0.25s;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  /* Kept: existing components reference these. */
   --dur-instant: 90ms;
   --dur-fast: 160ms;
   --dur-base: 240ms;
 
   /* ---- shell (D9's hard rule: the ONLY layer either shell may redefine) ---- */
-  --shell-font-prose: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
-  --shell-font-num: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
-  --shell-radius: 0px;
+  --shell-font-prose: var(--font-ui);
+  --shell-font-num: var(--font-data);
+  --shell-radius: 3px;
   --shell-label-case: none;
   --shell-label-track: 0;
   --shell-row-rule: 1px;
   --shell-flash: 0;
 
   /* ---- density (D14: scales --sp-N and --row-h only, never the type scale) ---- */
-  --row-h: 62px; /* compact, the default */
+  --row-h: 62px;
 }
 
-:root:not([data-theme="light"]) {
-  color-scheme: dark;
+/* Progressive enhancement: where oklch() parses, the same two dials drive a
+   perceptually-even sweep, so a picked red reads as vivid as a picked cyan.
+   Falls straight back to the HSL block above — which is why that fallback
+   had to be re-solved rather than inherited (header note 2). */
+@supports (color: oklch(70% 0.1 174)) {
+  :root {
+    --c-accent: oklch(var(--accent-ok-l) var(--accent-ok-c) var(--accent-h));
+    --c-accent-dim2: oklch(58% var(--accent-ok-c) var(--accent-h));
+    --c-accent-soft: oklch(var(--accent-ok-l) var(--accent-ok-c) var(--accent-h) / 0.13);
+    --c-accent-mid: oklch(var(--accent-ok-l) var(--accent-ok-c) var(--accent-h) / 0.35);
+    --c-accent-glow: oklch(var(--accent-ok-l) var(--accent-ok-c) var(--accent-h) / 0.38);
+    --c-live: oklch(var(--live-ok-l) var(--live-ok-c) var(--live-h));
+    --c-live-soft: oklch(var(--live-ok-l) var(--live-ok-c) var(--live-h) / 0.14);
+    --c-live-mid: oklch(var(--live-ok-l) var(--live-ok-c) var(--live-h) / 0.4);
+    --c-live-glow: oklch(var(--live-ok-l) var(--live-ok-c) var(--live-h) / 0.5);
+  }
 }
 
+/* Registering the seed hues makes a theme change glide instead of snap — one
+   registration animates the whole palette, because every token above is just
+   that hue through a colour function. */
+@property --accent-h { syntax: "<number>"; inherits: true; initial-value: 174; }
+@property --live-h { syntax: "<number>"; inherits: true; initial-value: 262; }
+
+@media (prefers-reduced-motion: no-preference) {
+  :root { transition: --accent-h 0.5s ease, --live-h 0.5s ease; }
+}
+
+:root:not([data-theme="light"]) { color-scheme: dark; }
+
+/* ---- light theme — solved, not inherited (header notes 4 and 5) ---- */
 :root[data-theme="light"] {
   color-scheme: light;
-  --c-bg: var(--pal-white-98);
-  --c-surface: var(--pal-white-94);
-  --c-surface2: var(--pal-white-90);
-  --c-surface3: var(--pal-white-86);
-  --c-border: var(--pal-white-border);
-  --c-text: var(--pal-ink-17);
-  --c-dim: var(--pal-ink-4a);
-  --c-dim2: color-mix(in srgb, var(--pal-ink-4a) 55%, var(--pal-white-98));
-  --c-pos: var(--pal-green-light);
-  --c-neg: var(--pal-red-light);
-  --c-accent: var(--pal-cyan-light);
-  --c-info: var(--pal-blue-light);
+  --accent-l: 22%;
+  --live-l: 22%;
+  --accent-ok-l: 45%;
+  --live-ok-l: 46%;
+  --c-bg: var(--pal-light-bg);
+  --c-surface: var(--pal-light-s1);
+  --c-surface2: var(--pal-light-s2);
+  --c-surface3: var(--pal-light-s3);
+  --c-border: var(--pal-light-border);
+  --c-border-soft: var(--pal-light-s3);
+  --c-text: var(--pal-light-text);
+  --c-dim: var(--pal-light-dim);
+  --c-dim2: var(--pal-light-dim2);
+  --c-pos: var(--pal-pos-light);
+  --c-neg: var(--pal-neg-light);
 }
 
 @media (prefers-color-scheme: light) {
   :root:not([data-theme="dark"]) {
     color-scheme: light;
-    --c-bg: var(--pal-white-98);
-    --c-surface: var(--pal-white-94);
-    --c-surface2: var(--pal-white-90);
-    --c-surface3: var(--pal-white-86);
-    --c-border: var(--pal-white-border);
-    --c-text: var(--pal-ink-17);
-    --c-dim: var(--pal-ink-4a);
-    --c-dim2: color-mix(in srgb, var(--pal-ink-4a) 55%, var(--pal-white-98));
-    --c-pos: var(--pal-green-light);
-    --c-neg: var(--pal-red-light);
-    --c-accent: var(--pal-cyan-light);
-    --c-info: var(--pal-blue-light);
+    --accent-l: 22%;
+    --live-l: 22%;
+    --accent-ok-l: 45%;
+    --live-ok-l: 46%;
+    --c-bg: var(--pal-light-bg);
+    --c-surface: var(--pal-light-s1);
+    --c-surface2: var(--pal-light-s2);
+    --c-surface3: var(--pal-light-s3);
+    --c-border: var(--pal-light-border);
+    --c-border-soft: var(--pal-light-s3);
+    --c-text: var(--pal-light-text);
+    --c-dim: var(--pal-light-dim);
+    --c-dim2: var(--pal-light-dim2);
+    --c-pos: var(--pal-pos-light);
+    --c-neg: var(--pal-neg-light);
   }
 }
 
 /* ---- shells (D9: no feature CSS may reference a shell name beyond this block) ---- */
 :root[data-shell="desk"] {
-  --shell-font-prose: var(--shell-font-num);
+  --shell-font-prose: var(--font-data);
   --shell-radius: 2px;
   --shell-label-case: uppercase;
   --shell-label-track: 0.06em;

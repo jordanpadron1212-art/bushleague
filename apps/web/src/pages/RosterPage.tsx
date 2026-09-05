@@ -179,15 +179,27 @@ export default function RosterPage() {
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <header className="border-b px-[var(--sp-3)] py-[var(--sp-3)]" style={{ borderColor: "var(--c-border)" }}>
-        <div className="flex items-baseline justify-between">
+        {/* The stat tile from the design system §5: micro label, big value,
+            dim context line. The headline figure gets the display face, and
+            its label sits under it rather than beside it — a first draft put
+            the count in the corner and left the sentence below starting
+            "under contract ·", which read as a fragment. */}
+        <div className="flex items-start justify-between gap-[var(--sp-3)]">
           <h1 className="text-[var(--fs-md)] font-semibold">{mine.city} organization</h1>
-          <span className="num text-[var(--fs-sm)]" style={{ color: "var(--c-dim)" }}>
-            {all.length} under contract
+          <span className="shrink-0 text-right">
+            <span className="display block text-[var(--fs-lg)] leading-none">{all.length}</span>
+            <span
+              className="mt-[var(--sp-1)] block text-[var(--fs-micro)]"
+              style={{ color: "var(--c-dim2)", textTransform: "var(--shell-label-case)" as never, letterSpacing: "var(--shell-label-track)" }}
+            >
+              under contract
+            </span>
           </span>
         </div>
-        <p className="mt-[var(--sp-1)] text-[var(--fs-micro)]" style={{ color: "var(--c-dim)" }}>
-          {money(orgPayroll)} in contracts across {clubs.length} {clubs.length === 1 ? "club" : "clubs"}. Grades are what
-          your scouts report, not what a player is — the bars are how sure they are.
+        <p className="mt-[var(--sp-2)] text-[var(--fs-micro)]" style={{ color: "var(--c-dim)" }}>
+          {money(orgPayroll)} in contracts across {clubs.length}{" "}
+          {clubs.length === 1 ? "club" : "clubs"}. Grades are what your scouts report, not what a
+          player is — the bars are how sure they are.
         </p>
       </header>
 

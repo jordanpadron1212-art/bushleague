@@ -2337,3 +2337,84 @@ dash — "he is what he is" — and the number only when there is genuinely more
 Rejected: re-solving D102's market exponent so contracts match the authorisation again (it would
 mean paying MORE per player to cancel out the service discount, which is the realistic part);
 adding promote/demote/release controls (D96); showing true grades anywhere (Law 10).
+
+## 2026-09-05 — The War Room design system is applied, and solving it for real broke five of its own values
+
+**D104 · Signed off in v2.15.0 and applied to the app here for the first time. The reference render
+is a dark-only artefact; the app has four surfaces, two themes, two shells, and an accent the owner
+can set to any hue. Solving the palette against all of that — rather than transcribing it — is
+where the work was.**
+
+### What made it more than a copy-paste
+
+The design system's own §2 says lightness and chroma are "held at values that stay in-gamut and
+legible across the entire hue circle." That claim had never been tested, and D18's rule (every
+semantic value solved against bg, surface, surface2 AND surface3, worst of the four recorded)
+extends here to the worst of **four surfaces × 360 hues × two themes**. Computed, never eyeballed.
+
+**Five values failed and were re-solved. Every deviation is measured, not preferred:**
+
+| # | what | render | shipped | measured problem |
+|---|---|---|---|---|
+| 1 | `--text-dim2` | `#6b7178` | `#878d94` | **3.28** on surface-3 |
+| 2 | HSL fallback accent lightness | 58% | 72% | **2.54** on blue (H=240) |
+| 3 | HSL fallback live lightness | 73% | 72% | unified with the accent |
+| 4 | `--pos`/`--neg` in light | "never themed" | themed | `#3ecf7a` is **1.56** on white |
+| 5 | light accent/live lightness | unspecified | oklch 45% / hsl 22% | §2 leaves light to the app |
+
+**Deviation 2 is the one that mattered most.** The OKLCH branch is perceptually even, so it passes
+across the circle at the render's own values (6.84 worst). The HSL fallback is *not* perceptually
+even, and blue is its worst case — a player who picked a blue accent on a browser without `oklch()`
+would have had 2.54:1 text. The fallback exists precisely for that player.
+
+**Deviation 4 overrules the design system's own rule 4** ("direction is fixed, never themed"). That
+rule was written for a dark render. On a light ground `#3ecf7a` measures 1.56:1. D18 outranks it;
+the hues are preserved so green still reads as green.
+
+**Deviation 1 also fixed a pre-existing violation.** The app's previous `--c-dim2` measured **2.65**
+and had been shipping that way, while the token file's header claimed D18 compliance — because the
+list of checked tokens simply never included that one. A compliance note that omits a token is
+worse than no note.
+
+### The type system, and one thing I got wrong
+
+Three faces, three jobs: Space Grotesk for the one headline figure a screen wants you to see first,
+Inter for everything you read, JetBrains Mono for everything you compare. Self-hosted variable
+fonts — three files, latin-only, 111 KB total, and the precache went *down* (20 entries to 18)
+because three variable files replace five static ones.
+
+The faces are declared **by hand** rather than imported wholesale, and that is not fussiness:
+`vite.config.ts`'s workbox `globPatterns` precaches every woff2 in the build, so importing the
+packages' own stylesheets would have pushed Cyrillic, Greek and Vietnamese cuts onto every user's
+device on first visit. The stack this replaced avoided that with `latin-*.css` imports; variable
+packages publish no per-subset stylesheet, so hand-written `@font-face` is the equivalent.
+
+**Correction to my own first draft:** I wrote in the token header that the old stack "named IBM Plex
+and never loaded it." That was false — it was self-hosted and latin-subset, and that part was
+already right. Caught and fixed before it shipped.
+
+### Enforced, not asserted
+
+The old token header *recorded* ratios in prose and nothing checked them, which is exactly how a
+2.65 ships under a compliance claim. There are now four browser tests that measure contrast by
+**painting each token to a 1×1 canvas and sampling the pixel.**
+
+That method is not incidental. `getComputedStyle().color` returns `oklch(0.75 0.13 174)` in
+Chromium — it preserves the colour space. A first version of this test scraped the first three
+numbers out of that string, read `0.75, 0.13, 174` as RGB bytes, and **reported the accent at
+1.24:1** — a false alarm about a palette that was correct. Sampling what is actually painted is
+immune to the format. Verified to fail on a real regression: reverting `--text-dim2` to the
+render's value makes it report exactly 3.28.
+
+### Impact
+
+**Visually decisive** — the app has never used the design system Jordan signed off on, and every
+screen now does. **Zero runtime cost**: same token architecture, three font files instead of five,
+CSS grew 17 KB uncompressed (4.7 KB gzipped). **Accessibility strictly better**: a token that had
+been shipping at 2.65:1 now measures 4.83, and the whole palette is guarded rather than described.
+
+Rejected: transcribing the render's values unchanged (five of them fail D18); a CDN font link (an
+offline-capable PWA should not make a third-party request on every load); porting §5's signature
+components — split-flap digits, the waterfall, the radial gauge, the aurora — in this pass (they
+belong to screens that mostly do not exist yet, and a gauge without a number worth gauging is
+decoration; the tokens they need are all present).

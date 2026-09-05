@@ -355,3 +355,139 @@ test("the roster shows real salary dispersion, not one number per grade", async 
   expect(salaries.length).toBeGreaterThan(20);
   expect(new Set(salaries).size).toBeGreaterThan(8);
 });
+
+/**
+ * D18, enforced rather than asserted in a comment (`DECISIONS.md` D104).
+ *
+ * `tokens.css`'s header records worst-case contrast ratios for every
+ * semantic value. Until now that was prose: nothing checked it, and the
+ * previous palette had in fact been shipping a `--c-dim2` at 2.65:1 with the
+ * header claiming compliance it never actually measured for that token.
+ *
+ * This resolves the tokens in a real browser — which matters, because the
+ * accent is an `oklch()` expression that only a browser computes — and
+ * measures every text colour against all four surfaces in both themes.
+ * It also sweeps the accent hue, because the accent is user-customizable and
+ * a palette that only passes at its default hue is not a palette that passes.
+ */
+/** Parsed from a real browser's computed `color`, so `oklch()` is resolved by the engine that ships it. */
+async function tokenContrast(page: Page, tokens: string[]): Promise<Record<string, number>> {
+  return page.evaluate((names) => {
+    const lum = (rgb: number[]) => {
+      const [r, g, b] = rgb.map((c) => {
+        const v = c / 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    // Read what is actually PAINTED, via a 1x1 canvas.
+    //
+    // `getComputedStyle().color` cannot be parsed as rgb here: Chromium
+    // preserves the colour space and returns "oklch(0.75 0.13 174)" for the
+    // accent. A first version of this test scraped the first three numbers
+    // out of that string, read 0.75/0.13/174 as RGB bytes, and reported the
+    // accent at 1.24:1 — a false alarm about a palette that was correct.
+    // Painting the colour and sampling the pixel is immune to the format.
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 1;
+    const ctx = cv.getContext("2d", { willReadFrequently: true })!;
+    const read = (name: string): number[] => {
+      const el = document.createElement("span");
+      el.style.color = `var(${name})`;
+      document.body.appendChild(el);
+      const resolved = getComputedStyle(el).color;
+      el.remove();
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.fillStyle = resolved;
+      ctx.fillRect(0, 0, 1, 1);
+      const d = ctx.getImageData(0, 0, 1, 1).data;
+      return [d[0]!, d[1]!, d[2]!];
+    };
+    const ratio = (a: number[], b: number[]) => {
+      const la = lum(a), lb = lum(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    };
+    const surfaces = ["--c-bg", "--c-surface", "--c-surface2", "--c-surface3"].map(read);
+    const out: Record<string, number> = {};
+    for (const n of names) {
+      const c = read(n);
+      out[n] = Math.min(...surfaces.map((s) => ratio(c, s)));
+    }
+    return out;
+  }, tokens);
+}
+
+/** Sweeps the accent and live hues, because both are things the owner can change. */
+async function hueSweepWorst(page: Page): Promise<number> {
+  return page.evaluate(() => {
+    const lum = (rgb: number[]) => {
+      const [r, g, b] = rgb.map((c) => {
+        const v = c / 255;
+        return v <= 0.04045 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4);
+      });
+      return 0.2126 * r! + 0.7152 * g! + 0.0722 * b!;
+    };
+    // Read what is actually PAINTED, via a 1x1 canvas.
+    //
+    // `getComputedStyle().color` cannot be parsed as rgb here: Chromium
+    // preserves the colour space and returns "oklch(0.75 0.13 174)" for the
+    // accent. A first version of this test scraped the first three numbers
+    // out of that string, read 0.75/0.13/174 as RGB bytes, and reported the
+    // accent at 1.24:1 — a false alarm about a palette that was correct.
+    // Painting the colour and sampling the pixel is immune to the format.
+    const cv = document.createElement("canvas");
+    cv.width = cv.height = 1;
+    const ctx = cv.getContext("2d", { willReadFrequently: true })!;
+    const read = (name: string): number[] => {
+      const el = document.createElement("span");
+      el.style.color = `var(${name})`;
+      document.body.appendChild(el);
+      const resolved = getComputedStyle(el).color;
+      el.remove();
+      ctx.clearRect(0, 0, 1, 1);
+      ctx.fillStyle = resolved;
+      ctx.fillRect(0, 0, 1, 1);
+      const d = ctx.getImageData(0, 0, 1, 1).data;
+      return [d[0]!, d[1]!, d[2]!];
+    };
+    const ratio = (a: number[], b: number[]) => {
+      const la = lum(a), lb = lum(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    };
+    const surfaces = ["--c-bg", "--c-surface", "--c-surface2", "--c-surface3"].map(read);
+    let lowest = 99;
+    for (let h = 0; h < 360; h += 15) {
+      document.documentElement.style.setProperty("--accent-h", String(h));
+      document.documentElement.style.setProperty("--live-h", String(h));
+      for (const name of ["--c-accent", "--c-live"]) {
+        const c = read(name);
+        lowest = Math.min(lowest, ...surfaces.map((s) => ratio(c, s)));
+      }
+    }
+    document.documentElement.style.removeProperty("--accent-h");
+    document.documentElement.style.removeProperty("--live-h");
+    return lowest;
+  });
+}
+
+for (const theme of THEMES) {
+  test(`every text token clears 4.5:1 on all four surfaces — ${theme}`, async ({ page }) => {
+    await startGame(page);
+    await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+
+    const results = await tokenContrast(page, [
+      "--c-text", "--c-dim", "--c-dim2", "--c-pos", "--c-neg", "--c-accent", "--c-live",
+    ]);
+    for (const [token, worst] of Object.entries(results)) {
+      expect(worst, `${token} in ${theme} is ${worst.toFixed(2)}:1`).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  test(`the accent stays legible at EVERY hue the owner can pick — ${theme}`, async ({ page }) => {
+    await startGame(page);
+    await page.evaluate((t) => document.documentElement.setAttribute("data-theme", t), theme);
+    const worst = await hueSweepWorst(page);
+    expect(worst, `worst accent/live contrast across the hue circle in ${theme} is ${worst.toFixed(2)}:1`)
+      .toBeGreaterThanOrEqual(4.5);
+  });
+}

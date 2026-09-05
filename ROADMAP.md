@@ -208,6 +208,12 @@ without a different lever: the **competitive balance tax** (real, published, and
 deferred in D93) or an **owner distribution**. Do not re-propose the cash call before one of those
 exists.
 
+**9. ~~Apply the War Room design system~~ — DONE, v2.21.0 (D104).** Tokens, type, motion and focus
+across every screen. Five of the design system's own values failed D18 and were re-solved; contrast
+is now enforced by browser tests rather than recorded in a comment. **Still open from §5:** the
+signature components (split-flap digits, waterfall, radial gauge, live conic border,
+drag-to-compare, aurora + grain) are not ported — they belong to the screens that light next.
+
 **Next for the delegation model, in order:**
 
 1. ~~**`payrollBudget`**~~ — **DONE, v2.19.0 (D102).** Both halves of "make money real" have landed.

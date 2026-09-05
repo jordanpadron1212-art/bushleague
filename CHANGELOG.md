@@ -5,6 +5,52 @@ HTML artifact (LAWS.md's old Law 13). As of v2.0.0 there is no more artifact fil
 entries are written directly here, one per pass, versioned against `package.json` and a git tag.
 See `DECISIONS.md` D78.
 
+## v2.21.0 · THE WAR ROOM, APPLIED — 2026-09-05
+
+The design you signed off on in v2.15.0 has never been in the app. It is now, on every screen.
+
+It wasn't a copy-paste. The reference render is a dark-only artefact; the app has four surfaces,
+two themes, two shells, and an accent you can set to any hue on the circle. The design system's own
+claim is that its colours "stay legible across the entire hue circle" — nobody had ever tested
+that. Solving it against D18's rule, across four surfaces x 360 hues x two themes, broke five of
+its own values:
+
+  - The dimmest text colour measures 3.28:1 and fails. Raised.
+  - The HSL fallback accent bottoms out at 2.54:1 on blue. A player who picked a blue accent on a
+    browser without oklch() would have had unreadable text — and the fallback exists for exactly
+    that player. Lightness raised from 58% to 72%.
+  - Positive and negative are specified as "fixed, never themed". On a white background the green
+    measures 1.56:1. They are themed for light, hues preserved so green still reads as green.
+  - Light-theme accent and live lightness were never specified at all; the render commits to dark.
+    Solved at oklch 45% / hsl 22%.
+
+Fixing the first one also fixed a violation that was already shipping: the old dim colour measured
+2.65:1 while the token file's header claimed compliance — because the list of checked tokens simply
+never included it. A compliance note that omits a token is worse than no note.
+
+Type is now three faces doing three jobs: Space Grotesk for the one headline figure per screen,
+Inter for everything you read, JetBrains Mono for everything you compare. Self-hosted, latin-only,
+three variable files at 111KB — and the precache actually got smaller, because three variable files
+replace five static ones. They're declared by hand rather than imported wholesale, because the
+service worker precaches every font file in the build and importing the packages directly would
+have pushed Cyrillic and Vietnamese onto every phone.
+
+Also in: the asymmetric hover the design system insists on (instant in, eased out — the thing that
+stops an interface feeling a beat behind your cursor), tabular figures everywhere so no column of
+numbers ever jitters, and a double-ring focus indicator that clears 3:1 against both a near-black
+page and a lit card.
+
+And it's enforced now rather than described. Four browser tests measure contrast by painting each
+colour to a 1x1 canvas and sampling the pixel — every text token against all four surfaces in both
+themes, plus a full sweep of the hue circle. Verified to fail when a value regresses, not merely to
+pass today.
+
+Not done, deliberately: the signature components — split-flap digits, the waterfall, the radial
+gauge, the aurora — aren't ported. They belong to screens that mostly don't exist yet, and a gauge
+with no number worth gauging is decoration. Every token they need is in place.
+
+See `DECISIONS.md` D104 and `design/DESIGN-SYSTEM.md` §7.
+
 ## v2.20.0 · YOU CAN FINALLY SEE YOUR TEAM — AND IT WAS LYING TO YOU — 2026-09-05
 
 A baseball game where you couldn't look at your own players. The Roster page lights: every player

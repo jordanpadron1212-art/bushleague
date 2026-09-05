@@ -150,7 +150,14 @@ export default function OfficePage() {
             </div>
             <div className="flex justify-between font-semibold">
               <span>Net</span>
-              <span style={{ color: monthIS.net >= 0 ? "var(--c-pos)" : "var(--c-neg)" }}>{money(monthIS.net)}</span>
+              {/* The one figure this screen wants you to see first — the
+                  display face is spent here and nowhere else on the page. */}
+              <span
+                className="display text-[var(--fs-md)]"
+                style={{ color: monthIS.net >= 0 ? "var(--c-pos)" : "var(--c-neg)" }}
+              >
+                {money(monthIS.net)}
+              </span>
             </div>
           </div>
         )}

@@ -2,7 +2,7 @@
 
 **Current state: the repository itself is the build.** There is no more single artifact file — read
 this file, then open `apps/web/src/` and `packages/sim-kit/src/`. Search `DECISIONS.md` before
-proposing anything that feels like a new idea — 103 of them are already recorded, several against
+proposing anything that feels like a new idea — 104 of them are already recorded, several against
 things that sound good.
 
 > **Rewritten whole, not patched — 2026-09-04.** `WORKFLOW.md` says "patch it, never rewrite it" for
@@ -56,7 +56,7 @@ leaves `main` green, not a handed-over file).
 | `packages/sim-kit/` | the portable engine — state schema, the double-entry ledger, RNG, formatters. Framework-agnostic, tested with Vitest |
 | `.github/workflows/ci-deploy.yml` | typecheck → test → build → Playwright visual check → deploy, on every push to `main` |
 | `HANDOFF.md` | this file |
-| `DECISIONS.md` | every decision with its reasoning, D1–D103. Search before proposing |
+| `DECISIONS.md` | every decision with its reasoning, D1–D104. Search before proposing |
 | `RESEARCH.md` | every real-world figure with source, date and tier. 24 sections |
 | `LAWS.md` / `DESIGN.md` / `UI.md` | the architecture laws (Laws 1/13/17 superseded, flagged not deleted), the design, the interface spec |
 | `CHANGELOG.md` / `ROADMAP.md` / `WORKFLOW.md` | what shipped, what is next, how a session runs |
@@ -300,6 +300,9 @@ itself (D93) — are resolved, not carried forward. See ROADMAP.md's "Next, in o
 | a drafted player's landed club's `parent` exactly matches the pick record's own drafting club id | checked directly, not sampled | same file |
 | setting `draftPhilosophy` to `"UPSIDE"` before rollover works, and the world's total population size stays exactly constant across a rollover that includes a real draft | checked directly | same file |
 | a genuine, pre-existing `makePlayer` id-collision risk exists at this project's current scale | a temporary diagnostic measured one sampled year absorbing "101.5%" of its draftees onto real roster slots — only possible if two distinct `Player` objects shared an `id` | disclosed in `DECISIONS.md` D93, diagnostic deleted, not a fix inside this pass |
+| that five values in the signed-off design system fail this project's own D18 contrast rule | worst case across 4 surfaces x 360 hues x 2 themes: `--text-dim2` 3.28, HSL fallback accent 2.54 on blue, `--pos` 1.56 on white; all re-solved | `DECISIONS.md` D104, `design/DESIGN-SYSTEM.md` §7 |
+| that the app was ALREADY shipping a token at 2.65:1 while its own header claimed D18 compliance | the compliance list simply never included `--c-dim2` | fixed in D104 — now 4.83 dark / 4.76 light |
+| that a naive contrast test reports the accent at 1.24:1 when it is actually 6.84 | Chromium returns `getComputedStyle().color` as `oklch(0.75 0.13 174)`, not `rgb()`; parsing the first three numbers reads them as RGB bytes. The shipped test paints to a 1x1 canvas and samples the pixel instead | `apps/web/e2e/visual.spec.ts` |
 | that a 40-man roster had almost no salary dispersion — found by LOOKING at the new Roster page, not by any test | every 65-grade player on exactly $13.00M, every 60 on $8.95M; ~4 distinct salaries across 40 players. After service-time pricing: 16 distinct, $0.80M-$13.00M | `DECISIONS.md` D103 |
 | that D102's "payroll equals what you authorised" claim was wrong once service time landed | contracts now total 62-70% of the authorisation, and the cost per marginal win IMPROVED from $7.8M to $5.25M against a ~$6.5M anchor | corrected in D103; the test now bounds the discount rather than asserting equality |
 | whether payroll created financial pressure (it did NOT — D100's negative result still holds) | 5 seasons at 0.5x/1.0x/1.5x/2.0x payroll: cash still grows at every level, $222M -> $257M even at 2.0x while winning 97-115 games. Winning pays for itself | the cash call and insolvency remain unbuildable; the next lever is a competitive-balance tax or owner distributions |
