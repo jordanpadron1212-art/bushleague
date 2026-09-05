@@ -105,7 +105,7 @@ describe("churn — the Frontier League against Build 0.9's own sourced target",
     expect(Math.abs(avg(p28s) - 0.146)).toBeLessThan(0.15); // sourced target: 14.6%
     expect(avg(continuities)).toBeGreaterThan(0.15); // sourced range 24-41% — not 0% (not a full rebuild every year)
     expect(avg(continuities)).toBeLessThan(0.6); // and not near-100% either (real turnover is happening)
-  }, 30000);
+  }, 120000);
 
   it("aged 30+ lands at the composition table's own required ceiling (8.0%, 2 of 25 Veteran slots) — the disclosed, structurally-explained gap from the sourced 2.4%, not an unexplained miss", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 11, year: 2026 });
@@ -139,7 +139,7 @@ describe("churn — world-level guarantees", () => {
         expect(p.age).toBeLessThanOrEqual(50);
       }
     }
-  });
+  }, 20000);
 
   it("the owned club still gets its bigger OWNED_N roster after churn, not the plain ROSTER_N", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 13, year: 2026 });

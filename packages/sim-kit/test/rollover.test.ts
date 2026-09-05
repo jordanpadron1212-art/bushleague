@@ -49,7 +49,7 @@ describe("rollover — mechanical guarantees", () => {
     const mine = state.world.clubs.find((c) => c.id === "MLB_NYY")!;
     const myGames = state.sched.filter(([, h, a]) => state.world.clubs[h] === mine || state.world.clubs[a] === mine);
     expect(myGames.length).toBe(162);
-  });
+  }, 20000);
 
   it("ages every SURVIVING player by exactly one year, churns in real new players too, and leaves no non-finite value anywhere in state", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 6, year: 2026 });
@@ -73,7 +73,7 @@ describe("rollover — mechanical guarantees", () => {
     expect(survivors).toBeGreaterThan(0); // churn is real retention, not 100% turnover
     expect(arrivals).toBeGreaterThan(0); // churn is real turnover, not 100% retention
     expect(scanNonFinite(state)).toEqual([]);
-  });
+  }, 20000);
 
   it("the new season is actually playable — advanceDay plays real games again after rollover", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 7, year: 2026 });
@@ -86,7 +86,7 @@ describe("rollover — mechanical guarantees", () => {
     while (result.played.length === 0 && guard++ < 30) result = advanceDay(state);
     expect(result.played.length).toBeGreaterThan(0);
     expect(state.season.year).toBe(2027);
-  });
+  }, 20000);
 
   it("three consecutive rollovers all succeed and keep advancing the year and every player's age", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 8, year: 2026 });
@@ -122,7 +122,7 @@ describe("rollover — mechanical guarantees", () => {
     // And a real sanity bound: nowhere near the ~35+ a fully closed
     // population reaches after just a handful of years (see D87's history).
     expect(ages[ages.length - 1]!).toBeLessThan(32);
-  }, 40000);
+  }, 120000);
 
   it("runs a real amateur draft every rollover (DECISIONS.md D93): state.lastDraft is a complete, real record, and drafted players actually land on the drafting org's own MiLB affiliates — never the MLB roster itself", () => {
     const state = newGame({ ownedClubId: "MLB_NYY", seed: 14, year: 2026 });

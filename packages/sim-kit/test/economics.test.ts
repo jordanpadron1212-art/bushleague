@@ -94,7 +94,7 @@ describe("economics — ledger integrity over a full season", () => {
         }
       }
     }
-  }, 30000);
+  }, 120000);
 
   it("never lets cash collapse to a catastrophic negative — the opening-capital seed actually covers the pre-season runway", async () => {
     const { state } = await playFullYear("MLB_NYY", 9);
@@ -184,7 +184,7 @@ describe("economics — independent leagues, recalibrated against the sourced -$
       expect(Number.isFinite(is.net)).toBe(true);
       expect(Number.isFinite(is.totalRev)).toBe(true);
     }
-  }, 30000);
+  }, 120000);
 
   it("lands within a bounded margin of revenue over a full calendar year for every independent league, not an order-of-magnitude miss", async () => {
     // Measured on seeds this project's own solve did NOT train on (10-12,

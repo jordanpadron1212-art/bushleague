@@ -21,22 +21,20 @@
  * A club that scouts badly bats the wrong man leadoff, and it will never
  * know.
  *
- * A GAP THIS SCREEN EXPOSED, disclosed rather than hidden. Rendering it
- * produced a batting order of three right fielders, two left fielders and
- * no catcher — because `chartClub` takes the nine best BATS by scouted
- * overall and nothing constrains the positions. Reading the engine
- * confirms why that is consistent rather than broken: `rateProfile` uses
- * only `hit`, `pow`, `eye` and `spd`, so the `def` and `arm` tools are
- * generated on every player and never read, and `p.pos` separates SP from
- * RP and is otherwise cosmetic. There is no fielding model yet, so no
- * result on any other screen is wrong.
+ * THE GAP THIS SCREEN EXPOSED IS NOW CLOSED. The first version of this
+ * page rendered a batting order of three right fielders and no catcher,
+ * because `chartClub` took the nine best BATS and nothing constrained
+ * position. That was a real engine gap — `def` and `arm` were generated on
+ * every player and read by nothing — and this screen is what made it
+ * visible. `fielding.ts` closed it: positions are filled hardest-first
+ * against the sourced positional adjustment (RESEARCH.md §21.6), up the
+ * middle is closed to specialists, and the nine men shown here are the nine
+ * the simulation actually fields.
  *
- * This page does NOT sort the card into something that looks like a real
- * lineup. Doing so would show an order the simulation is not playing, which
- * is a worse failure than showing an odd one. The note at the foot says so
- * to the owner, and ROADMAP.md carries the engine work.
+ * So the card now carries a POSITION for every man, and the club's own
+ * defensive standing, because both finally mean something.
  */
-import { chartClub, type Player } from "@bushleague/sim-kit";
+import { LVL, chartClub, naturalSlot, teamDefense, type FieldSlot, type Player } from "@bushleague/sim-kit";
 import { useMemo } from "react";
 import { useGameStore } from "../store/gameStore.js";
 import { nextGameFor, ownedClub, rosterOf } from "../store/selectors.js";
@@ -85,6 +83,17 @@ export default function LineupPage() {
   // way the sim does is the only way this screen stays true.
   const starterIdx = chart.rot.length ? club.gp % chart.rot.length : 0;
 
+  // Where each man is standing, and what the nine of them are worth.
+  const slotOf = new Map<string, FieldSlot>();
+  for (const [slot, id] of chart.field) slotOf.set(id, slot);
+  const assignment = new Map<FieldSlot, Player>();
+  for (const [slot, id] of chart.field) {
+    const p = byId.get(id);
+    if (p) assignment.set(slot, p);
+  }
+  const centre = (LVL[club.lvl as keyof typeof LVL] ?? LVL.INDY).c;
+  const defence = teamDefense(assignment, centre);
+
   return (
     <div className="flex h-full flex-col overflow-y-auto">
       <div className="border-b px-[var(--sp-3)] py-[var(--sp-2)]" style={{ borderColor: "var(--c-border)" }}>
@@ -103,9 +112,19 @@ export default function LineupPage() {
       </div>
 
       <Panel title="Batting order" bare>
-        {chart.lineup.map((id, i) => (
-          <Slot key={id} n={i + 1} p={byId.get(id)} />
-        ))}
+        {chart.lineup.map((id, i) => {
+          const p = byId.get(id);
+          const slot = slotOf.get(id);
+          const natural = p ? naturalSlot(p) : undefined;
+          return (
+            <Slot
+              key={id}
+              n={i + 1}
+              p={p}
+              label={slot ? (slot === natural ? slot : `${slot} (${natural})`) : undefined}
+            />
+          );
+        })}
       </Panel>
 
       <Panel title="Rotation" bare>
@@ -120,6 +139,51 @@ export default function LineupPage() {
         ))}
       </Panel>
 
+      <Panel title="Defence">
+        <div className="grid grid-cols-3 gap-[var(--sp-2)] text-[var(--fs-sm)]">
+          <div>
+            <div className="text-[var(--fs-micro)]" style={{ color: "var(--c-dim2)" }}>
+              GLOVES
+            </div>
+            <div className="num" style={{ color: defence.runs >= 0 ? "var(--c-pos)" : "var(--c-neg)" }}>
+              {defence.runs >= 0 ? "+" : ""}
+              {defence.runs.toFixed(0)}
+            </div>
+            <div className="text-[var(--fs-micro)]" style={{ color: "var(--c-dim)" }}>
+              runs / yr
+            </div>
+          </div>
+          <div>
+            <div className="text-[var(--fs-micro)]" style={{ color: "var(--c-dim2)" }}>
+              FRAMING
+            </div>
+            <div className="num" style={{ color: defence.framingRuns >= 0 ? "var(--c-pos)" : "var(--c-neg)" }}>
+              {defence.framingRuns >= 0 ? "+" : ""}
+              {defence.framingRuns.toFixed(0)}
+            </div>
+            <div className="text-[var(--fs-micro)]" style={{ color: "var(--c-dim)" }}>
+              your catcher
+            </div>
+          </div>
+          <div>
+            <div className="text-[var(--fs-micro)]" style={{ color: "var(--c-dim2)" }}>
+              ON CONTACT
+            </div>
+            <div className="num" style={{ color: defence.babipDelta <= 0 ? "var(--c-pos)" : "var(--c-neg)" }}>
+              {defence.babipDelta <= 0 ? "" : "+"}
+              {(defence.babipDelta * 1000).toFixed(0)}
+            </div>
+            <div className="text-[var(--fs-micro)]" style={{ color: "var(--c-dim)" }}>
+              pts of BABIP
+            </div>
+          </div>
+        </div>
+        <p className="pt-[var(--sp-2)] text-[var(--fs-micro)]" style={{ color: "var(--c-dim2)" }}>
+          What your gloves are worth against the rest of your league — not against the majors. Once a ball is in
+          play the pitcher has largely done his job; the rest is who is standing where.
+        </p>
+      </Panel>
+
       <Panel title="Who sets this">
         <p className="text-[var(--fs-sm)]" style={{ color: "var(--c-dim2)" }}>
           Your manager does, off the organization&rsquo;s own scouted grades — and the game is played from exactly
@@ -127,8 +191,8 @@ export default function LineupPage() {
           handle.
         </p>
         <p className="mt-[var(--sp-2)] text-[var(--fs-micro)]" style={{ color: "var(--c-dim2)" }}>
-          Fielding is not simulated yet, so the card is picked on bat alone and the positions beside each name are
-          descriptive, not assignments. You will see repeats and gaps. Nothing on any other screen depends on it.
+          A name shown as &ldquo;LF (3B)&rdquo; is playing out of position — a bat your manager wanted in the order,
+          hidden at a corner. It costs something, and the figure above says how much.
         </p>
       </Panel>
     </div>
